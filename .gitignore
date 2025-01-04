@@ -1,2 +1,6 @@
 myenv/
+<<<<<<< HEAD
 __pycache__/
+=======
+ProGraML/venv
+>>>>>>> 8d83329 (add: edge embedding)
