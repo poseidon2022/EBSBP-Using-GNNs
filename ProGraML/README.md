@@ -33,10 +33,19 @@ pip install programl
 pip install matplotlib
 ```
 
-### Run the python file graph.py
+### Run the python file generate_graph.py
 
-Now you can run your python file. Assuming your file is named graph.py.
+This should output file.data on your working dierctory whihc is the `data` representation of the instructions in a graph format.
+
 
 ```bash
-python main.py
+python generate_graph.py
+```
+
+### Run the python file graph.py
+
+This is for visualization purposes and should output the feature information stored on every node along with the plotted graph representation of the program.
+
+```bash
+python graph.py
 ```
