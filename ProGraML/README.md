@@ -20,10 +20,7 @@ Using a virtual environment helps keep your project dependencies isolated. This 
     source venv/bin/activate
     ``` 
   Activating the environment
-```bash
-  conda create -n myenv python=3.10  # You can choose a specific Python version.
-conda activate myenv
-```
+  
 ### Install `programl` and `matplotlib`
 
 With your virtual environment activated, you can install programl using pip. The installation process should automatically fetch the required dependencies.
