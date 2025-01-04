@@ -16,9 +16,9 @@ Using a virtual environment helps keep your project dependencies isolated. This 
 
    This creates a directory named venv in your project folder.
 
-     ```bash
-  source venv/bin/activate
-  ``` 
+    ```bash
+    source venv/bin/activate
+    ``` 
   Activating the environment
 ```bash
   conda create -n myenv python=3.10  # You can choose a specific Python version.
