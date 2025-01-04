@@ -1,14 +1,14 @@
 import programl as pg 
-G = pg.from_cpp("""
-#include <iostream>
+# G = pg.from_cpp("""
+# #include <iostream>
 
-    int main(int argc, char** argv) {
-                std::cout << "Hello, world!" << std::endl;
-                return 0;
-    }
-""")
+#     int main(int argc, char** argv) {
+#                 std::cout << "Hello, world!" << std::endl;
+#                 return 0;
+#     }
+# """)
 
-graph = pg.load_graphs("file.data")
+graph = pg.load_graphs("file.data") # here you can change the file dir to view either the raw or processed one
 
 networkx_graph = pg.to_networkx(graph[0])
 # Print all nodes and their attributes
