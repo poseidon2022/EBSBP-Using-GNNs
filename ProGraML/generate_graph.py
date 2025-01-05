@@ -3,7 +3,7 @@ from inst2vec_encoder import Inst2vecEncoder
 
 # Construct a program graph from C++:
 
-G = pg.from_cpp("""
+PROGRAM_GRAPH = pg.from_cpp("""
  #include <iostream>
 
  int main(int argc, char** argv) {
@@ -12,10 +12,9 @@ G = pg.from_cpp("""
 }
  """)
 
-print(type(G))
+print(type(PROGRAM_GRAPH))
 encoder = Inst2vecEncoder()
-encoded_graph = encoder.Encode(proto=G)
-# Convert the graph to NetworkX:
+encoded_graph = encoder.Encode(proto=PROGRAM_GRAPH)
 
-pg.save_graphs("unprocessed.data", [G])
+pg.save_graphs("unprocessed.data", [PROGRAM_GRAPH])
 pg.save_graphs('file.data', [encoded_graph])
