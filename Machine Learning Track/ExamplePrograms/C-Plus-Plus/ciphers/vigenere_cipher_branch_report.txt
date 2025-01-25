@@ -1,0 +1,136 @@
+    1|       |/**
+    2|       | * @file vigenere_cipher.cpp
+    3|       | * @brief Implementation of [Vigenère cipher](https://en.wikipedia.org/wiki/Vigen%C3%A8re_cipher) algorithm.
+    4|       | *
+    5|       | * @details
+    6|       | * The Vigenère cipher is a method of encrypting alphabetic text by using a series of interwoven vigenere 
+    7|       | * ciphers, based on the letters of a keyword. It employs a form of polyalphabetic substitution. 
+    8|       | *
+    9|       | * ### Algorithm
+   10|       | * The encryption can also be represented using modular arithmetic by first transforming 
+   11|       | * the letters into numbers, according to the scheme, A → 0, B → 1, ..., Z → 25.
+   12|       | * Encryption of \f$i^{th}\f$ character in Message M by key K can be described mathematically as,
+   13|       | * 
+   14|       | * \f[ E_{K}(M_{i}) = (M_{i} + K_{i})\;\mbox{mod}\; 26\f]
+   15|       | * 
+   16|       | * while decryption of \f$i^{th}\f$ character in Cipher C by key K can be described mathematically as,
+   17|       | *
+   18|       | * \f[ D_{k}(C_{i}) = (C_{i} - K_{i} + 26)\;\mbox{mod}\; 26\f]
+   19|       | * 
+   20|       | * Where \f$K_{i}\f$ denotes corresponding character in key. If \f$|key| < |text|\f$ than
+   21|       | * same key is repeated untill their lengths are equal.
+   22|       | * 
+   23|       | * For Example,
+   24|       | * If M = "ATTACKATDAWN" and K = "LEMON" than K becomes "LEMONLEMONLE".
+   25|       | * 
+   26|       | * \note Rather than creating new key of equal length this program does this by using modular index for key
+   27|       | * (i.e. \f$(j + 1) \;\mbox{mod}\; |\mbox{key}|\f$)
+   28|       | * 
+   29|       | * \note This program implements Vigenère cipher for only uppercase English alphabet characters (i.e. A-Z). 
+   30|       | * 
+   31|       | * @author [Deep Raval](https://github.com/imdeep2905)
+   32|       | */
+   33|       |#include <iostream>
+   34|       |#include <string>
+   35|       |#include <cassert>
+   36|       |
+   37|       |/** \namespace ciphers
+   38|       | * \brief Algorithms for encryption and decryption
+   39|       | */
+   40|       |namespace ciphers {
+   41|       |    /** \namespace vigenere
+   42|       |     * \brief Functions for [vigenère cipher](https://en.wikipedia.org/wiki/Vigen%C3%A8re_cipher) algorithm.
+   43|       |     */
+   44|       |    namespace vigenere {   
+   45|       |        namespace {
+   46|       |            /**
+   47|       |             * This function finds character for given value (i.e.A-Z)
+   48|       |             * @param x value for which we want character 
+   49|       |             * @return  corresponding character for perticular value
+   50|       |             */        
+   51|     38|            inline char get_char(const int x) {
+   52|       |                // By adding 65 we are scaling 0-25 to 65-90. 
+   53|       |                // Which are in fact ASCII values of A-Z. 
+   54|     38|                return char(x + 65); 
+   55|     38|            }
+   56|       |            /**
+   57|       |             * This function finds value for given character (i.e.0-25)
+   58|       |             * @param c character for which we want value
+   59|       |             * @return returns corresponding value for perticular character
+   60|       |             */  
+   61|     76|            inline int get_value(const char c) {
+   62|       |                // A-Z have ASCII values in range 65-90.
+   63|       |                // Hence subtracting 65 will scale them to 0-25.
+   64|     76|                return int(c - 65);
+   65|     76|            }
+   66|       |        } // Unnamed namespace
+   67|       |        /**
+   68|       |         * Encrypt given text using vigenere cipher.
+   69|       |         * @param text text to be encrypted
+   70|       |         * @param key to be used for encryption
+   71|       |         * @return new encrypted text
+   72|       |         */
+   73|      2|        std::string encrypt (const std::string &text, const std::string &key) {
+   74|      2|            std::string encrypted_text = ""; // Empty string to store encrypted text
+   75|       |            // Going through each character of text and key
+   76|       |            // Note that key is visited in circular way hence  j = (j + 1) % |key|
+   77|     21|            for(size_t i = 0, j = 0; i < text.length(); i++, j = (j + 1) % key.length()) {
+   78|     19|                int place_value_text = get_value(text[i]); // Getting value of character in text
+   79|     19|                int place_value_key = get_value(key[j]); // Getting value of character in key
+   80|     19|                place_value_text = (place_value_text + place_value_key) % 26; // Applying encryption
+   81|     19|                char encrypted_char = get_char(place_value_text); // Getting new character from encrypted value
+   82|     19|                encrypted_text += encrypted_char; // Appending encrypted character
+   83|     19|            }
+   84|      2|            return encrypted_text; // Returning encrypted text
+   85|      2|        }
+   86|       |        /**
+   87|       |         * Decrypt given text using vigenere cipher.
+   88|       |         * @param text text to be decrypted
+   89|       |         * @param key key to be used for decryption
+   90|       |         * @return new decrypted text
+   91|       |         */        
+   92|      2|        std::string decrypt (const std::string &text, const std::string &key) {
+   93|       |            // Going through each character of text and key
+   94|       |            // Note that key is visited in circular way hence  j = (j + 1) % |key|
+   95|      2|            std::string decrypted_text = ""; // Empty string to store decrypted text
+   96|     21|            for(size_t i = 0, j = 0; i < text.length(); i++, j = (j + 1) % key.length()) {
+   97|     19|                int place_value_text = get_value(text[i]); // Getting value of character in text
+   98|     19|                int place_value_key = get_value(key[j]); // Getting value of character in key
+   99|     19|                place_value_text = (place_value_text - place_value_key + 26) % 26; // Applying decryption
+  100|     19|                char decrypted_char = get_char(place_value_text); // Getting new character from decrypted value
+  101|     19|                decrypted_text += decrypted_char; // Appending decrypted character
+  102|     19|            }        
+  103|      2|            return decrypted_text; // Returning decrypted text
+  104|      2|        }
+  105|       |    } // namespace vigenere
+  106|       |} // namespace ciphers
+  107|       |
+  108|       |/**
+  109|       | * Function to test above algorithm
+  110|       | */
+  111|      1|void test() {
+  112|       |    // Test 1
+  113|      1|    std::string text1 = "NIKOLATESLA";
+  114|      1|    std::string encrypted1 = ciphers::vigenere::encrypt(text1, "TESLA");
+  115|      1|    std::string decrypted1 = ciphers::vigenere::decrypt(encrypted1, "TESLA");
+  116|      1|    assert(text1 == decrypted1);
+  117|      0|    std::cout << "Original text : " << text1;
+  118|      1|    std::cout << " , Encrypted text (with key = TESLA) : " << encrypted1;
+  119|      1|    std::cout << " , Decrypted text : "<< decrypted1 << std::endl;
+  120|       |    // Test 2
+  121|      1|    std::string text2 = "GOOGLEIT";
+  122|      1|    std::string encrypted2 = ciphers::vigenere::encrypt(text2, "REALLY");
+  123|      1|    std::string decrypted2 = ciphers::vigenere::decrypt(encrypted2, "REALLY");
+  124|      1|    assert(text2 == decrypted2);
+  125|      0|    std::cout << "Original text : " << text2;
+  126|      1|    std::cout << " , Encrypted text (with key = REALLY) : " << encrypted2;
+  127|      1|    std::cout << " , Decrypted text : "<< decrypted2 << std::endl;
+  128|      1|}
+  129|       |
+  130|       |/** Driver Code */
+  131|      1|int main() {
+  132|       |    // Testing
+  133|      1|    test();
+  134|      1|    return 0;
+  135|      1|}
+

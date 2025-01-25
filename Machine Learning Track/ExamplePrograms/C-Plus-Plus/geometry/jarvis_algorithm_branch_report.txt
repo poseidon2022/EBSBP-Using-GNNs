@@ -1,0 +1,180 @@
+    1|       |/**
+    2|       | * @file
+    3|       | * @brief Implementation of [Jarvis’s](https://en.wikipedia.org/wiki/Gift_wrapping_algorithm) algorithm.
+    4|       | *
+    5|       | * @details
+    6|       | * Given a set of points in the plane. the convex hull of the set
+    7|       | * is the smallest convex polygon that contains all the points of it.
+    8|       | *
+    9|       | * ### Algorithm
+   10|       | * The idea of Jarvis’s Algorithm is simple, we start from the leftmost point
+   11|       | * (or point with minimum x coordinate value) and we
+   12|       | * keep wrapping points in counterclockwise direction.
+   13|       | *
+   14|       | * The idea is to use orientation() here. Next point is selected as the
+   15|       | * point that beats all other points at counterclockwise orientation, i.e.,
+   16|       | * next point is q if for any other point r,
+   17|       | * we have “orientation(p, q, r) = counterclockwise”.
+   18|       | *
+   19|       | * For Example,
+   20|       | * If points = {{0, 3}, {2, 2}, {1, 1}, {2, 1},
+   21|       |                      {3, 0}, {0, 0}, {3, 3}};
+   22|       | *
+   23|       | * then the convex hull is
+   24|       | * (0, 3), (0, 0), (3, 0), (3, 3)
+   25|       | *
+   26|       | * @author [Rishabh Agarwal](https://github.com/rishabh-997)
+   27|       | */
+   28|       |
+   29|       |#include <vector>
+   30|       |#include <cassert>
+   31|       |#include <iostream>
+   32|       |
+   33|       |/**
+   34|       | *  @namespace geometry
+   35|       | *  @brief Geometry algorithms
+   36|       | */
+   37|       |namespace geometry {
+   38|       |    /**
+   39|       |     * @namespace jarvis
+   40|       |     * @brief Functions for [Jarvis’s](https://en.wikipedia.org/wiki/Gift_wrapping_algorithm) algorithm
+   41|       |     */
+   42|       |    namespace jarvis {
+   43|       |        /**
+   44|       |         * Structure defining the x and y co-ordinates of the given
+   45|       |         * point in space
+   46|       |         */
+   47|       |        struct Point {
+   48|       |            int x, y;
+   49|       |        };
+   50|       |
+   51|       |        /**
+   52|       |         * Class which can be called from main and is globally available
+   53|       |         * throughout the code
+   54|       |         */
+   55|       |        class Convexhull {
+   56|       |            std::vector<Point> points;
+   57|       |            int size;
+   58|       |
+   59|       |        public:
+   60|       |            /**
+   61|       |             * Constructor of given class
+   62|       |             *
+   63|       |             * @param pointList list of all points in the space
+   64|       |             * @param n number of points in space
+   65|       |             */
+   66|      1|            explicit Convexhull(const std::vector<Point> &pointList) {
+   67|      1|                points = pointList;
+   68|      1|                size = points.size();
+   69|      1|            }
+   70|       |
+   71|       |            /**
+   72|       |             * Creates convex hull of a set of n points.
+   73|       |             * There must be 3 points at least for the convex hull to exist
+   74|       |             *
+   75|       |             * @returns an vector array containing points in space
+   76|       |             * which enclose all given points thus forming a hull
+   77|       |             */
+   78|      1|            std::vector<Point> getConvexHull() const {
+   79|       |                // Initialize Result
+   80|      1|                std::vector<Point> hull;
+   81|       |
+   82|       |                // Find the leftmost point
+   83|      1|                int leftmost_point = 0;
+   84|      7|                for (int i = 1; i < size; i++) {
+   85|      6|                    if (points[i].x < points[leftmost_point].x) {
+   86|      0|                        leftmost_point = i;
+   87|      0|                    }
+   88|      6|                }
+   89|       |                // Start from leftmost point, keep moving counterclockwise
+   90|       |                // until reach the start point again.  This loop runs O(h)
+   91|       |                // times where h is number of points in result or output.
+   92|      1|                int p = leftmost_point, q = 0;
+   93|      4|                do {
+   94|       |                    // Add current point to result
+   95|      4|                    hull.push_back(points[p]);
+   96|       |
+   97|       |                    // Search for a point 'q' such that orientation(p, x, q)
+   98|       |                    // is counterclockwise for all points 'x'. The idea
+   99|       |                    // is to keep track of last visited most counter clock-
+  100|       |                    // wise point in q. If any point 'i' is more counter clock-
+  101|       |                    // wise than q, then update q.
+  102|      4|                    q = (p + 1) % size;
+  103|     32|                    for (int i = 0; i < size; i++) {
+  104|       |                        // If i is more counterclockwise than current q, then
+  105|       |                        // update q
+  106|     28|                        if (orientation(points[p], points[i], points[q]) == 2) {
+  107|      7|                            q = i;
+  108|      7|                        }
+  109|     28|                    }
+  110|       |
+  111|       |                    // Now q is the most counterclockwise with respect to p
+  112|       |                    // Set p as q for next iteration, so that q is added to
+  113|       |                    // result 'hull'
+  114|      4|                    p = q;
+  115|       |
+  116|      4|                } while (p != leftmost_point);        // While we don't come to first point
+  117|       |
+  118|      1|                return hull;
+  119|      1|            }
+  120|       |
+  121|       |            /**
+  122|       |             * This function returns the geometric orientation for the three points
+  123|       |             * in a space, ie, whether they are linear ir clockwise or
+  124|       |             * anti-clockwise
+  125|       |             * @param p first point selected
+  126|       |             * @param q adjacent point for q
+  127|       |             * @param r adjacent point for q
+  128|       |             *
+  129|       |             * @returns 0 -> Linear
+  130|       |             * @returns 1 -> Clock Wise
+  131|       |             * @returns 2 -> Anti Clock Wise
+  132|       |             */
+  133|     28|            static int orientation(const Point &p, const Point &q, const Point &r) {
+  134|     28|                int val = (q.y - p.y) * (r.x - q.x) - (q.x - p.x) * (r.y - q.y);
+  135|       |
+  136|     28|                if (val == 0) {
+  137|      8|                    return 0;
+  138|      8|                }
+  139|     20|                return (val > 0) ? 1 : 2;
+  140|     28|            }
+  141|       |
+  142|       |        };
+  143|       |
+  144|       |    } // namespace jarvis
+  145|       |} // namespace geometry
+  146|       |
+  147|       |/**
+  148|       | * Test function
+  149|       | * @returns void
+  150|       | */
+  151|      1|static void test() {
+  152|      1|    std::vector<geometry::jarvis::Point> points = {{0, 3},
+  153|      1|                                                   {2, 2},
+  154|      1|                                                   {1, 1},
+  155|      1|                                                   {2, 1},
+  156|      1|                                                   {3, 0},
+  157|      1|                                                   {0, 0},
+  158|      1|                                                   {3, 3}
+  159|      1|    };
+  160|      1|    geometry::jarvis::Convexhull hull(points);
+  161|      1|    std::vector<geometry::jarvis::Point> actualPoint;
+  162|      1|    actualPoint = hull.getConvexHull();
+  163|       |
+  164|      1|    std::vector<geometry::jarvis::Point> expectedPoint = {{0, 3},
+  165|      1|                                                          {0, 0},
+  166|      1|                                                          {3, 0},
+  167|      1|                                                          {3, 3}};
+  168|      5|    for (int i = 0; i < expectedPoint.size(); i++) {
+  169|      4|        assert(actualPoint[i].x == expectedPoint[i].x);
+  170|      0|        assert(actualPoint[i].y == expectedPoint[i].y);
+  171|      4|    }
+  172|      1|    std::cout << "Test implementations passed!\n";
+  173|      1|}
+  174|       |
+  175|       |/** Driver Code */
+  176|      1|int main() {
+  177|      1|    test();
+  178|      1|    return 0;
+  179|      1|}
+

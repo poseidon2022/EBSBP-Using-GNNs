@@ -1,0 +1,106 @@
+    1|       |/**
+    2|       | * @file sparse_table.cpp
+    3|       | * @brief Implementation of [Sparse
+    4|       | * Table](https://en.wikipedia.org/wiki/Range_minimum_query) data structure
+    5|       | *
+    6|       | * @details
+    7|       | * Sparse Table is a data structure, that allows answering range queries.
+    8|       | * It can answer most range queries in O(logn), but its true power is answering
+    9|       | * range minimum queries or equivalent range maximum queries). For those queries
+   10|       | * it can compute the answer in O(1) time.
+   11|       | *
+   12|       | * * Running Time Complexity \n
+   13|       | * * Build : O(NlogN) \n
+   14|       | * * Range Query : O(1) \n
+   15|       | */
+   16|       |
+   17|       |#include <algorithm>
+   18|       |#include <cassert>
+   19|       |#include <iostream>
+   20|       |#include <vector>
+   21|       |
+   22|       |/**
+   23|       | * @namespace range_queries
+   24|       | * @brief Range Queries algorithms
+   25|       | */
+   26|       |namespace range_queries {
+   27|       |/**
+   28|       | * @namespace sparse_table
+   29|       | * @brief Range queries using sparse-tables
+   30|       | */
+   31|       |namespace sparse_table {
+   32|       |/**
+   33|       | * This function precomputes intial log table for further use.
+   34|       | * @param n value of the size of the input array
+   35|       | * @return corresponding vector of the log table
+   36|       | */
+   37|       |template <typename T>
+   38|      1|std::vector<T> computeLogs(const std::vector<T>& A) {
+   39|      1|    int n = A.size();
+   40|      1|    std::vector<T> logs(n);
+   41|      1|    logs[1] = 0;
+   42|      4|    for (int i = 2; i < n; i++) {
+   43|      3|        logs[i] = logs[i / 2] + 1;
+   44|      3|    }
+   45|      1|    return logs;
+   46|      1|}
+   47|       |
+   48|       |/**
+   49|       | * This functions builds the primary data structure sparse table
+   50|       | * @param n value of the size of the input array
+   51|       | * @param A array of the input integers
+   52|       | * @param logs array of the log table
+   53|       | * @return created sparse table data structure
+   54|       | */
+   55|       |template <typename T>
+   56|       |std::vector<std::vector<T> > buildTable(const std::vector<T>& A,
+   57|      1|                                        const std::vector<T>& logs) {
+   58|      1|    int n = A.size();
+   59|      1|    std::vector<std::vector<T> > table(20, std::vector<T>(n + 5, 0));
+   60|      1|    int curLen = 0;
+   61|      2|    for (int i = 0; i <= logs[n]; i++) {
+   62|      1|        curLen = 1 << i;
+   63|      5|        for (int j = 0; j + curLen < n; j++) {
+   64|      4|            if (curLen == 1) {
+   65|      4|                table[i][j] = A[j];
+   66|      4|            } else {
+   67|      0|                table[i][j] =
+   68|      0|                    std::min(table[i - 1][j], table[i - 1][j + curLen / 2]);
+   69|      0|            }
+   70|      4|        }
+   71|      1|    }
+   72|      1|    return table;
+   73|      1|}
+   74|       |
+   75|       |/**
+   76|       | * This function is the query function to get the range minimum value
+   77|       | * @param beg beginning index of the query range
+   78|       | * @param end ending index of the query range
+   79|       | * @param logs array of the log table
+   80|       | * @param table sparse table data structure for the input array
+   81|       | * @return minimum value for the [beg, end] range for the input array
+   82|       | */
+   83|       |template <typename T>
+   84|       |int getMinimum(int beg, int end, const std::vector<T>& logs,
+   85|      3|               const std::vector<std::vector<T> >& table) {
+   86|      3|    int p = logs[end - beg + 1];
+   87|      3|    int pLen = 1 << p;
+   88|      3|    return std::min(table[p][beg], table[p][end - pLen + 1]);
+   89|      3|}
+   90|       |}  // namespace sparse_table
+   91|       |}  // namespace range_queries
+   92|       |
+   93|       |/**
+   94|       | * Main function
+   95|       | */
+   96|      1|int main() {
+   97|      1|    std::vector<int> A{1, 2, 0, 3, 9};
+   98|      1|    std::vector<int> logs = range_queries::sparse_table::computeLogs(A);
+   99|      1|    std::vector<std::vector<int> > table =
+  100|      1|        range_queries::sparse_table::buildTable(A, logs);
+  101|      1|    assert(range_queries::sparse_table::getMinimum(0, 0, logs, table) == 1);
+  102|      0|    assert(range_queries::sparse_table::getMinimum(0, 4, logs, table) == 0);
+  103|      0|    assert(range_queries::sparse_table::getMinimum(2, 4, logs, table) == 0);
+  104|      0|    return 0;
+  105|      1|}
+

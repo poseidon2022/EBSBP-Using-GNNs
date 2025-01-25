@@ -1,0 +1,498 @@
+/home/kidus/Desktop/GNNs/ExamplePrograms/C-Plus-Plus/numerical_methods/qr_decompose.h:
+    1|       |/**
+    2|       | * @file
+    3|       | * \brief Library functions to compute [QR
+    4|       | * decomposition](https://en.wikipedia.org/wiki/QR_decomposition) of a given
+    5|       | * matrix.
+    6|       | * \author [Krishna Vedala](https://github.com/kvedala)
+    7|       | */
+    8|       |
+    9|       |#ifndef NUMERICAL_METHODS_QR_DECOMPOSE_H_
+   10|       |#define NUMERICAL_METHODS_QR_DECOMPOSE_H_
+   11|       |
+   12|       |#include <cmath>
+   13|       |#include <cstdlib>
+   14|       |#include <iomanip>
+   15|       |#include <iostream>
+   16|       |#include <limits>
+   17|       |#include <numeric>
+   18|       |#include <valarray>
+   19|       |#ifdef _OPENMP
+   20|       |#include <omp.h>
+   21|       |#endif
+   22|       |
+   23|       |/** \namespace qr_algorithm
+   24|       | * \brief Functions to compute [QR
+   25|       | * decomposition](https://en.wikipedia.org/wiki/QR_decomposition) of any
+   26|       | * rectangular matrix
+   27|       | */
+   28|       |namespace qr_algorithm {
+   29|       |/**
+   30|       | * operator to print a matrix
+   31|       | */
+   32|       |template <typename T>
+   33|       |std::ostream &operator<<(std::ostream &out,
+   34|      1|                         std::valarray<std::valarray<T>> const &v) {
+   35|      1|    const int width = 12;
+   36|      1|    const char separator = ' ';
+   37|       |
+   38|      1|    out.precision(4);
+   39|      6|    for (size_t row = 0; row < v.size(); row++) {
+   40|     30|        for (size_t col = 0; col < v[row].size(); col++)
+   41|     25|            out << std::right << std::setw(width) << std::setfill(separator)
+   42|     25|                << v[row][col];
+   43|      5|        out << std::endl;
+   44|      5|    }
+   45|       |
+   46|      1|    return out;
+   47|      1|}
+   48|       |
+   49|       |/**
+   50|       | * operator to print a vector
+   51|       | */
+   52|       |template <typename T>
+   53|      1|std::ostream &operator<<(std::ostream &out, std::valarray<T> const &v) {
+   54|      1|    const int width = 10;
+   55|      1|    const char separator = ' ';
+   56|       |
+   57|      1|    out.precision(4);
+   58|      6|    for (size_t row = 0; row < v.size(); row++) {
+   59|      5|        out << std::right << std::setw(width) << std::setfill(separator)
+   60|      5|            << v[row];
+   61|      5|    }
+   62|       |
+   63|      1|    return out;
+   64|      1|}
+   65|       |
+   66|       |/**
+   67|       | * Compute dot product of two vectors of equal lengths
+   68|       | *
+   69|       | * If \f$\vec{a}=\left[a_0,a_1,a_2,...,a_L\right]\f$ and
+   70|       | * \f$\vec{b}=\left[b_0,b_1,b_1,...,b_L\right]\f$ then
+   71|       | * \f$\vec{a}\cdot\vec{b}=\displaystyle\sum_{i=0}^L a_i\times b_i\f$
+   72|       | *
+   73|       | * \returns \f$\vec{a}\cdot\vec{b}\f$
+   74|       | */
+   75|       |template <typename T>
+   76|    345|inline double vector_dot(const std::valarray<T> &a, const std::valarray<T> &b) {
+   77|    345|    return (a * b).sum();
+   78|       |    // could also use following
+   79|       |    // return std::inner_product(std::begin(a), std::end(a), std::begin(b),
+   80|       |    // 0.f);
+   81|    345|}
+   82|       |
+   83|       |/**
+   84|       | * Compute magnitude of vector.
+   85|       | *
+   86|       | * If \f$\vec{a}=\left[a_0,a_1,a_2,...,a_L\right]\f$ then
+   87|       | * \f$\left|\vec{a}\right|=\sqrt{\displaystyle\sum_{i=0}^L a_i^2}\f$
+   88|       | *
+   89|       | * \returns \f$\left|\vec{a}\right|\f$
+   90|       | */
+   91|       |template <typename T>
+   92|     75|inline double vector_mag(const std::valarray<T> &a) {
+   93|     75|    double dot = vector_dot(a, a);
+   94|     75|    return std::sqrt(dot);
+   95|     75|}
+   96|       |
+   97|       |/**
+   98|       | * Compute projection of vector \f$\vec{a}\f$ on \f$\vec{b}\f$ defined as
+   99|       | * \f[\text{proj}_\vec{b}\vec{a}=\frac{\vec{a}\cdot\vec{b}}{\left|\vec{b}\right|^2}\vec{b}\f]
+  100|       | *
+  101|       | * \returns NULL if error, otherwise pointer to output
+  102|       | */
+  103|       |template <typename T>
+  104|       |std::valarray<T> vector_proj(const std::valarray<T> &a,
+  105|    135|                             const std::valarray<T> &b) {
+  106|    135|    double num = vector_dot(a, b);
+  107|    135|    double deno = vector_dot(b, b);
+  108|       |
+  109|       |    /*! check for division by zero using machine epsilon */
+  110|    135|    if (deno <= std::numeric_limits<double>::epsilon()) {
+  111|      0|        std::cerr << "[" << __func__ << "] Possible division by zero\n";
+  112|      0|        return a;  // return vector a back
+  113|      0|    }
+  114|       |
+  115|    135|    double scalar = num / deno;
+  116|       |
+  117|    135|    return b * scalar;
+  118|    135|}
+  119|       |
+  120|       |/**
+  121|       | * Decompose matrix \f$A\f$ using [Gram-Schmidt
+  122|       | *process](https://en.wikipedia.org/wiki/QR_decomposition).
+  123|       | *
+  124|       | * \f{eqnarray*}{
+  125|       | * \text{given that}\quad A &=&
+  126|       | *\left[\mathbf{a}_1,\mathbf{a}_2,\ldots,\mathbf{a}_{N-1},\right]\\
+  127|       | * \text{where}\quad\mathbf{a}_i &=&
+  128|       | * \left[a_{0i},a_{1i},a_{2i},\ldots,a_{(M-1)i}\right]^T\quad\ldots\mbox{(column
+  129|       | * vectors)}\\
+  130|       | * \text{then}\quad\mathbf{u}_i &=& \mathbf{a}_i
+  131|       | *-\sum_{j=0}^{i-1}\text{proj}_{\mathbf{u}_j}\mathbf{a}_i\\
+  132|       | * \mathbf{e}_i &=&\frac{\mathbf{u}_i}{\left|\mathbf{u}_i\right|}\\
+  133|       | * Q &=& \begin{bmatrix}\mathbf{e}_0 & \mathbf{e}_1 & \mathbf{e}_2 & \dots &
+  134|       | * \mathbf{e}_{N-1}\end{bmatrix}\\
+  135|       | * R &=& \begin{bmatrix}\langle\mathbf{e}_0\,,\mathbf{a}_0\rangle &
+  136|       | * \langle\mathbf{e}_1\,,\mathbf{a}_1\rangle &
+  137|       | * \langle\mathbf{e}_2\,,\mathbf{a}_2\rangle & \dots \\
+  138|       | *                  0 & \langle\mathbf{e}_1\,,\mathbf{a}_1\rangle &
+  139|       | * \langle\mathbf{e}_2\,,\mathbf{a}_2\rangle & \dots\\
+  140|       | *                  0 & 0 & \langle\mathbf{e}_2\,,\mathbf{a}_2\rangle &
+  141|       | * \dots\\ \vdots & \vdots & \vdots & \ddots
+  142|       | *      \end{bmatrix}\\
+  143|       | * \f}
+  144|       | */
+  145|       |template <typename T>
+  146|       |void qr_decompose(
+  147|       |    const std::valarray<std::valarray<T>> &A, /**< input matrix to decompose */
+  148|       |    std::valarray<std::valarray<T>> *Q,       /**< output decomposed matrix */
+  149|       |    std::valarray<std::valarray<T>> *R        /**< output decomposed matrix */
+  150|     18|) {
+  151|     18|    std::size_t ROWS = A.size();        // number of rows of A
+  152|     18|    std::size_t COLUMNS = A[0].size();  // number of columns of A
+  153|     18|    std::valarray<T> col_vector(ROWS);
+  154|     18|    std::valarray<T> col_vector2(ROWS);
+  155|     18|    std::valarray<T> tmp_vector(ROWS);
+  156|       |
+  157|     93|    for (int i = 0; i < COLUMNS; i++) {
+  158|       |        /* for each column => R is a square matrix of NxN */
+  159|     75|        int j;
+  160|     75|        R[0][i] = 0.; /* make R upper triangular */
+  161|       |
+  162|       |        /* get corresponding Q vector */
+  163|       |#ifdef _OPENMP
+  164|       |// parallelize on threads
+  165|       |#pragma omp for
+  166|       |#endif
+  167|    420|        for (j = 0; j < ROWS; j++) {
+  168|    345|            tmp_vector[j] = A[j][i]; /* accumulator for uk */
+  169|    345|            col_vector[j] = A[j][i];
+  170|    345|        }
+  171|    210|        for (j = 0; j < i; j++) {
+  172|    795|            for (int k = 0; k < ROWS; k++) {
+  173|    660|                col_vector2[k] = Q[0][k][j];
+  174|    660|            }
+  175|    135|            col_vector2 = vector_proj(col_vector, col_vector2);
+  176|    135|            tmp_vector -= col_vector2;
+  177|    135|        }
+  178|       |
+  179|     75|        double mag = vector_mag(tmp_vector);
+  180|       |
+  181|       |#ifdef _OPENMP
+  182|       |// parallelize on threads
+  183|       |#pragma omp for
+  184|       |#endif
+  185|    420|        for (j = 0; j < ROWS; j++) Q[0][j][i] = tmp_vector[j] / mag;
+  186|       |
+  187|       |            /* compute upper triangular values of R */
+  188|       |#ifdef _OPENMP
+  189|       |// parallelize on threads
+  190|       |#pragma omp for
+  191|       |#endif
+  192|    420|        for (int kk = 0; kk < ROWS; kk++) {
+  193|    345|            col_vector[kk] = Q[0][kk][i];
+  194|    345|        }
+  195|       |
+  196|       |#ifdef _OPENMP
+  197|       |// parallelize on threads
+  198|       |#pragma omp for
+  199|       |#endif
+  200|    285|        for (int k = i; k < COLUMNS; k++) {
+  201|  1.21k|            for (int kk = 0; kk < ROWS; kk++) {
+  202|  1.00k|                col_vector2[kk] = A[kk][k];
+  203|  1.00k|            }
+  204|    210|            R[0][i][k] = (col_vector * col_vector2).sum();
+  205|    210|        }
+  206|     75|    }
+  207|     18|}
+  208|       |}  // namespace qr_algorithm
+  209|       |
+  210|       |#endif  // NUMERICAL_METHODS_QR_DECOMPOSE_H_
+
+/home/kidus/Desktop/GNNs/ExamplePrograms/C-Plus-Plus/numerical_methods/qr_eigen_values.cpp:
+    1|       |/**
+    2|       | * @file
+    3|       | * \brief Compute real eigen values and eigen vectors of a symmetric matrix
+    4|       | * using [QR decomposition](https://en.wikipedia.org/wiki/QR_decomposition)
+    5|       | * method.
+    6|       | * \author [Krishna Vedala](https://github.com/kvedala)
+    7|       | */
+    8|       |#include <cassert>
+    9|       |#include <cmath>
+   10|       |#include <cstdlib>
+   11|       |#include <ctime>
+   12|       |#include <iostream>
+   13|       |#ifdef _OPENMP
+   14|       |#include <omp.h>
+   15|       |#endif
+   16|       |
+   17|       |#include "./qr_decompose.h"
+   18|       |using qr_algorithm::operator<<;
+   19|       |
+   20|      0|#define LIMS 9 /**< limit of range of matrix values */
+   21|       |
+   22|       |/**
+   23|       | * create a symmetric square matrix of given size with random elements. A
+   24|       | * symmetric square matrix will *always* have real eigen values.
+   25|       | *
+   26|       | * \param[out] A matrix to create (must be pre-allocated in memory)
+   27|       | */
+   28|      0|void create_matrix(std::valarray<std::valarray<double>> *A) {
+   29|      0|    int i, j, tmp, lim2 = LIMS >> 1;
+   30|      0|    int N = A->size();
+   31|       |
+   32|       |#ifdef _OPENMP
+   33|       |#pragma omp for
+   34|       |#endif
+   35|      0|    for (i = 0; i < N; i++) {
+   36|      0|        A[0][i][i] = (std::rand() % LIMS) - lim2;
+   37|      0|        for (j = i + 1; j < N; j++) {
+   38|      0|            tmp = (std::rand() % LIMS) - lim2;
+   39|      0|            A[0][i][j] = tmp;  // summetrically distribute random values
+   40|      0|            A[0][j][i] = tmp;
+   41|      0|        }
+   42|      0|    }
+   43|      0|}
+   44|       |
+   45|       |/**
+   46|       | * Perform multiplication of two matrices.
+   47|       | * * R2 must be equal to C1
+   48|       | * * Resultant matrix size should be R1xC2
+   49|       | * \param[in] A first matrix to multiply
+   50|       | * \param[in] B second matrix to multiply
+   51|       | * \param[out] OUT output matrix (must be pre-allocated)
+   52|       | * \returns pointer to resultant matrix
+   53|       | */
+   54|       |void mat_mul(const std::valarray<std::valarray<double>> &A,
+   55|       |             const std::valarray<std::valarray<double>> &B,
+   56|     18|             std::valarray<std::valarray<double>> *OUT) {
+   57|     18|    int R1 = A.size();
+   58|     18|    int C1 = A[0].size();
+   59|     18|    int R2 = B.size();
+   60|     18|    int C2 = B[0].size();
+   61|     18|    if (C1 != R2) {
+   62|      0|        perror("Matrix dimensions mismatch!");
+   63|      0|        return;
+   64|      0|    }
+   65|       |
+   66|     93|    for (int i = 0; i < R1; i++) {
+   67|    420|        for (int j = 0; j < C2; j++) {
+   68|    345|            OUT[0][i][j] = 0.f;
+   69|  2.01k|            for (int k = 0; k < C1; k++) {
+   70|  1.66k|                OUT[0][i][j] += A[i][k] * B[k][j];
+   71|  1.66k|            }
+   72|    345|        }
+   73|     75|    }
+   74|     18|}
+   75|       |
+   76|       |namespace qr_algorithm {
+   77|       |/** Compute eigen values using iterative shifted QR decomposition algorithm as
+   78|       | * follows:
+   79|       | * 1. Use last diagonal element of A as eigen value approximation \f$c\f$
+   80|       | * 2. Shift diagonals of matrix \f$A' = A - cI\f$
+   81|       | * 3. Decompose matrix \f$A'=QR\f$
+   82|       | * 4. Compute next approximation \f$A'_1 = RQ \f$
+   83|       | * 5. Shift diagonals back \f$A_1 = A'_1 + cI\f$
+   84|       | * 6. Termination condition check: last element below diagonal is almost 0
+   85|       | *   1. If not 0, go back to step 1 with the new approximation \f$A_1\f$
+   86|       | *   2. If 0, continue to step 7
+   87|       | * 7. Save last known \f$c\f$ as the eigen value.
+   88|       | * 8. Are all eigen values found?
+   89|       | *   1. If not, remove last row and column of \f$A_1\f$ and go back to step 1.
+   90|       | *   2. If yes, stop.
+   91|       | *
+   92|       | * \note The matrix \f$A\f$ gets modified
+   93|       | *
+   94|       | * \param[in,out] A matrix to compute eigen values for
+   95|       | * \param[in] print_intermediates (optional) whether to print intermediate A, Q
+   96|       | * and R matrices (default = `false`)
+   97|       | */
+   98|       |std::valarray<double> eigen_values(std::valarray<std::valarray<double>> *A,
+   99|      2|                                   bool print_intermediates = false) {
+  100|      2|    int rows = A->size();
+  101|      2|    int columns = rows;
+  102|      2|    int counter = 0, num_eigs = rows - 1;
+  103|      2|    double last_eig = 0;
+  104|       |
+  105|      2|    std::valarray<std::valarray<double>> Q(rows);
+  106|      2|    std::valarray<std::valarray<double>> R(columns);
+  107|       |
+  108|       |    /* number of eigen values = matrix size */
+  109|      2|    std::valarray<double> eigen_vals(rows);
+  110|      9|    for (int i = 0; i < rows; i++) {
+  111|      7|        Q[i] = std::valarray<double>(columns);
+  112|      7|        R[i] = std::valarray<double>(columns);
+  113|      7|    }
+  114|       |
+  115|       |    /* continue till all eigen values are found */
+  116|      7|    while (num_eigs > 0) {
+  117|       |        /* iterate with QR decomposition */
+  118|     23|        while (std::abs(A[0][num_eigs][num_eigs - 1]) >
+  119|     23|               std::numeric_limits<double>::epsilon()) {
+  120|       |            // initial approximation = last diagonal element
+  121|     18|            last_eig = A[0][num_eigs][num_eigs];
+  122|     75|            for (int i = 0; i < rows; i++) {
+  123|     57|                A[0][i][i] -= last_eig; /* A - cI */
+  124|     57|            }
+  125|       |
+  126|     18|            qr_decompose(*A, &Q, &R);
+  127|       |
+  128|     18|            if (print_intermediates) {
+  129|      0|                std::cout << *A << "\n";
+  130|      0|                std::cout << Q << "\n";
+  131|      0|                std::cout << R << "\n";
+  132|      0|                printf("-------------------- %d ---------------------\n",
+  133|      0|                       ++counter);
+  134|      0|            }
+  135|       |
+  136|       |            // new approximation A' = R * Q
+  137|     18|            mat_mul(R, Q, A);
+  138|       |
+  139|     75|            for (int i = 0; i < rows; i++) {
+  140|     57|                A[0][i][i] += last_eig; /* A + cI */
+  141|     57|            }
+  142|     18|        }
+  143|       |
+  144|       |        /* store the converged eigen value */
+  145|      5|        eigen_vals[num_eigs] = last_eig;
+  146|       |        // A[0][num_eigs][num_eigs];
+  147|      5|        if (print_intermediates) {
+  148|      0|            std::cout << "========================\n";
+  149|      0|            std::cout << "Eigen value: " << last_eig << ",\n";
+  150|      0|            std::cout << "========================\n";
+  151|      0|        }
+  152|       |
+  153|      5|        num_eigs--;
+  154|      5|        rows--;
+  155|      5|        columns--;
+  156|      5|    }
+  157|      2|    eigen_vals[0] = A[0][0][0];
+  158|       |
+  159|      2|    if (print_intermediates) {
+  160|      0|        std::cout << Q << "\n";
+  161|      0|        std::cout << R << "\n";
+  162|      0|    }
+  163|       |
+  164|      2|    return eigen_vals;
+  165|      2|}
+  166|       |
+  167|       |}  // namespace qr_algorithm
+  168|       |
+  169|       |/**
+  170|       | * test function to compute eigen values of a 2x2 matrix
+  171|       | * \f[\begin{bmatrix}
+  172|       | * 5 & 7\\
+  173|       | * 7 & 11
+  174|       | * \end{bmatrix}\f]
+  175|       | * which are approximately, {15.56158, 0.384227}
+  176|       | */
+  177|      1|void test1() {
+  178|      1|    std::valarray<std::valarray<double>> X = {{5, 7}, {7, 11}};
+  179|      1|    double y[] = {15.56158, 0.384227};  // corresponding y-values
+  180|       |
+  181|      1|    std::cout << "------- Test 1 -------" << std::endl;
+  182|      1|    std::valarray<double> eig_vals = qr_algorithm::eigen_values(&X);
+  183|       |
+  184|      3|    for (int i = 0; i < 2; i++) {
+  185|      2|        std::cout << i + 1 << "/2 Checking for " << y[i] << " --> ";
+  186|      2|        bool result = false;
+  187|      5|        for (int j = 0; j < 2 && !result; j++) {
+  188|      3|            if (std::abs(y[i] - eig_vals[j]) < 0.1) {
+  189|      2|                result = true;
+  190|      2|                std::cout << "(" << eig_vals[j] << ") ";
+  191|      2|            }
+  192|      3|        }
+  193|      2|        assert(result);  // ensure that i^th expected eigen value was computed
+  194|      0|        std::cout << "found\n";
+  195|      2|    }
+  196|      1|    std::cout << "Test 1 Passed\n\n";
+  197|      1|}
+  198|       |
+  199|       |/**
+  200|       | * test function to compute eigen values of a 2x2 matrix
+  201|       | * \f[\begin{bmatrix}
+  202|       | * -4& 4& 2& 0& -3\\
+  203|       | * 4& -4& 4& -3& -1\\
+  204|       | * 2& 4& 4& 3& -3\\
+  205|       | * 0& -3& 3& -1&-1\\
+  206|       | * -3& -1& -3& -3& 0
+  207|       | * \end{bmatrix}\f]
+  208|       | * which are approximately, {9.27648, -9.26948, 2.0181, -1.03516, -5.98994}
+  209|       | */
+  210|      1|void test2() {
+  211|      1|    std::valarray<std::valarray<double>> X = {{-4, 4, 2, 0, -3},
+  212|      1|                                              {4, -4, 4, -3, -1},
+  213|      1|                                              {2, 4, 4, 3, -3},
+  214|      1|                                              {0, -3, 3, -1, -3},
+  215|      1|                                              {-3, -1, -3, -3, 0}};
+  216|      1|    double y[] = {9.27648, -9.26948, 2.0181, -1.03516,
+  217|      1|                  -5.98994};  // corresponding y-values
+  218|       |
+  219|      1|    std::cout << "------- Test 2 -------" << std::endl;
+  220|      1|    std::valarray<double> eig_vals = qr_algorithm::eigen_values(&X);
+  221|       |
+  222|      1|    std::cout << X << "\n"
+  223|      1|              << "Eigen values: " << eig_vals << "\n";
+  224|       |
+  225|      6|    for (int i = 0; i < 5; i++) {
+  226|      5|        std::cout << i + 1 << "/5 Checking for " << y[i] << " --> ";
+  227|      5|        bool result = false;
+  228|     20|        for (int j = 0; j < 5 && !result; j++) {
+  229|     15|            if (std::abs(y[i] - eig_vals[j]) < 0.1) {
+  230|      5|                result = true;
+  231|      5|                std::cout << "(" << eig_vals[j] << ") ";
+  232|      5|            }
+  233|     15|        }
+  234|      5|        assert(result);  // ensure that i^th expected eigen value was computed
+  235|      0|        std::cout << "found\n";
+  236|      5|    }
+  237|      1|    std::cout << "Test 2 Passed\n\n";
+  238|      1|}
+  239|       |
+  240|       |/**
+  241|       | * main function
+  242|       | */
+  243|      1|int main(int argc, char **argv) {
+  244|      1|    int mat_size = 5;
+  245|      1|    if (argc == 2) {
+  246|      0|        mat_size = atoi(argv[1]);
+  247|      1|    } else {  // if invalid input argument is given run tests
+  248|      1|        test1();
+  249|      1|        test2();
+  250|      1|        std::cout << "Usage: ./qr_eigen_values [mat_size]\n";
+  251|      1|        return 0;
+  252|      1|    }
+  253|       |
+  254|      0|    if (mat_size < 2) {
+  255|      0|        fprintf(stderr, "Matrix size should be > 2\n");
+  256|      0|        return -1;
+  257|      0|    }
+  258|       |
+  259|       |    // initialize random number generator
+  260|      0|    std::srand(std::time(nullptr));
+  261|       |
+  262|      0|    int i, rows = mat_size, columns = mat_size;
+  263|       |
+  264|      0|    std::valarray<std::valarray<double>> A(rows);
+  265|       |
+  266|      0|    for (int i = 0; i < rows; i++) {
+  267|      0|        A[i] = std::valarray<double>(columns);
+  268|      0|    }
+  269|       |
+  270|       |    /* create a random matrix */
+  271|      0|    create_matrix(&A);
+  272|       |
+  273|      0|    std::cout << A << "\n";
+  274|       |
+  275|      0|    clock_t t1 = clock();
+  276|      0|    std::valarray<double> eigen_vals = qr_algorithm::eigen_values(&A);
+  277|      0|    double dtime = static_cast<double>(clock() - t1) / CLOCKS_PER_SEC;
+  278|       |
+  279|      0|    std::cout << "Eigen vals: ";
+  280|      0|    for (i = 0; i < mat_size; i++) std::cout << eigen_vals[i] << "\t";
+  281|      0|    std::cout << "\nTime taken to compute: " << dtime << " sec\n";
+  282|       |
+  283|      0|    return 0;
+  284|      0|}
+

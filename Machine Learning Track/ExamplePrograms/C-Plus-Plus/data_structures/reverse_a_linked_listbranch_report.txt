@@ -1,0 +1,307 @@
+    1|       |/**
+    2|       | * @file
+    3|       | * @brief Implementation of [Reversing
+    4|       | * a single linked list](https://simple.wikipedia.org/wiki/Linked_list)
+    5|       | * @details
+    6|       | * The linked list is a data structure used for holding a sequence of
+    7|       | * values, which can be added, displayed, reversed, or removed.
+    8|       | * ### Algorithm
+    9|       | * Values can be added by iterating to the end of a list (by following
+   10|       | * the pointers) starting from the first link. Whichever link points to null
+   11|       | * is considered the last link and is pointed to the new value.
+   12|       | *
+   13|       | * Linked List can be reversed by using 3 pointers: current, previous, and
+   14|       | * next_node; we keep iterating until the last node. Meanwhile, before changing
+   15|       | * to the next of current, we store it in the next_node pointer, now we store
+   16|       | * the prev pointer in the current of next, this is where the actual reversal
+   17|       | * happens. And then we move the prev and current pointers one step forward.
+   18|       | * Then the head node is made to point to the last node (prev pointer) after
+   19|       | * completion of an iteration.
+   20|       |
+   21|       | * [A graphic explanation and view of what's happening behind the
+   22|       | *scenes](https://drive.google.com/file/d/1pM5COF0wx-wermnNy_svtyZquaCUP2xS/view?usp=sharing)
+   23|       | */
+   24|       |
+   25|       |#include <cassert>   /// for assert
+   26|       |#include <iostream>  /// for I/O operations
+   27|       |#include <new>       /// for managing  dynamic storage
+   28|       |
+   29|       |/**
+   30|       | * @namespace data_structures
+   31|       | * @brief Data Structures algorithms
+   32|       | */
+   33|       |namespace data_structures {
+   34|       |/**
+   35|       | * @namespace linked_list
+   36|       | * @brief Functions for singly linked list algorithm
+   37|       | */
+   38|       |namespace linked_list {
+   39|       |/**
+   40|       | * A Node class containing a value and pointer to another link
+   41|       | */
+   42|       |class Node {
+   43|       | public:
+   44|       |    int32_t val;  /// value of the current link
+   45|       |    Node* next;   /// pointer to the next value on the list
+   46|       |};
+   47|       |
+   48|       |/**
+   49|       | *  @brief creates a deep copy of a list starting at the input node
+   50|       | *  @param[in] node pointer to the first node/head of the list to be copied
+   51|       | *  @return pointer to the first node/head of the copied list or nullptr
+   52|       | */
+   53|      8|Node* copy_all_nodes(const Node* const node) {
+   54|      8|    if (node) {
+   55|       |        // NOLINTNEXTLINE(cppcoreguidelines-owning-memory)
+   56|      6|        Node* res = new Node();
+   57|      6|        res->val = node->val;
+   58|      6|        res->next = copy_all_nodes(node->next);
+   59|      6|        return res;
+   60|      6|    }
+   61|      2|    return nullptr;
+   62|      8|}
+   63|       |
+   64|       |/**
+   65|       | * A list class containing a sequence of links
+   66|       | */
+   67|       |// NOLINTNEXTLINE(cppcoreguidelines-special-member-functions)
+   68|       |class list {
+   69|       | private:
+   70|       |    Node* head = nullptr;  // link before the actual first element
+   71|       |    void delete_all_nodes();
+   72|       |    void copy_all_nodes_from_list(const list& other);
+   73|       |
+   74|       | public:
+   75|       |    bool isEmpty() const;
+   76|       |    void insert(int32_t new_elem);
+   77|       |    void reverseList();
+   78|       |    void display() const;
+   79|       |    int32_t top() const;
+   80|       |    int32_t last() const;
+   81|       |    int32_t traverse(int32_t index) const;
+   82|       |    ~list();
+   83|      4|    list() = default;
+   84|       |    list(const list& other);
+   85|       |    list& operator=(const list& other);
+   86|       |};
+   87|       |
+   88|       |/**
+   89|       | * @brief Utility function that checks if the list is empty
+   90|       | * @returns true if the list is empty
+   91|       | * @returns false if the list is not empty
+   92|       | */
+   93|     31|bool list::isEmpty() const { return head == nullptr; }
+   94|       |
+   95|       |/**
+   96|       | * @brief Utility function that adds a new element at the end of the list
+   97|       | * @param new_elem element be added at the end of the list
+   98|       | */
+   99|     17|void list::insert(int32_t n) {
+  100|     17|    try {
+  101|       |        // NOLINTNEXTLINE(cppcoreguidelines-owning-memory)
+  102|     17|        Node* new_node = new Node();
+  103|     17|        Node* temp = nullptr;
+  104|     17|        new_node->val = n;
+  105|     17|        new_node->next = nullptr;
+  106|     17|        if (isEmpty()) {
+  107|      3|            head = new_node;
+  108|     14|        } else {
+  109|     14|            temp = head;
+  110|     39|            while (temp->next != nullptr) {
+  111|     25|                temp = temp->next;
+  112|     25|            }
+  113|     14|            temp->next = new_node;
+  114|     14|        }
+  115|     17|    } catch (std::bad_alloc& exception) {
+  116|      0|        std::cerr << "bad_alloc detected: " << exception.what() << "\n";
+  117|      0|    }
+  118|     17|}
+  119|       |
+  120|       |/**
+  121|       | * @brief Utility function for reversing a list
+  122|       | * @brief Using the current, previous, and next pointer.
+  123|       | * @returns void
+  124|       | */
+  125|      1|void list::reverseList() {
+  126|      1|    Node* curr = head;
+  127|      1|    Node* prev = nullptr;
+  128|      1|    Node* next_node = nullptr;
+  129|      8|    while (curr != nullptr) {
+  130|      7|        next_node = curr->next;
+  131|      7|        curr->next = prev;
+  132|      7|        prev = curr;
+  133|      7|        curr = next_node;
+  134|      7|    }
+  135|      1|    head = prev;
+  136|      1|}
+  137|       |
+  138|       |/**
+  139|       | * @brief Utility function to find the top element of the list
+  140|       | * @returns the top element of the list
+  141|       | */
+  142|      6|int32_t list::top() const {
+  143|      6|    if (!isEmpty()) {
+  144|      6|        return head->val;
+  145|      6|    } else {
+  146|      0|        throw std::logic_error("List is empty");
+  147|      0|    }
+  148|      6|}
+  149|       |/**
+  150|       | *  @brief Utility function to find the last element of the list
+  151|       | *  @returns the last element of the list
+  152|       | */
+  153|      6|int32_t list::last() const {
+  154|      6|    if (!isEmpty()) {
+  155|      6|        Node* t = head;
+  156|     30|        while (t->next != nullptr) {
+  157|     24|            t = t->next;
+  158|     24|        }
+  159|      6|        return t->val;
+  160|      6|    } else {
+  161|      0|        throw std::logic_error("List is empty");
+  162|      0|    }
+  163|      6|}
+  164|       |/**
+  165|       | *  @brief Utility function to find the i th element of the list
+  166|       | *  @returns the i th element of the list
+  167|       | */
+  168|     13|int32_t list::traverse(int32_t index) const {
+  169|     13|    Node* current = head;
+  170|       |
+  171|     13|    int count = 0;
+  172|     40|    while (current != nullptr) {
+  173|     40|        if (count == index) {
+  174|     13|            return (current->val);
+  175|     13|        }
+  176|     27|        count++;
+  177|     27|        current = current->next;
+  178|     27|    }
+  179|       |
+  180|       |    /* if we get to this line,the caller was asking for a non-existent element
+  181|       |    so we assert fail */
+  182|      0|    exit(1);
+  183|     13|}
+  184|       |
+  185|       |/**
+  186|       | *  @brief calls delete operator on every node in the represented list
+  187|       | */
+  188|      6|void list::delete_all_nodes() {
+  189|     29|    while (head != nullptr) {
+  190|     23|        const auto tmp_node = head->next;
+  191|     23|        delete head;
+  192|     23|        head = tmp_node;
+  193|     23|    }
+  194|      6|}
+  195|       |
+  196|      5|list::~list() { delete_all_nodes(); }
+  197|       |
+  198|      2|void list::copy_all_nodes_from_list(const list& other) {
+  199|      2|    assert(isEmpty());
+  200|      0|    head = copy_all_nodes(other.head);
+  201|      2|}
+  202|       |
+  203|       |/**
+  204|       | *  @brief copy constructor creating a deep copy of every node of the input
+  205|       | */
+  206|      1|list::list(const list& other) { copy_all_nodes_from_list(other); }
+  207|       |
+  208|       |/**
+  209|       | *  @brief assignment operator creating a deep copy of every node of the input
+  210|       | */
+  211|      1|list& list::operator=(const list& other) {
+  212|      1|    if (this == &other) {
+  213|      0|        return *this;
+  214|      0|    }
+  215|      1|    delete_all_nodes();
+  216|       |
+  217|      1|    copy_all_nodes_from_list(other);
+  218|      1|    return *this;
+  219|      1|}
+  220|       |
+  221|       |}  // namespace linked_list
+  222|       |}  // namespace data_structures
+  223|       |
+  224|       |/**
+  225|       | * @brief Self-test implementations
+  226|       | * @returns void
+  227|       | */
+  228|      1|static void test() {
+  229|      1|    data_structures::linked_list::list L;
+  230|       |    // 1st test
+  231|      1|    L.insert(11);
+  232|      1|    L.insert(12);
+  233|      1|    L.insert(15);
+  234|      1|    L.insert(10);
+  235|      1|    L.insert(-12);
+  236|      1|    L.insert(-20);
+  237|      1|    L.insert(18);
+  238|      1|    assert(L.top() == 11);
+  239|      0|    assert(L.last() == 18);
+  240|      0|    L.reverseList();
+  241|       |    // Reversal Testing
+  242|      1|    assert(L.top() == 18);
+  243|      0|    assert(L.traverse(1) == -20);
+  244|      0|    assert(L.traverse(2) == -12);
+  245|      0|    assert(L.traverse(3) == 10);
+  246|      0|    assert(L.traverse(4) == 15);
+  247|      0|    assert(L.traverse(5) == 12);
+  248|      0|    assert(L.last() == 11);
+  249|      0|    std::cout << "All tests have successfully passed!" << std::endl;
+  250|      1|}
+  251|       |
+  252|      1|void test_copy_constructor() {
+  253|      1|    data_structures::linked_list::list L;
+  254|      1|    L.insert(10);
+  255|      1|    L.insert(20);
+  256|      1|    L.insert(30);
+  257|      1|    data_structures::linked_list::list otherList(L);
+  258|      1|    otherList.insert(40);
+  259|       |
+  260|      1|    L.insert(400);
+  261|       |
+  262|      1|    assert(L.top() == 10);
+  263|      0|    assert(otherList.top() == 10);
+  264|      0|    assert(L.traverse(1) == 20);
+  265|      0|    assert(otherList.traverse(1) == 20);
+  266|       |
+  267|      0|    assert(L.traverse(2) == 30);
+  268|      0|    assert(otherList.traverse(2) == 30);
+  269|       |
+  270|      0|    assert(L.last() == 400);
+  271|      0|    assert(otherList.last() == 40);
+  272|      1|}
+  273|       |
+  274|      1|void test_assignment_operator() {
+  275|      1|    data_structures::linked_list::list L;
+  276|      1|    data_structures::linked_list::list otherList;
+  277|      1|    L.insert(10);
+  278|      1|    L.insert(20);
+  279|      1|    L.insert(30);
+  280|      1|    otherList = L;
+  281|       |
+  282|      1|    otherList.insert(40);
+  283|      1|    L.insert(400);
+  284|       |
+  285|      1|    assert(L.top() == 10);
+  286|      0|    assert(otherList.top() == 10);
+  287|      0|    assert(L.traverse(1) == 20);
+  288|      0|    assert(otherList.traverse(1) == 20);
+  289|       |
+  290|      0|    assert(L.traverse(2) == 30);
+  291|      0|    assert(otherList.traverse(2) == 30);
+  292|       |
+  293|      0|    assert(L.last() == 400);
+  294|      0|    assert(otherList.last() == 40);
+  295|      1|}
+  296|       |
+  297|       |/**
+  298|       | * @brief Main function
+  299|       | * @returns 0 on exit
+  300|       | */
+  301|      1|int main() {
+  302|      1|    test();  // run self-test implementations
+  303|      1|    test_copy_constructor();
+  304|      1|    test_assignment_operator();
+  305|      1|    return 0;
+  306|      1|}
+

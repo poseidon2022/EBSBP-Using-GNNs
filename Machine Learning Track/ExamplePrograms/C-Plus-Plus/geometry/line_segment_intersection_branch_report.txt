@@ -1,0 +1,105 @@
+    1|       |/**
+    2|       | * @file
+    3|       | * @brief check whether two line segments intersect each other
+    4|       | * or not.
+    5|       | */
+    6|       |#include <algorithm>
+    7|       |#include <iostream>
+    8|       |
+    9|       |/**
+   10|       | * Define a Point.
+   11|       | */
+   12|       |struct Point {
+   13|       |    int x;  /// Point respect to x coordinate
+   14|       |    int y;  /// Point respect to y coordinate
+   15|       |};
+   16|       |
+   17|       |/**
+   18|       | * intersect returns true if segments of two line intersects and
+   19|       | * false if they do not. It calls the subroutines direction
+   20|       | * which computes the orientation.
+   21|       | */
+   22|       |struct SegmentIntersection {
+   23|       |    inline bool intersect(Point first_point, Point second_point,
+   24|      1|                          Point third_point, Point forth_point) {
+   25|      1|        int direction1 = direction(third_point, forth_point, first_point);
+   26|      1|        int direction2 = direction(third_point, forth_point, second_point);
+   27|      1|        int direction3 = direction(first_point, second_point, third_point);
+   28|      1|        int direction4 = direction(first_point, second_point, forth_point);
+   29|       |
+   30|      1|        if ((direction1 < 0 || direction2 > 0) &&
+   31|      1|            (direction3 < 0 || direction4 > 0))
+   32|      1|            return true;
+   33|       |
+   34|      0|        else if (direction1 == 0 &&
+   35|      0|                 on_segment(third_point, forth_point, first_point))
+   36|      0|            return true;
+   37|       |
+   38|      0|        else if (direction2 == 0 &&
+   39|      0|                 on_segment(third_point, forth_point, second_point))
+   40|      0|            return true;
+   41|       |
+   42|      0|        else if (direction3 == 0 &&
+   43|      0|                 on_segment(first_point, second_point, third_point))
+   44|      0|            return true;
+   45|       |
+   46|      0|        else if (direction3 == 0 &&
+   47|      0|                 on_segment(first_point, second_point, forth_point))
+   48|      0|            return true;
+   49|       |
+   50|      0|        else
+   51|      0|            return false;
+   52|      1|    }
+   53|       |
+   54|       |    /**
+   55|       |     * We will find direction of line here respect to @first_point.
+   56|       |     * Here @second_point and @third_point is first and second points
+   57|       |     * of the line respectively. we want a method to determine which way a
+   58|       |     * given angle these three points turns. If returned number is negative,
+   59|       |     * then the angle is counter-clockwise. That means the line is going to
+   60|       |     * right to left. We will fount angle as clockwise if the method returns
+   61|       |     * positive number.
+   62|       |     */
+   63|       |    inline int direction(Point first_point, Point second_point,
+   64|      4|                         Point third_point) {
+   65|      4|        return ((third_point.x - first_point.x) *
+   66|      4|                (second_point.y - first_point.y)) -
+   67|      4|               ((second_point.x - first_point.x) *
+   68|      4|                (third_point.y - first_point.y));
+   69|      4|    }
+   70|       |
+   71|       |    /**
+   72|       |     * This method determines whether a point known to be colinear
+   73|       |     * with a segment lies on that segment.
+   74|       |     */
+   75|       |    inline bool on_segment(Point first_point, Point second_point,
+   76|      0|                           Point third_point) {
+   77|      0|        if (std::min(first_point.x, second_point.x) <= third_point.x &&
+   78|      0|            third_point.x <= std::max(first_point.x, second_point.x) &&
+   79|      0|            std::min(first_point.y, second_point.y) <= third_point.y &&
+   80|      0|            third_point.y <= std::max(first_point.y, second_point.y))
+   81|      0|            return true;
+   82|       |
+   83|      0|        else
+   84|      0|            return false;
+   85|      0|    }
+   86|       |};
+   87|       |
+   88|       |/**
+   89|       | * This is the main function to test whether the algorithm is
+   90|       | * working well.
+   91|       | */
+   92|      1|int main() {
+   93|      1|    SegmentIntersection segment;
+   94|      1|    Point first_point, second_point, third_point, forth_point;
+   95|       |
+   96|      1|    std::cin >> first_point.x >> first_point.y;
+   97|      1|    std::cin >> second_point.x >> second_point.y;
+   98|      1|    std::cin >> third_point.x >> third_point.y;
+   99|      1|    std::cin >> forth_point.x >> forth_point.y;
+  100|       |
+  101|      1|    printf("%d", segment.intersect(first_point, second_point, third_point,
+  102|      1|                                   forth_point));
+  103|      1|    std::cout << std::endl;
+  104|      1|}
+

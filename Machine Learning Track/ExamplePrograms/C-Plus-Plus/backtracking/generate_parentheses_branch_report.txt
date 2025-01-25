@@ -1,0 +1,114 @@
+    1|       |/**
+    2|       | * @file
+    3|       | * @brief Well-formed [Generated
+    4|       | * Parentheses](https://leetcode.com/explore/interview/card/top-interview-questions-medium/109/backtracking/794/) with all combinations.
+    5|       | *
+    6|       | * @details a sequence of parentheses is well-formed if each opening parentheses
+    7|       | * has a corresponding closing parenthesis
+    8|       | * and the closing parentheses are correctly ordered
+    9|       | *
+   10|       | * @author [Giuseppe Coco](https://github.com/WoWS17)
+   11|       |
+   12|       | */
+   13|       |
+   14|       |#include <cassert>   /// for assert
+   15|       |#include <iostream>  /// for I/O operation
+   16|       |#include <vector>    /// for vector container
+   17|       |
+   18|       |/**
+   19|       | * @brief Backtracking algorithms
+   20|       | * @namespace backtracking
+   21|       | */
+   22|       |namespace backtracking {
+   23|       |/**
+   24|       | * @brief generate_parentheses class
+   25|       | */
+   26|       |class generate_parentheses {
+   27|       | private:
+   28|       |    std::vector<std::string> res;  ///< Contains all possible valid patterns
+   29|       |
+   30|       |    void makeStrings(std::string str, int n, int closed, int open);
+   31|       |
+   32|       | public:
+   33|       |    std::vector<std::string> generate(int n);
+   34|       |};
+   35|       |
+   36|       |/**
+   37|       | * @brief function that adds parenthesis to the string.
+   38|       | *
+   39|       | * @param str string build during backtracking
+   40|       | * @param n number of pairs of parentheses
+   41|       | * @param closed number of closed parentheses
+   42|       | * @param open number of open parentheses
+   43|       | */
+   44|       |
+   45|       |void generate_parentheses::makeStrings(std::string str, int n,
+   46|    203|                                                     int closed, int open) {
+   47|    203|    if (closed > open)  // We can never have more closed than open
+   48|     11|        return;
+   49|       |
+   50|    192|    if ((str.length() == 2 * n) &&
+   51|    192|        (closed != open)) {  // closed and open must be the same
+   52|     72|        return;
+   53|     72|    }
+   54|       |
+   55|    120|    if (str.length() == 2 * n) {
+   56|     20|        res.push_back(str);
+   57|     20|        return;
+   58|     20|    }
+   59|       |
+   60|    100|    makeStrings(str + ')', n, closed + 1, open);
+   61|    100|    makeStrings(str + '(', n, closed, open + 1);
+   62|    100|}
+   63|       |
+   64|       |/**
+   65|       | * @brief wrapper interface
+   66|       | *
+   67|       | * @param n number of pairs of parentheses
+   68|       | * @return all well-formed pattern of parentheses
+   69|       | */
+   70|      3|std::vector<std::string> generate_parentheses::generate(int n) {
+   71|      3|    backtracking::generate_parentheses::res.clear();
+   72|      3|    std::string str = "(";
+   73|      3|    generate_parentheses::makeStrings(str, n, 0, 1);
+   74|      3|    return res;
+   75|      3|}
+   76|       |}  // namespace backtracking
+   77|       |
+   78|       |/**
+   79|       | * @brief Self-test implementations
+   80|       | * @returns void
+   81|       | */
+   82|      1|static void test() {
+   83|      1|    int n = 0;
+   84|      1|    std::vector<std::string> patterns;
+   85|      1|    backtracking::generate_parentheses p;
+   86|       |
+   87|      1|    n = 1;
+   88|      1|    patterns = {{"()"}};
+   89|      1|    assert(p.generate(n) == patterns);
+   90|       |
+   91|      0|    n = 3;
+   92|      1|    patterns = {{"()()()"}, {"()(())"}, {"(())()"}, {"(()())"}, {"((()))"}};
+   93|       |
+   94|      1|    assert(p.generate(n) == patterns);
+   95|       |
+   96|      0|    n = 4;
+   97|      1|    patterns = {{"()()()()"}, {"()()(())"}, {"()(())()"}, {"()(()())"},
+   98|      1|                {"()((()))"}, {"(())()()"}, {"(())(())"}, {"(()())()"},
+   99|      1|                {"(()()())"}, {"(()(()))"}, {"((()))()"}, {"((())())"},
+  100|      1|                {"((()()))"}, {"(((())))"}};
+  101|      1|    assert(p.generate(n) == patterns);
+  102|       |
+  103|      0|    std::cout << "All tests passed\n";
+  104|      1|}
+  105|       |
+  106|       |/**
+  107|       | * @brief Main function
+  108|       | * @returns 0 on exit
+  109|       | */
+  110|      1|int main() {
+  111|      1|    test();  // run self-test implementations
+  112|      1|    return 0;
+  113|      1|}
+

@@ -1,0 +1,226 @@
+    1|       |/**
+    2|       | * @file skip_list.cpp
+    3|       | * @brief Data structure for fast searching and insertion in \f$O(\log n)\f$
+    4|       | * time
+    5|       | * @details
+    6|       | * A skip list is a data structure that is used for storing a sorted list of
+    7|       | * items with a help of hierarchy of linked lists that connect increasingly
+    8|       | * sparse subsequences of the items
+    9|       | *
+   10|       | * References used: [GeeksForGeek](https://www.geeksforgeeks.org/skip-list/),
+   11|       | * [OpenGenus](https://iq.opengenus.org/skip-list) for PseudoCode and Code
+   12|       | * @author [enqidu](https://github.com/enqidu)
+   13|       | * @author [Krishna Vedala](https://github.com/kvedala)
+   14|       | */
+   15|       |
+   16|       |#include <array>
+   17|       |#include <cstring>
+   18|       |#include <ctime>
+   19|       |#include <iostream>
+   20|       |#include <memory>
+   21|       |#include <vector>
+   22|       |
+   23|       |/** \namespace data_structures
+   24|       | * \brief Data-structure algorithms
+   25|       | */
+   26|       |namespace data_structures {
+   27|       |constexpr int MAX_LEVEL = 2;        ///< Maximum level of skip list
+   28|       |constexpr float PROBABILITY = 0.5;  ///< Current probability for "coin toss"
+   29|       |
+   30|       |/**
+   31|       | *  Node structure [Key][Node*, Node*...]
+   32|       | */
+   33|       |struct Node {
+   34|       |    int key;      ///< key integer
+   35|       |    void* value;  ///< pointer of value
+   36|       |    std::vector<std::shared_ptr<Node>>
+   37|       |        forward;  ///< nodes of the given one in all levels
+   38|       |
+   39|       |    /**
+   40|       |     * Creates node with provided key, level and value
+   41|       |     * @param key is number that is used for comparision
+   42|       |     * @param level is the maximum level node's going to added
+   43|       |     */
+   44|      7|    Node(int key, int level, void* value = nullptr) : key(key), value(value) {
+   45|       |        // Initialization of forward vector
+   46|     18|        for (int i = 0; i < (level + 1); i++) {
+   47|     11|            forward.push_back(nullptr);
+   48|     11|        }
+   49|      7|    }
+   50|       |};
+   51|       |
+   52|       |/**
+   53|       | * SkipList class implementation with basic methods
+   54|       | */
+   55|       |class SkipList {
+   56|       |    int level;                     ///< Maximum level of the skiplist
+   57|       |    std::shared_ptr<Node> header;  ///< Pointer to the header node
+   58|       |
+   59|       | public:
+   60|       |    /**
+   61|       |     * Skip List constructor. Initializes header, start
+   62|       |     * Node for searching in the list
+   63|       |     */
+   64|      1|    SkipList() {
+   65|      1|        level = 0;
+   66|       |        // Header initialization
+   67|      1|        header = std::make_shared<Node>(-1, MAX_LEVEL);
+   68|      1|    }
+   69|       |
+   70|       |    /**
+   71|       |     * Returns random level of the skip list.
+   72|       |     * Every higher level is 2 times less likely.
+   73|       |     * @return random level for skip list
+   74|       |     */
+   75|      6|    int randomLevel() {
+   76|      6|        int lvl = 0;
+   77|      8|        while (static_cast<float>(std::rand()) / RAND_MAX < PROBABILITY &&
+   78|      8|               lvl < MAX_LEVEL) {
+   79|      2|            lvl++;
+   80|      2|        }
+   81|      6|        return lvl;
+   82|      6|    }
+   83|       |
+   84|       |    /**
+   85|       |     * Inserts elements with given key and value;
+   86|       |     * It's level is computed by randomLevel() function.
+   87|       |     * @param key is number that is used for comparision
+   88|       |     * @param value pointer to a value, that can be any type
+   89|       |     */
+   90|      8|    void insertElement(int key, void* value) {
+   91|      8|        std::cout << "Inserting" << key << "...";
+   92|      8|        std::shared_ptr<Node> x = header;
+   93|      8|        std::array<std::shared_ptr<Node>, MAX_LEVEL + 1> update;
+   94|      8|        update.fill(nullptr);
+   95|       |
+   96|     22|        for (int i = level; i >= 0; i--) {
+   97|     29|            while (x->forward[i] != nullptr && x->forward[i]->key < key) {
+   98|     15|                x = x->forward[i];
+   99|     15|            }
+  100|     14|            update[i] = x;
+  101|     14|        }
+  102|       |
+  103|      8|        x = x->forward[0];
+  104|       |
+  105|      8|        bool doesnt_exist = (x == nullptr || x->key != key);
+  106|      8|        if (doesnt_exist) {
+  107|      6|            int rlevel = randomLevel();
+  108|       |
+  109|      6|            if (rlevel > level) {
+  110|      3|                for (int i = level + 1; i < rlevel + 1; i++) update[i] = header;
+  111|       |
+  112|       |                // Update current level
+  113|      1|                level = rlevel;
+  114|      1|            }
+  115|       |
+  116|      6|            std::shared_ptr<Node> n =
+  117|      6|                std::make_shared<Node>(key, rlevel, value);
+  118|     14|            for (int i = 0; i <= rlevel; i++) {
+  119|      8|                n->forward[i] = update[i]->forward[i];
+  120|      8|                update[i]->forward[i] = n;
+  121|      8|            }
+  122|      6|            std::cout << "Inserted" << std::endl;
+  123|       |
+  124|      6|        } else {
+  125|      2|            std::cout << "Exists" << std::endl;
+  126|      2|        }
+  127|      8|    }
+  128|       |
+  129|       |    /**
+  130|       |     * Deletes an element by key and prints if has been removed successfully
+  131|       |     * @param key is number that is used for comparision.
+  132|       |     */
+  133|      0|    void deleteElement(int key) {
+  134|      0|        std::shared_ptr<Node> x = header;
+  135|      0|
+  136|      0|        std::array<std::shared_ptr<Node>, MAX_LEVEL + 1> update;
+  137|      0|        update.fill(nullptr);
+  138|      0|
+  139|      0|        for (int i = level; i >= 0; i--) {
+  140|      0|            while (x->forward[i] != nullptr && x->forward[i]->key < key) {
+  141|      0|                x = x->forward[i];
+  142|      0|            }
+  143|      0|            update[i] = x;
+  144|      0|        }
+  145|      0|
+  146|      0|        x = x->forward[0];
+  147|      0|
+  148|      0|        bool doesnt_exist = (x == nullptr || x->key != key);
+  149|      0|
+  150|      0|        if (!doesnt_exist) {
+  151|      0|            for (int i = 0; i <= level; i++) {
+  152|      0|                if (update[i]->forward[i] != x) {
+  153|      0|                    break;
+  154|      0|                }
+  155|      0|                update[i]->forward[i] = x->forward[i];
+  156|      0|            }
+  157|      0|            /* Remove empty levels*/
+  158|      0|            while (level > 0 && header->forward[level] == nullptr) level--;
+  159|      0|            std::cout << "Deleted" << std::endl;
+  160|      0|        } else {
+  161|      0|            std::cout << "Doesn't exist" << std::endl;
+  162|      0|        }
+  163|      0|    }
+  164|       |
+  165|       |    /**
+  166|       |     * Searching element in skip list structure
+  167|       |     * @param key is number that is used for comparision
+  168|       |     * @return pointer to the value of the node
+  169|       |     */
+  170|      0|    void* searchElement(int key) {
+  171|      0|        std::shared_ptr<Node> x = header;
+  172|      0|        std::cout << "Searching for " << key << std::endl;
+  173|      0|
+  174|      0|        for (int i = level; i >= 0; i--) {
+  175|      0|            while (x->forward[i] && x->forward[i]->key < key) x = x->forward[i];
+  176|      0|        }
+  177|      0|
+  178|      0|        x = x->forward[0];
+  179|      0|        if (x && x->key == key) {
+  180|      0|            std::cout << "Found" << std::endl;
+  181|      0|            return x->value;
+  182|      0|        } else {
+  183|      0|            std::cout << "Not Found" << std::endl;
+  184|      0|            return nullptr;
+  185|      0|        }
+  186|      0|    }
+  187|       |
+  188|       |    /**
+  189|       |     * Display skip list level
+  190|       |     */
+  191|      1|    void displayList() {
+  192|      1|        std::cout << "Displaying list:\n";
+  193|      4|        for (int i = 0; i <= level; i++) {
+  194|      3|            std::shared_ptr<Node> node = header->forward[i];
+  195|      3|            std::cout << "Level " << (i) << ": ";
+  196|     11|            while (node != nullptr) {
+  197|      8|                std::cout << node->key << " ";
+  198|      8|                node = node->forward[i];
+  199|      8|            }
+  200|      3|            std::cout << std::endl;
+  201|      3|        }
+  202|      1|    }
+  203|       |};
+  204|       |
+  205|       |}  // namespace data_structures
+  206|       |
+  207|       |/**
+  208|       | * Main function:
+  209|       | * Creates and inserts random 2^[number of levels]
+  210|       | * elements into the skip lists and than displays it
+  211|       | */
+  212|      1|int main() {
+  213|      1|    std::srand(std::time(nullptr));
+  214|       |
+  215|      1|    data_structures::SkipList lst;
+  216|       |
+  217|      9|    for (int j = 0; j < (1 << (data_structures::MAX_LEVEL + 1)); j++) {
+  218|      8|        int k = (std::rand() % (1 << (data_structures::MAX_LEVEL + 2)) + 1);
+  219|      8|        lst.insertElement(k, &j);
+  220|      8|    }
+  221|       |
+  222|      1|    lst.displayList();
+  223|       |
+  224|      1|    return 0;
+  225|      1|}
+

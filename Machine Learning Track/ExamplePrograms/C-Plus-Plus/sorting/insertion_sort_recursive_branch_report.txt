@@ -1,0 +1,197 @@
+    1|       |/**
+    2|       | * @file
+    3|       | * @brief Insertion Sort Algorithm
+    4|       | * @author [Dhanush S](https://github.com/Fandroid745)
+    5|       | * 
+    6|       | * @details
+    7|       | * Insertion sort is a simple sorting algorithm that builds the final
+    8|       | * sorted array one element at a time. It is much less efficient compared
+    9|       | * to other sorting algorithms like heap sort, merge sort, or quick sort.
+   10|       | * 
+   11|       | * However, it has several advantages:
+   12|       | * - Easy to implement.
+   13|       | * - Efficient for small data sets.
+   14|       | * - More efficient than other O(n²) algorithms like selection sort or bubble sort.
+   15|       | * - Stable: it does not change the relative order of elements with equal keys.
+   16|       | * 
+   17|       | * Insertion sort works similarly to how people sort playing cards in their hands.
+   18|       | * The algorithm iterates through the list and inserts each element into its correct 
+   19|       | * position in the sorted portion of the array.
+   20|       | * 
+   21|       | * The time complexity of the algorithm is \f$O(n^2)\f$, and in some cases, it
+   22|       | * can be \f$O(n)\f$.
+   23|       | * 
+   24|       | * Example execution:
+   25|       | * 1. Start with the array [4, 3, 2, 5, 1].
+   26|       | * 2. Insert 3 in its correct position: [3, 4, 2, 5, 1].
+   27|       | * 3. Insert 2: [2, 3, 4, 5, 1].
+   28|       | * 4. Continue this until the array is sorted: [1, 2, 3, 4, 5].
+   29|       | */
+   30|       |
+   31|       |
+   32|       |#include <algorithm>   /// for std::is_sorted
+   33|       |#include <cassert>     /// for assert function in testing
+   34|       |#include <iostream>    /// for std::cout and std::endl
+   35|       |#include <vector>      /// for using std::vector
+   36|       |
+   37|       |/** 
+   38|       | * @namespace sorting
+   39|       | * @brief Contains sorting algorithms
+   40|       | */
+   41|       |namespace sorting {
+   42|       |
+   43|       |/**
+   44|       | * @brief Insertion Sort Function
+   45|       | * 
+   46|       | * @tparam T Type of the array elements
+   47|       | * @param[in,out] arr Array to be sorted
+   48|       | * @param n Size of the array
+   49|       | */
+   50|       |template <typename T>
+   51|      5|void insertionSort(T *arr, int n) {
+   52|    120|    for (int i = 1; i < n; i++) {
+   53|    115|        T temp = arr[i];
+   54|    115|        int j = i - 1;
+   55|  1.43k|        while (j >= 0 && temp < arr[j]) {
+   56|  1.32k|            arr[j + 1] = arr[j];
+   57|  1.32k|            j--;
+   58|  1.32k|        }
+   59|    115|        arr[j + 1] = temp;
+   60|    115|    }
+   61|      5|}
+  ------------------
+  | _ZN7sorting13insertionSortIiEEvPT_i:
+  |   51|      3|void insertionSort(T *arr, int n) {
+  |   52|     65|    for (int i = 1; i < n; i++) {
+  |   53|     62|        T temp = arr[i];
+  |   54|     62|        int j = i - 1;
+  |   55|    759|        while (j >= 0 && temp < arr[j]) {
+  |   56|    697|            arr[j + 1] = arr[j];
+  |   57|    697|            j--;
+  |   58|    697|        }
+  |   59|     62|        arr[j + 1] = temp;
+  |   60|     62|    }
+  |   61|      3|}
+  ------------------
+  | _ZN7sorting13insertionSortIfEEvPT_i:
+  |   51|      2|void insertionSort(T *arr, int n) {
+  |   52|     55|    for (int i = 1; i < n; i++) {
+  |   53|     53|        T temp = arr[i];
+  |   54|     53|        int j = i - 1;
+  |   55|    676|        while (j >= 0 && temp < arr[j]) {
+  |   56|    623|            arr[j + 1] = arr[j];
+  |   57|    623|            j--;
+  |   58|    623|        }
+  |   59|     53|        arr[j + 1] = temp;
+  |   60|     53|    }
+  |   61|      2|}
+  ------------------
+   62|       |
+   63|       |/**
+   64|       | * @brief Insertion Sort for a vector
+   65|       | * 
+   66|       | * @tparam T Type of the vector elements
+   67|       | * @param [in,out] arr Pointer to the vector to be sorted
+   68|       | */
+   69|       |template <typename T>
+   70|      1|void insertionSort(std::vector<T> *arr) {
+   71|      1|    size_t n = arr->size();
+   72|       |
+   73|      5|    for (size_t i = 1; i < n; i++) {
+   74|      4|        T temp = arr->at(i);
+   75|      4|        int32_t j = i - 1;
+   76|      8|        while (j >= 0 && temp < arr->at(j)) {
+   77|      4|            arr->at(j + 1) = arr->at(j);
+   78|      4|            j--;
+   79|      4|        }
+   80|      4|        arr->at(j + 1) = temp;
+   81|      4|    }
+   82|      1|}
+   83|       |
+   84|       |}  // namespace sorting
+   85|       |
+   86|       |/**
+   87|       | * @brief Helper function to create a random array
+   88|       | * 
+   89|       | * @tparam T Type of the array elements
+   90|       | * @param arr Array to fill (must be pre-allocated)
+   91|       | * @param N Number of elements in the array
+   92|       | */
+   93|       |template <typename T>
+   94|      2|static void create_random_array(T *arr, int N) {
+   95|    102|    while (N--) {
+   96|    100|        double r = (std::rand() % 10000 - 5000) / 100.f;
+   97|    100|        arr[N] = static_cast<T>(r);
+   98|    100|    }
+   99|      2|}
+  ------------------
+  | insertion_sort_recursive.cpp:_ZL19create_random_arrayIiEvPT_i:
+  |   94|      1|static void create_random_array(T *arr, int N) {
+  |   95|     51|    while (N--) {
+  |   96|     50|        double r = (std::rand() % 10000 - 5000) / 100.f;
+  |   97|     50|        arr[N] = static_cast<T>(r);
+  |   98|     50|    }
+  |   99|      1|}
+  ------------------
+  | insertion_sort_recursive.cpp:_ZL19create_random_arrayIfEvPT_i:
+  |   94|      1|static void create_random_array(T *arr, int N) {
+  |   95|     51|    while (N--) {
+  |   96|     50|        double r = (std::rand() % 10000 - 5000) / 100.f;
+  |   97|     50|        arr[N] = static_cast<T>(r);
+  |   98|     50|    }
+  |   99|      1|}
+  ------------------
+  100|       |
+  101|       |/** 
+  102|       | * @brief self test implementation
+  103|       | * @return void
+  104|       | */
+  105|      1|static void tests() {
+  106|      1|    int arr1[10] = {78, 34, 35, 6, 34, 56, 3, 56, 2, 4};
+  107|      1|    std::cout << "Test 1... ";
+  108|      1|    sorting::insertionSort(arr1, 10);
+  109|      1|    assert(std::is_sorted(arr1, arr1 + 10));
+  110|      0|    std::cout << "passed" << std::endl;
+  111|       |
+  112|      1|    int arr2[5] = {5, -3, 7, -2, 1};
+  113|      1|    std::cout << "Test 2... ";
+  114|      1|    sorting::insertionSort(arr2, 5);
+  115|      1|    assert(std::is_sorted(arr2, arr2 + 5));
+  116|      0|    std::cout << "passed" << std::endl;
+  117|       |
+  118|      1|    float arr3[5] = {5.6, -3.1, -3.0, -2.1, 1.8};
+  119|      1|    std::cout << "Test 3... ";
+  120|      1|    sorting::insertionSort(arr3, 5);
+  121|      1|    assert(std::is_sorted(arr3, arr3 + 5));
+  122|      0|    std::cout << "passed" << std::endl;
+  123|       |
+  124|      1|    std::vector<float> arr4({5.6, -3.1, -3.0, -2.1, 1.8});
+  125|      1|    std::cout << "Test 4... ";
+  126|      1|    sorting::insertionSort(&arr4);
+  127|      1|    assert(std::is_sorted(std::begin(arr4), std::end(arr4)));
+  128|      0|    std::cout << "passed" << std::endl;
+  129|       |
+  130|      1|    int arr5[50];
+  131|      1|    std::cout << "Test 5... ";
+  132|      1|    create_random_array(arr5, 50);
+  133|      1|    sorting::insertionSort(arr5, 50);
+  134|      1|    assert(std::is_sorted(arr5, arr5 + 50));
+  135|      0|    std::cout << "passed" << std::endl;
+  136|       |
+  137|      1|    float arr6[50];
+  138|      1|    std::cout << "Test 6... ";
+  139|      1|    create_random_array(arr6, 50);
+  140|      1|    sorting::insertionSort(arr6, 50);
+  141|      1|    assert(std::is_sorted(arr6, arr6 + 50));
+  142|      0|    std::cout << "passed" << std::endl;
+  143|      1|}
+  144|       |
+  145|       |/** 
+  146|       | * @brief Main function
+  147|       | * @return 0 on successful exit.
+  148|       | */
+  149|      1|int main() {
+  150|      1|    tests(); /// run self test implementations
+  151|      1|    return 0;
+  152|      1|}
+

@@ -1,0 +1,169 @@
+    1|       |/**
+    2|       | * @file
+    3|       | *
+    4|       | * @author Anmol3299
+    5|       | * \brief A basic implementation of trie class to store only lower-case strings.
+    6|       | */
+    7|       |#include <iostream>  // for io operations
+    8|       |#include <memory>    // for std::shared_ptr<>
+    9|       |#include <string>    // for std::string class
+   10|       |
+   11|       |/**
+   12|       | * A basic implementation of trie class to store only lower-case strings.
+   13|       | * You can extend the implementation to all the ASCII characters by changing the
+   14|       | * value of @ ALPHABETS to 128.
+   15|       | */
+   16|       |class Trie {
+   17|       | private:
+   18|       |    static constexpr size_t ALPHABETS = 26;
+   19|       |
+   20|       |    /**
+   21|       |     * Structure of trie node.
+   22|       |     * This struct doesn't need a constructor as we are initializing using
+   23|       |     * intializer list which is more efficient than if we had done so with
+   24|       |     * constructor.
+   25|       |     */
+   26|       |    struct TrieNode {
+   27|       |        // An array of pointers of size 26 which tells if a character of word is
+   28|       |        // present or not.
+   29|       |        std::shared_ptr<TrieNode> character[ALPHABETS]{nullptr};
+   30|       |
+   31|       |        bool isEndOfWord{false};
+   32|       |    };
+   33|       |
+   34|       |    /**
+   35|       |     * Function to check if a node has some children which can form words.
+   36|       |     * @param node whose character array of pointers need to be checked for
+   37|       |     * children.
+   38|       |     * @return `true` if a child is found
+   39|       |     * @return `false` if a child is not found
+   40|       |     */
+   41|      1|    inline static bool hasChildren(std::shared_ptr<TrieNode> node) {
+   42|     12|        for (size_t i = 0; i < ALPHABETS; i++) {
+   43|     12|            if (node->character[i]) {
+   44|      1|                return true;
+   45|      1|            }
+   46|     12|        }
+   47|      0|        return false;
+   48|      1|    }
+   49|       |
+   50|       |    /**
+   51|       |     * A recursive helper function to remove a word from the trie. First, it
+   52|       |     * recursively traverses to the location of last character of word in the
+   53|       |     * trie. However, if the word is not found, the function returns a runtime
+   54|       |     * error. Upon successfully reaching the last character of word in trie, if
+   55|       |     * sets the isEndOfWord to false and deletes the node if and only if it has
+   56|       |     * no children, else it returns the current node.
+   57|       |     * @param word is the string which needs to be removed from trie.
+   58|       |     * @param curr is the current node we are at.
+   59|       |     * @param index is the index of the @word we are at.
+   60|       |     * @return if current node has childern, it returns @ curr, else it returns
+   61|       |     * nullptr.
+   62|       |     * @throw a runtime error in case @ word is not found in the trie.
+   63|       |     */
+   64|       |    std::shared_ptr<TrieNode> removeWordHelper(const std::string& word,
+   65|       |                                               std::shared_ptr<TrieNode> curr,
+   66|      4|                                               size_t index) {
+   67|      4|        if (word.size() == index) {
+   68|      1|            if (curr->isEndOfWord) {
+   69|      1|                curr->isEndOfWord = false;
+   70|      1|            }
+   71|      1|            if (hasChildren(curr)) {
+   72|      1|                return curr;
+   73|      1|            }
+   74|      0|            return nullptr;
+   75|      1|        }
+   76|       |
+   77|      3|        size_t idx = word[index] - 'a';
+   78|       |
+   79|       |        // Throw a runtime error in case the user enters a word which is not
+   80|       |        // present in the trie.
+   81|      3|        if (!curr->character[idx]) {
+   82|      0|            throw std::runtime_error(std::move(std::string("Word not found.")));
+   83|      0|        }
+   84|       |
+   85|      3|        curr->character[idx] =
+   86|      3|            removeWordHelper(word, curr->character[idx], index + 1);
+   87|       |
+   88|       |        // This if condition checks if the node has some childern.
+   89|       |        // The 1st if check, i.e. (curr->character[idx]) is checked specifically
+   90|       |        // because if the older string is a prefix of some other string, then,
+   91|       |        // there would be no need to check all 26 characters. Example- str1 =
+   92|       |        // abbey, str2 = abbex and we want to delete string "abbey", then in
+   93|       |        // this case, there would be no need to check all characters for the
+   94|       |        // chars a,b,b.
+   95|      3|        if (curr->character[idx] || hasChildren(curr)) {
+   96|      3|            return curr;
+   97|      3|        }
+   98|      0|        return nullptr;
+   99|      3|    }
+  100|       |
+  101|       | public:
+  102|       |    /// constructor to initialise the root of the trie.
+  103|      1|    Trie() : m_root(std::make_shared<TrieNode>()) {}
+  104|       |
+  105|       |    /**
+  106|       |     * Insert a word into the trie.
+  107|       |     * @param word which needs to be inserted into the string.
+  108|       |     */
+  109|      2|    void insert(const std::string& word) {
+  110|      2|        auto curr = m_root;
+  111|      8|        for (char ch : word) {
+  112|      8|            size_t index = ch - 'a';
+  113|       |
+  114|       |            // if a node for current word is not already present in trie, create
+  115|       |            // a new node for it.
+  116|      8|            if (!curr->character[index]) {
+  117|      5|                curr->character[index] = std::make_shared<TrieNode>();
+  118|      5|            }
+  119|       |
+  120|      8|            curr = curr->character[index];
+  121|      8|        }
+  122|      2|        curr->isEndOfWord = true;
+  123|      2|    }
+  124|       |
+  125|       |    /**
+  126|       |     * Search if a word is present in trie or not.
+  127|       |     * @param word which is needed to be searched in the trie.
+  128|       |     * @return True if the word is found in trie and isEndOfWord is set to true.
+  129|       |     * @return False if word is not found in trie or isEndOfWord is set to
+  130|       |     * false.
+  131|       |     */
+  132|      1|    bool search(const std::string& word) {
+  133|      1|        auto curr = m_root;
+  134|      5|        for (char ch : word) {
+  135|      5|            size_t index = ch - 'a';
+  136|       |
+  137|       |            // if any node for a character is not found, then return that the
+  138|       |            // word cannot be formed.
+  139|      5|            if (!curr->character[index]) {
+  140|      0|                return false;
+  141|      0|            }
+  142|      5|            curr = curr->character[index];
+  143|      5|        }
+  144|      1|        return curr->isEndOfWord;
+  145|      1|    }
+  146|       |
+  147|       |    // Function to remove the word which calls the helper function.
+  148|      1|    void removeWord(const std::string& word) {
+  149|      1|        m_root = removeWordHelper(word, m_root, 0);
+  150|      1|    }
+  151|       |
+  152|       | private:
+  153|       |    // data member to store the root of the trie.
+  154|       |    std::shared_ptr<TrieNode> m_root;
+  155|       |};
+  156|       |
+  157|       |/**
+  158|       | * Main function
+  159|       | */
+  160|      1|int main() {
+  161|      1|    Trie trie;
+  162|      1|    trie.insert("hel");
+  163|      1|    trie.insert("hello");
+  164|      1|    trie.removeWord("hel");
+  165|      1|    std::cout << trie.search("hello") << '\n';
+  166|       |
+  167|      1|    return 0;
+  168|      1|}
+

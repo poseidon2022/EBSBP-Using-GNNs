@@ -1,0 +1,128 @@
+    1|       |/**
+    2|       | * @author sprintyaf
+    3|       | * @file fibonacci_search.cpp
+    4|       | * @brief [Fibonacci search
+    5|       | * algorithm](https://en.wikipedia.org/wiki/Fibonacci_search_technique)
+    6|       | */
+    7|       |
+    8|       |#include <iostream>
+    9|       |#include <vector> // for std::vector class
+   10|       |#include <cassert> // for assert
+   11|       |#include <cstdlib> // for random numbers
+   12|       |#include <algorithm> // for sorting
+   13|       |
+   14|       |
+   15|       |
+   16|       |/**
+   17|       | * @brief using fibonacci search algorithm finds an index of a given element in a sorted array
+   18|       | * 
+   19|       | * @param arr sorted array
+   20|       | * @param value value that we're looking for
+   21|       | * @returns if the array contains the value, returns an index of the element. otherwise -1.
+   22|       | */
+   23|  11.0k|int fibonacci_search(const std::vector<int> &arr, int value){
+   24|       |    // initialize last and current members of Fibonacci sequence 
+   25|  11.0k|    int last = 0, current = 1;
+   26|  11.0k|    int length = arr.size(); // array size
+   27|       |    // next member of Fibonacci sequence which is "last" + "current"
+   28|  11.0k|    int next = last + current; 
+   29|       |
+   30|       |    // "next" will store the smallest Fibonacci number greater or equal to "length"
+   31|   121k|    while(next < length){
+   32|   110k|        last = current;
+   33|   110k|        current = next;
+   34|   110k|        next = last + current;
+   35|   110k|    }
+   36|       |
+   37|       |    // "offset" is the end of eliminated range from front
+   38|  11.0k|    int offset = -1, index;
+   39|       |    // while loop until there are elements left to consider.
+   40|       |    // when "next" becomes 1, last is equal to 0, so search is done,
+   41|       |    // because arr[offset] will already be eliminated
+   42|  87.6k|    while(next > 1){
+   43|       |        // check if "last" is valid location
+   44|  77.5k|        index = std::min(offset + last, length-1);
+   45|       |        // if value is greater than the value at "index", eliminate the subarray from offset to index
+   46|  77.5k|        if(arr[index] < value){
+   47|  41.9k|            next = current;
+   48|  41.9k|            current = last;
+   49|  41.9k|            last = next - current;
+   50|  41.9k|            offset = index;
+   51|       |        // if value is less than the value at "index", eliminate the subarray after index+1
+   52|  41.9k|        } else if(arr[index] > value){
+   53|  34.7k|            next = last;
+   54|  34.7k|            current = current - last;
+   55|  34.7k|            last = next - current;
+   56|       |        // element is found
+   57|  34.7k|        } else {
+   58|    877|            return index;
+   59|    877|        }
+   60|  77.5k|    }
+   61|       |    // comparing the last element
+   62|  10.1k|    if(current && !arr.empty() && arr[offset+1] == value){
+   63|      0|        return offset+1;
+   64|      0|    }
+   65|       |    // value was not found, return -1
+   66|  10.1k|    return -1;
+   67|  10.1k|}
+   68|       |
+   69|       |/**
+   70|       | * @brief random tests for checking performance when an array doesn't contain an element
+   71|       |*/
+   72|      1|bool no_occurence_tests(){
+   73|      1|    bool passed = true;
+   74|      1|    int rand_num, rand_value, index, num_tests = 1000;
+   75|      1|    std::vector<int> arr;
+   76|  1.00k|    while(num_tests--){
+   77|  1.00k|        arr.clear();
+   78|   101k|        for(int i = 0; i < 100; i++){
+   79|   100k|            rand_num = std::rand() % 1000;
+   80|   100k|            arr.push_back(rand_num);
+   81|   100k|        }
+   82|  1.00k|        rand_value = std::rand() % 1000;
+   83|  1.09k|        while(std::find(arr.begin(), arr.end(), rand_value) != arr.end()){
+   84|     98|            std::remove(arr.begin(), arr.end(), rand_value);
+   85|     98|        }
+   86|  1.00k|        sort(arr.begin(), arr.end());
+   87|  1.00k|        index = fibonacci_search(arr, rand_value);
+   88|  1.00k|        passed = passed && (index == -1);
+   89|  1.00k|    }
+   90|      1|    return passed;
+   91|      1|}
+   92|       |
+   93|       |/**
+   94|       | * @brief random tests which cover cases when we have one, multiple or zero occurences of the value we're looking for
+   95|       |*/
+   96|      1|bool random_tests(){
+   97|      1|    bool passed = true;
+   98|      1|    int rand_num, rand_value, index, real_value, num_tests = 10000;
+   99|      1|    std::vector<int> arr;
+  100|  10.0k|    while(num_tests--){
+  101|  10.0k|        arr.clear();
+  102|  1.01M|        for(int i = 0; i < 100; i++){
+  103|  1.00M|            rand_num = std::rand() % 1000;
+  104|  1.00M|            arr.push_back(rand_num);
+  105|  1.00M|        }
+  106|  10.0k|        rand_value = std::rand() % 1000;
+  107|  10.0k|        std::sort(arr.begin(), arr.end());
+  108|  10.0k|        index = fibonacci_search(arr, rand_value);
+  109|  10.0k|        if(index != -1){
+  110|    877|            real_value = arr[index];
+  111|    877|            passed = passed && (real_value == rand_value);
+  112|  9.12k|        } else {
+  113|  9.12k|            passed = passed && (std::find(arr.begin(), arr.end(), rand_value) == arr.end());
+  114|  9.12k|        }
+  115|  10.0k|    }
+  116|      1|    return passed;
+  117|      1|}
+  118|       |
+  119|       |/**
+  120|       | * Main Function
+  121|       | * testing the algorithm
+  122|       | */
+  123|      1|int main() {
+  124|      1|    assert(no_occurence_tests());
+  125|      0|    assert(random_tests());
+  126|      0|    return 0;
+  127|      1|}
+

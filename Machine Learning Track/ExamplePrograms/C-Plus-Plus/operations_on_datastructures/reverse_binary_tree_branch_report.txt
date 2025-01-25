@@ -1,0 +1,274 @@
+    1|       |/**
+    2|       | * @file
+    3|       | * @brief Implementation for the [Reversing a Binary
+    4|       | * Tree](https://www.geeksforgeeks.org/reverse-tree-path/) recursively
+    5|       | * algorithm.
+    6|       | * @details A binary tree can be reversed by swapping the left and
+    7|       | * right child of a node at each node, starting from the root, and
+    8|       | * cascading below. This solution aims to provide an implementation of
+    9|       | * a recursive reversal of a binary tree.
+   10|       | * @author [Alvin](https://github.com/polarvoid)
+   11|       | */
+   12|       |
+   13|       |#include <cassert>   /// For assert
+   14|       |#include <iostream>  /// For IO operations
+   15|       |#include <queue>     /// For std::queue
+   16|       |#include <vector>    /// For std::vector
+   17|       |
+   18|       |/**
+   19|       | * @namespace operations_on_datastructures
+   20|       | * @brief Operations on Data Structures
+   21|       | */
+   22|       |namespace operations_on_datastructures {
+   23|       |
+   24|       |/**
+   25|       | * @namespace reverse_binary_tree
+   26|       | * @brief Functions for the [Reverse a Binary
+   27|       | * Tree](https://www.geeksforgeeks.org/reverse-tree-path/) implementation
+   28|       | */
+   29|       |namespace reverse_binary_tree {
+   30|       |
+   31|       |/**
+   32|       | * @brief A Node struct that represents a single node in a Binary Tree
+   33|       | */
+   34|       |struct Node {
+   35|       |    int64_t data;  ///< The value of the Node
+   36|       |    Node* left;    ///< The Node's left child
+   37|       |    Node* right;   ///< The Node's right child
+   38|       |    /**
+   39|       |     * @brief Creates a new Node with some initial data
+   40|       |     */
+   41|      8|    explicit Node(int64_t _data) {
+   42|      8|        data = _data;     ///< Set value of Node data
+   43|      8|        left = nullptr;   ///< Initialize left child to NULL
+   44|      8|        right = nullptr;  ///< Initialize right child to NULL
+   45|      8|    }
+   46|       |};
+   47|       |
+   48|       |/**
+   49|       | * @brief A Binary Tree class that implements a Binary Search Tree
+   50|       | *(BST) by default.
+   51|       | */
+   52|       |class BinaryTree {
+   53|       | private:
+   54|       |    Node* root;  ///< Pointer to root node of Binary Tree
+   55|       |    /**
+   56|       |     * @brief inserts a node in the Binary Tree, with the behaviouur of
+   57|       |     * a Binary Search Tree.
+   58|       |     * @details Nodes with smaller values are inserted in the left
+   59|       |     * subtree, and Nodes with larger values are inserted into the
+   60|       |     * right subtree recursively. Time Complexity: O(log(n))
+   61|       |     * @param data The data/value of the Node to be inserted
+   62|       |     * @param pivot A pointer to the root node of the (sub)tree
+   63|       |     * @returns Node pointer to the root
+   64|       |     */
+   65|     19|    Node* insert(int64_t data, Node* pivot) {
+   66|     19|        if (pivot == nullptr) {
+   67|      8|            return new Node(data);  ///< Create new node
+   68|      8|        }
+   69|     11|        if (data <= pivot->data) {
+   70|      7|            pivot->left =
+   71|      7|                insert(data, pivot->left);  ///< Insert Node to the left
+   72|      7|        } else {
+   73|      4|            pivot->right =
+   74|      4|                insert(data, pivot->right);  ///< Insert node to the right
+   75|      4|        }
+   76|     11|        return pivot;
+   77|     19|    }
+   78|       |    /**
+   79|       |     * @brief Reverses a Binary Tree recursively by swapping the left and
+   80|       |     * right subtrees and their children.
+   81|       |     * @param pivot A reference to the root of the (sub)tree
+   82|       |     * @returns Node pointer to root node
+   83|       |     */
+   84|     19|    Node* reverseBinaryTree(Node* pivot) {
+   85|     19|        if (pivot == nullptr) {
+   86|     11|            return pivot;  ///< Base case
+   87|     11|        }
+   88|      8|        Node* temp = pivot->left;  ///< pointer to the left subtree
+   89|      8|        pivot->left = reverseBinaryTree(pivot->right);  ///< Swap
+   90|      8|        pivot->right = reverseBinaryTree(temp);         ///< Swap
+   91|      8|        return pivot;
+   92|     19|    }
+   93|       |
+   94|       |    BinaryTree(const BinaryTree&) = delete;
+   95|       |    BinaryTree& operator=(const BinaryTree&) = delete;
+   96|       |
+   97|       | public:
+   98|       |    /**
+   99|       |     * @brief Creates a BinaryTree with a root pointing to NULL.
+  100|       |     */
+  101|      3|    BinaryTree() { root = nullptr; }
+  102|       |    /**
+  103|       |     * @brief Creates a BinaryTree with a root with an initial value.
+  104|       |     */
+  105|      0|    explicit BinaryTree(int64_t data) { root = new Node(data); }
+  106|       |
+  107|      3|    ~BinaryTree() {
+  108|      3|        std::vector<Node*> nodes;
+  109|      3|        nodes.emplace_back(root);
+  110|     22|        while (!nodes.empty()) {
+  111|     19|            const auto cur_node = nodes.back();
+  112|     19|            nodes.pop_back();
+  113|     19|            if (cur_node) {
+  114|      8|                nodes.emplace_back(cur_node->left);
+  115|      8|                nodes.emplace_back(cur_node->right);
+  116|      8|                delete cur_node;
+  117|      8|            }
+  118|     19|        }
+  119|      3|    }
+  120|       |
+  121|       |    /**
+  122|       |     * @brief Adds a new Node to the Binary Tree
+  123|       |     */
+  124|      8|    void add(int64_t data) { root = insert(data, root); }
+  125|       |    /**
+  126|       |     * Reverses the Binary Tree
+  127|       |     */
+  128|      3|    void reverse() { root = reverseBinaryTree(root); }
+  129|       |    /**
+  130|       |     * @brief Level order traversal of a tree consists of visiting its
+  131|       |     * elements, top to bottom, left to right. This function performs
+  132|       |     * level order traversal and returns the node datas as a vector.
+  133|       |     * @details The function uses a queue to append and remove elements
+  134|       |     * as they are visited, and then adds their children, if any. This
+  135|       |     * ensures that the elements are visited layer-by-layer, starting
+  136|       |     * from the root of the Tree.
+  137|       |     * @returns vector<int64_t> of nodes of the tree.
+  138|       |     */
+  139|     12|    std::vector<int64_t> get_level_order() {
+  140|     12|        std::vector<int64_t> data;  ///< Result vector of int
+  141|     12|        if (root == nullptr) {
+  142|      4|            return data;  ///< Return empty vector if root is Invalid
+  143|      4|        }
+  144|      8|        std::queue<Node*> nodes;  ///< Queue of the nodes in the tree
+  145|      8|        nodes.push(root);         ///< Insert root into the queue
+  146|     40|        while (!nodes.empty()) {
+  147|     32|            Node* temp = nodes.front();  ///< Copy the first element
+  148|     32|            data.push_back(temp->data);  ///< Add the element to the data
+  149|     32|            nodes.pop();                 ///< Remove element
+  150|     32|            if (temp->left != nullptr) {
+  151|     12|                nodes.push(temp->left);  ///< Insert left node
+  152|     12|            }
+  153|     32|            if (temp->right != nullptr) {
+  154|     12|                nodes.push(temp->right);  ///< Insert right node
+  155|     12|            }
+  156|     32|        }  /// Add nodes while Tree is not empty
+  157|      8|        return data;
+  158|     12|    }
+  159|       |    /**
+  160|       |     * @brief Prints all of the elements in the tree to stdout
+  161|       |     * level-by-level, using the get_level_order() function.
+  162|       |     * @returns void
+  163|       |     */
+  164|      6|    void print() {
+  165|     16|        for (int i : get_level_order()) {
+  166|     16|            std::cout << i << " ";  /// Print each element in the tree
+  167|     16|        }
+  168|      6|        std::cout << "\n";  /// Print newline
+  169|      6|    }
+  170|       |};
+  171|       |
+  172|       |}  // namespace reverse_binary_tree
+  173|       |}  // namespace operations_on_datastructures
+  174|       |
+  175|       |/**
+  176|       | * @namespace tests
+  177|       | * @brief Testcases to check Reversal of Binary Tree.
+  178|       | */
+  179|       |namespace tests {
+  180|       |using operations_on_datastructures::reverse_binary_tree::
+  181|       |    BinaryTree;  ///< Use the BinaryTree
+  182|       |/**
+  183|       | * @brief A Test to check an edge case (single element reversal)
+  184|       | */
+  185|      1|void test1() {
+  186|      1|    BinaryTree bst;
+  187|      1|    std::vector<int64_t> pre_reversal, post_reversal;
+  188|      1|    std::cout << "TEST CASE 1\n";
+  189|      1|    std::cout << "Initializing tree with a single element (5)\n";
+  190|      1|    bst.add(5);
+  191|      1|    pre_reversal = bst.get_level_order();
+  192|      1|    std::cout << "Before reversal: ";
+  193|      1|    bst.print();
+  194|      1|    std::cout << "After reversal: ";
+  195|      1|    bst.reverse();
+  196|      1|    post_reversal = bst.get_level_order();
+  197|      1|    assert(pre_reversal.size() ==
+  198|      1|           post_reversal.size());  ///< Check for equal sizes
+  199|      0|    assert(pre_reversal.size() ==
+  200|      1|           1);  ///< Ensure that there is only one element
+  201|      0|    assert(pre_reversal[0] ==
+  202|      1|           post_reversal[0]);  ///< Check if both elements are same
+  203|      0|    bst.print();
+  204|      1|    std::cout << "TEST PASSED!\n\n";
+  205|      1|}
+  206|       |/**
+  207|       | * @brief A Test to check an edge case (NULL root element)
+  208|       | */
+  209|      1|void test2() {
+  210|      1|    BinaryTree bst;
+  211|      1|    std::vector<int64_t> pre_reversal, post_reversal;
+  212|      1|    std::cout << "TEST CASE 2\n";
+  213|      1|    std::cout << "Creating empty tree (root points to NULL)\n";
+  214|      1|    pre_reversal = bst.get_level_order();
+  215|      1|    std::cout << "Before reversal: ";
+  216|      1|    bst.print();
+  217|      1|    std::cout << "After reversal: ";
+  218|      1|    bst.reverse();
+  219|      1|    post_reversal = bst.get_level_order();
+  220|      1|    assert(pre_reversal.size() ==
+  221|      1|           post_reversal.size());  ///< Check for equal sizes
+  222|      0|    assert(pre_reversal.size() ==
+  223|      1|           0);  ///< Ensure that there is only one element
+  224|      0|    bst.print();
+  225|      1|    std::cout << "TEST PASSED!\n\n";
+  226|      1|}
+  227|       |/**
+  228|       | * @brief A Test to check correct reversal of a Binary Tree
+  229|       | */
+  230|      1|void test3() {
+  231|      1|    BinaryTree bst;
+  232|      1|    std::vector<int64_t> pre_reversal, post_reversal;
+  233|      1|    std::vector<int64_t> pre_res = {4, 3, 6, 2, 5, 7, 1};
+  234|      1|    std::vector<int64_t> post_res = {4, 6, 3, 7, 5, 2, 1};
+  235|      1|    std::cout << "TEST CASE 3\n";
+  236|      1|    std::cout << "Creating tree with elements (4, 6, 3, 2, 5, 7, 1)\n";
+  237|      1|    bst.add(4);
+  238|      1|    bst.add(6);
+  239|      1|    bst.add(3);
+  240|      1|    bst.add(2);
+  241|      1|    bst.add(5);
+  242|      1|    bst.add(7);
+  243|      1|    bst.add(1);
+  244|      1|    pre_reversal = bst.get_level_order();
+  245|      1|    assert(pre_reversal == pre_res);  ///< Check for equality
+  246|      0|    std::cout << "Before reversal: ";
+  247|      1|    bst.print();
+  248|      1|    std::cout << "After reversal: ";
+  249|      1|    bst.reverse();
+  250|      1|    post_reversal = bst.get_level_order();
+  251|      1|    assert(post_reversal == post_res);  ///< Check for equality
+  252|      0|    bst.print();
+  253|      1|    std::cout << "TEST PASSED!\n\n";
+  254|      1|}
+  255|       |}  // namespace tests
+  256|       |
+  257|       |/**
+  258|       | * @brief Function to test the correctness of the Tree Reversal
+  259|       | */
+  260|      1|static void test() {
+  261|      1|    tests::test1();  ///< Single element test
+  262|      1|    tests::test2();  ///< No element test
+  263|      1|    tests::test3();  ///< Correct reversal test
+  264|      1|}
+  265|       |
+  266|       |/**
+  267|       | * @brief main function
+  268|       | * @returns 0 on exit
+  269|       | */
+  270|      1|int main() {
+  271|      1|    test();  // run self-test implementations
+  272|      1|    return 0;
+  273|      1|}
+

@@ -1,0 +1,119 @@
+    1|       |#include <climits>
+    2|       |#include <iostream>
+    3|       |#include <vector>
+    4|       |
+    5|       |using namespace std;
+    6|       |
+    7|       |// Wrapper class for storing an edge
+    8|       |class Edge {
+    9|       | public:
+   10|       |    int src, dst, weight;
+   11|       |};
+   12|       |
+   13|       |// Wrapper class for storing a graph
+   14|       |class Graph {
+   15|       | public:
+   16|       |    int vertexNum, edgeNum;
+   17|       |    std::vector<Edge> edges;
+   18|       |
+   19|       |    // Constructs a graph with V vertices and E edges
+   20|      0|    Graph(int V, int E) {
+   21|      0|        this->vertexNum = V;
+   22|      0|        this->edgeNum = E;
+   23|      0|        this->edges.reserve(E);
+   24|      0|    }
+   25|       |
+   26|       |    // Adds the given edge to the graph
+   27|      0|    void addEdge(int src, int dst, int weight) {
+   28|      0|        static int edgeInd = 0;
+   29|      0|        if (edgeInd < this->edgeNum) {
+   30|      0|            Edge newEdge;
+   31|      0|            newEdge.src = src;
+   32|      0|            newEdge.dst = dst;
+   33|      0|            newEdge.weight = weight;
+   34|      0|            this->edges[edgeInd++] = newEdge;
+   35|      0|        }
+   36|      0|    }
+   37|       |};
+   38|       |
+   39|       |// Utility function to print distances
+   40|      0|void print(const std::vector<int>& dist, int V) {
+   41|      0|    cout << "\nVertex  Distance" << endl;
+   42|      0|    for (int i = 0; i < V; i++) {
+   43|      0|        if (dist[i] != INT_MAX)
+   44|      0|            cout << i << "\t" << dist[i] << endl;
+   45|      0|        else
+   46|      0|            cout << i << "\tINF" << endl;
+   47|      0|    }
+   48|      0|}
+   49|       |
+   50|       |// The main function that finds the shortest path from given source
+   51|       |// to all other vertices using Bellman-Ford.It also detects negative
+   52|       |// weight cycle
+   53|      0|void BellmanFord(Graph graph, int src) {
+   54|      0|    int V = graph.vertexNum;
+   55|      0|    int E = graph.edgeNum;
+   56|      0|    std::vector<int> dist;
+   57|      0|    dist.reserve(E);
+   58|       |
+   59|       |    // Initialize distances array as INF for all except source
+   60|       |    // Intialize source as zero
+   61|      0|    for (int i = 0; i < V; i++) dist[i] = INT_MAX;
+   62|      0|    dist[src] = 0;
+   63|       |
+   64|       |    // Calculate shortest path distance from source to all edges
+   65|       |    // A path can contain maximum (|V|-1) edges
+   66|      0|    for (int i = 0; i <= V - 1; i++)
+   67|      0|        for (int j = 0; j < E; j++) {
+   68|      0|            int u = graph.edges[j].src;
+   69|      0|            int v = graph.edges[j].dst;
+   70|      0|            int w = graph.edges[j].weight;
+   71|       |
+   72|      0|            if (dist[u] != INT_MAX && dist[u] + w < dist[v])
+   73|      0|                dist[v] = dist[u] + w;
+   74|      0|        }
+   75|       |
+   76|       |    // Iterate inner loop once more to check for negative cycle
+   77|      0|    for (int j = 0; j < E; j++) {
+   78|      0|        int u = graph.edges[j].src;
+   79|      0|        int v = graph.edges[j].dst;
+   80|      0|        int w = graph.edges[j].weight;
+   81|       |
+   82|      0|        if (dist[u] != INT_MAX && dist[u] + w < dist[v]) {
+   83|      0|            cout << "Graph contains negative weight cycle. Hence, shortest "
+   84|      0|                    "distance not guaranteed."
+   85|      0|                 << endl;
+   86|      0|            return;
+   87|      0|        }
+   88|      0|    }
+   89|       |
+   90|      0|    print(dist, V);
+   91|       |
+   92|      0|    return;
+   93|      0|}
+   94|       |
+   95|       |// Driver Function
+   96|      0|int main() {
+   97|      0|    int V, E, gsrc;
+   98|      0|    int src, dst, weight;
+   99|      0|    cout << "Enter number of vertices: ";
+  100|      0|    cin >> V;
+  101|      0|    cout << "Enter number of edges: ";
+  102|      0|    cin >> E;
+  103|      0|    Graph G(V, E);
+  104|      0|    for (int i = 0; i < E; i++) {
+  105|      0|        cout << "\nEdge " << i + 1 << "\nEnter source: ";
+  106|      0|        cin >> src;
+  107|      0|        cout << "Enter destination: ";
+  108|      0|        cin >> dst;
+  109|      0|        cout << "Enter weight: ";
+  110|      0|        cin >> weight;
+  111|      0|        G.addEdge(src, dst, weight);
+  112|      0|    }
+  113|      0|    cout << "\nEnter source: ";
+  114|      0|    cin >> gsrc;
+  115|      0|    BellmanFord(G, gsrc);
+  116|       |
+  117|      0|    return 0;
+  118|      0|}
+

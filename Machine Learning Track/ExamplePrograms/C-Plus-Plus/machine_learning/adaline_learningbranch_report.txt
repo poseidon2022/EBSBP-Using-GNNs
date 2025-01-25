@@ -1,0 +1,378 @@
+    1|       |/**
+    2|       | * \addtogroup machine_learning Machine Learning Algorithms
+    3|       | * @{
+    4|       | * \file
+    5|       | * \brief [Adaptive Linear Neuron
+    6|       | * (ADALINE)](https://en.wikipedia.org/wiki/ADALINE) implementation
+    7|       | *
+    8|       | * \author [Krishna Vedala](https://github.com/kvedala)
+    9|       | *
+   10|       | * \details
+   11|       | * <a href="https://commons.wikimedia.org/wiki/File:Adaline_flow_chart.gif"><img
+   12|       | * src="https://upload.wikimedia.org/wikipedia/commons/b/be/Adaline_flow_chart.gif"
+   13|       | * alt="Structure of an ADALINE network. Source: Wikipedia"
+   14|       | * style="width:200px; float:right;"></a>
+   15|       | *
+   16|       | * ADALINE is one of the first and simplest single layer artificial neural
+   17|       | * network. The algorithm essentially implements a linear function
+   18|       | * \f[ f\left(x_0,x_1,x_2,\ldots\right) =
+   19|       | * \sum_j x_jw_j+\theta
+   20|       | * \f]
+   21|       | * where \f$x_j\f$ are the input features of a sample, \f$w_j\f$ are the
+   22|       | * coefficients of the linear function and \f$\theta\f$ is a constant. If we
+   23|       | * know the \f$w_j\f$, then for any given set of features, \f$y\f$ can be
+   24|       | * computed. Computing the \f$w_j\f$ is a supervised learning algorithm wherein
+   25|       | * a set of features and their corresponding outputs are given and weights are
+   26|       | * computed using stochastic gradient descent method.
+   27|       | */
+   28|       |
+   29|       |#include <array>
+   30|       |#include <cassert>
+   31|       |#include <climits>
+   32|       |#include <cmath>
+   33|       |#include <cstdlib>
+   34|       |#include <ctime>
+   35|       |#include <iostream>
+   36|       |#include <numeric>
+   37|       |#include <vector>
+   38|       |
+   39|       |/** Maximum number of iterations to learn */
+   40|       |constexpr int MAX_ITER = 500;  // INT_MAX
+   41|       |
+   42|       |/** \namespace machine_learning
+   43|       | * \brief Machine learning algorithms
+   44|       | */
+   45|       |namespace machine_learning {
+   46|       |class adaline {
+   47|       | public:
+   48|       |    /**
+   49|       |     * Default constructor
+   50|       |     * \param[in] num_features number of features present
+   51|       |     * \param[in] eta learning rate (optional, default=0.1)
+   52|       |     * \param[in] convergence accuracy (optional,
+   53|       |     * default=\f$1\times10^{-5}\f$)
+   54|       |     */
+   55|       |    explicit adaline(int num_features, const double eta = 0.01f,
+   56|       |                     const double accuracy = 1e-5)
+   57|      0|        : eta(eta), accuracy(accuracy) {
+   58|      0|        if (eta <= 0) {
+   59|      0|            std::cerr << "learning rate should be positive and nonzero"
+   60|      0|                      << std::endl;
+   61|      0|            std::exit(EXIT_FAILURE);
+   62|      0|        }
+   63|       |
+   64|      0|        weights = std::vector<double>(
+   65|      0|            num_features +
+   66|      0|            1);  // additional weight is for the constant bias term
+   67|       |
+   68|       |        // initialize with random weights in the range [-50, 49]
+   69|      0|        for (double &weight : weights) weight = 1.f;
+   70|       |        // weights[i] = (static_cast<double>(std::rand() % 100) - 50);
+   71|      0|    }
+   72|       |
+   73|       |    /**
+   74|       |     * Operator to print the weights of the model
+   75|       |     */
+   76|      0|    friend std::ostream &operator<<(std::ostream &out, const adaline &ada) {
+   77|      0|        out << "<";
+   78|      0|        for (int i = 0; i < ada.weights.size(); i++) {
+   79|      0|            out << ada.weights[i];
+   80|      0|            if (i < ada.weights.size() - 1) {
+   81|      0|                out << ", ";
+   82|      0|            }
+   83|      0|        }
+   84|      0|        out << ">";
+   85|      0|        return out;
+   86|      0|    }
+   87|       |
+   88|       |    /**
+   89|       |     * predict the output of the model for given set of features
+   90|       |     * \param[in] x input vector
+   91|       |     * \param[out] out optional argument to return neuron output before
+   92|       |     * applying activation function (optional, `nullptr` to ignore) \returns
+   93|       |     * model prediction output
+   94|       |     */
+   95|      0|    int predict(const std::vector<double> &x, double *out = nullptr) {
+   96|      0|        if (!check_size_match(x)) {
+   97|      0|            return 0;
+   98|      0|        }
+   99|       |
+  100|      0|        double y = weights.back();  // assign bias value
+  101|       |
+  102|       |        // for (int i = 0; i < x.size(); i++) y += x[i] * weights[i];
+  103|      0|        y = std::inner_product(x.begin(), x.end(), weights.begin(), y);
+  104|       |
+  105|      0|        if (out != nullptr) {  // if out variable is provided
+  106|      0|            *out = y;
+  107|      0|        }
+  108|       |
+  109|      0|        return activation(y);  // quantizer: apply ADALINE threshold function
+  110|      0|    }
+  111|       |
+  112|       |    /**
+  113|       |     * Update the weights of the model using supervised learning for one
+  114|       |     * feature vector
+  115|       |     * \param[in] x feature vector
+  116|       |     * \param[in] y known output value
+  117|       |     * \returns correction factor
+  118|       |     */
+  119|      0|    double fit(const std::vector<double> &x, const int &y) {
+  120|      0|        if (!check_size_match(x)) {
+  121|      0|            return 0;
+  122|      0|        }
+  123|       |
+  124|       |        /* output of the model with current weights */
+  125|      0|        int p = predict(x);
+  126|      0|        int prediction_error = y - p;  // error in estimation
+  127|      0|        double correction_factor = eta * prediction_error;
+  128|       |
+  129|       |        /* update each weight, the last weight is the bias term */
+  130|      0|        for (int i = 0; i < x.size(); i++) {
+  131|      0|            weights[i] += correction_factor * x[i];
+  132|      0|        }
+  133|      0|        weights[x.size()] += correction_factor;  // update bias
+  134|       |
+  135|      0|        return correction_factor;
+  136|      0|    }
+  137|       |
+  138|       |    /**
+  139|       |     * Update the weights of the model using supervised learning for an
+  140|       |     * array of vectors.
+  141|       |     * \param[in] X array of feature vector
+  142|       |     * \param[in] y known output value for each feature vector
+  143|       |     */
+  144|       |    template <size_t N>
+  145|       |    void fit(std::array<std::vector<double>, N> const &X,
+  146|      0|             std::array<int, N> const &Y) {
+  147|      0|        double avg_pred_error = 1.f;
+  148|       |
+  149|      0|        int iter = 0;
+  150|      0|        for (iter = 0; (iter < MAX_ITER) && (avg_pred_error > accuracy);
+  151|      0|             iter++) {
+  152|      0|            avg_pred_error = 0.f;
+  153|       |
+  154|       |            // perform fit for each sample
+  155|      0|            for (int i = 0; i < N; i++) {
+  156|      0|                double err = fit(X[i], Y[i]);
+  157|      0|                avg_pred_error += std::abs(err);
+  158|      0|            }
+  159|      0|            avg_pred_error /= N;
+  160|       |
+  161|       |            // Print updates every 200th iteration
+  162|       |            // if (iter % 100 == 0)
+  163|      0|            std::cout << "\tIter " << iter << ": Training weights: " << *this
+  164|      0|                      << "\tAvg error: " << avg_pred_error << std::endl;
+  165|      0|        }
+  166|       |
+  167|      0|        if (iter < MAX_ITER) {
+  168|      0|            std::cout << "Converged after " << iter << " iterations."
+  169|      0|                      << std::endl;
+  170|      0|        } else {
+  171|      0|            std::cout << "Did not converge after " << iter << " iterations."
+  172|      0|                      << std::endl;
+  173|      0|        }
+  174|      0|    }
+  ------------------
+  | Unexecuted instantiation: _ZN16machine_learning7adaline3fitILm10EEEvRKSt5arrayISt6vectorIdSaIdEEXT_EERKS2_IiXT_EE
+  ------------------
+  | Unexecuted instantiation: _ZN16machine_learning7adaline3fitILm50EEEvRKSt5arrayISt6vectorIdSaIdEEXT_EERKS2_IiXT_EE
+  ------------------
+  | Unexecuted instantiation: _ZN16machine_learning7adaline3fitILm100EEEvRKSt5arrayISt6vectorIdSaIdEEXT_EERKS2_IiXT_EE
+  ------------------
+  175|       |
+  176|       |    /** Defines activation function as Heaviside's step function.
+  177|       |     * \f[
+  178|       |     * f(x) = \begin{cases}
+  179|       |     * -1 & \forall x \le 0\\
+  180|       |     *  1 & \forall x > 0
+  181|       |     * \end{cases}
+  182|       |     * \f]
+  183|       |     * @param x input value to apply activation on
+  184|       |     * @return activation output
+  185|       |     */
+  186|      0|    int activation(double x) { return x > 0 ? 1 : -1; }
+  187|       |
+  188|       | private:
+  189|       |    /**
+  190|       |     * convenient function to check if input feature vector size matches the
+  191|       |     * model weights size
+  192|       |     * \param[in] x fecture vector to check
+  193|       |     * \returns `true` size matches
+  194|       |     * \returns `false` size does not match
+  195|       |     */
+  196|      0|    bool check_size_match(const std::vector<double> &x) {
+  197|      0|        if (x.size() != (weights.size() - 1)) {
+  198|      0|            std::cerr << __func__ << ": "
+  199|      0|                      << "Number of features in x does not match the feature "
+  200|      0|                         "dimension in model!"
+  201|      0|                      << std::endl;
+  202|      0|            return false;
+  203|      0|        }
+  204|      0|        return true;
+  205|      0|    }
+  206|       |
+  207|       |    const double eta;             ///< learning rate of the algorithm
+  208|       |    const double accuracy;        ///< model fit convergence accuracy
+  209|       |    std::vector<double> weights;  ///< weights of the neural network
+  210|       |};
+  211|       |
+  212|       |}  // namespace machine_learning
+  213|       |
+  214|       |using machine_learning::adaline;
+  215|       |
+  216|       |/** @} */
+  217|       |
+  218|       |/**
+  219|       | * test function to predict points in a 2D coordinate system above the line
+  220|       | * \f$x=y\f$ as +1 and others as -1.
+  221|       | * Note that each point is defined by 2 values or 2 features.
+  222|       | * \param[in] eta learning rate (optional, default=0.01)
+  223|       | */
+  224|      0|void test1(double eta = 0.01) {
+  225|      0|    adaline ada(2, eta);  // 2 features
+  226|       |
+  227|      0|    const int N = 10;  // number of sample points
+  228|       |
+  229|      0|    std::array<std::vector<double>, N> X = {
+  230|      0|        std::vector<double>({0, 1}),   std::vector<double>({1, -2}),
+  231|      0|        std::vector<double>({2, 3}),   std::vector<double>({3, -1}),
+  232|      0|        std::vector<double>({4, 1}),   std::vector<double>({6, -5}),
+  233|      0|        std::vector<double>({-7, -3}), std::vector<double>({-8, 5}),
+  234|      0|        std::vector<double>({-9, 2}),  std::vector<double>({-10, -15})};
+  235|      0|    std::array<int, N> y = {1,  -1, 1, -1, -1,
+  236|      0|                            -1, 1,  1, 1,  -1};  // corresponding y-values
+  237|       |
+  238|      0|    std::cout << "------- Test 1 -------" << std::endl;
+  239|      0|    std::cout << "Model before fit: " << ada << std::endl;
+  240|       |
+  241|      0|    ada.fit<N>(X, y);
+  242|      0|    std::cout << "Model after fit: " << ada << std::endl;
+  243|       |
+  244|      0|    int predict = ada.predict({5, -3});
+  245|      0|    std::cout << "Predict for x=(5,-3): " << predict;
+  246|      0|    assert(predict == -1);
+  247|      0|    std::cout << " ...passed" << std::endl;
+  248|       |
+  249|      0|    predict = ada.predict({5, 8});
+  250|      0|    std::cout << "Predict for x=(5,8): " << predict;
+  251|      0|    assert(predict == 1);
+  252|      0|    std::cout << " ...passed" << std::endl;
+  253|      0|}
+  254|       |
+  255|       |/**
+  256|       | * test function to predict points in a 2D coordinate system above the line
+  257|       | * \f$x+3y=-1\f$ as +1 and others as -1.
+  258|       | * Note that each point is defined by 2 values or 2 features.
+  259|       | * The function will create random sample points for training and test purposes.
+  260|       | * \param[in] eta learning rate (optional, default=0.01)
+  261|       | */
+  262|      0|void test2(double eta = 0.01) {
+  263|      0|    adaline ada(2, eta);  // 2 features
+  264|       |
+  265|      0|    const int N = 50;  // number of sample points
+  266|       |
+  267|      0|    std::array<std::vector<double>, N> X;
+  268|      0|    std::array<int, N> Y{};  // corresponding y-values
+  269|       |
+  270|       |    // generate sample points in the interval
+  271|       |    // [-range2/100 , (range2-1)/100]
+  272|      0|    int range = 500;          // sample points full-range
+  273|      0|    int range2 = range >> 1;  // sample points half-range
+  274|      0|    for (int i = 0; i < N; i++) {
+  275|      0|        double x0 = (static_cast<double>(std::rand() % range) - range2) / 100.f;
+  276|      0|        double x1 = (static_cast<double>(std::rand() % range) - range2) / 100.f;
+  277|      0|        X[i] = std::vector<double>({x0, x1});
+  278|      0|        Y[i] = (x0 + 3. * x1) > -1 ? 1 : -1;
+  279|      0|    }
+  280|       |
+  281|      0|    std::cout << "------- Test 2 -------" << std::endl;
+  282|      0|    std::cout << "Model before fit: " << ada << std::endl;
+  283|       |
+  284|      0|    ada.fit(X, Y);
+  285|      0|    std::cout << "Model after fit: " << ada << std::endl;
+  286|       |
+  287|      0|    int N_test_cases = 5;
+  288|      0|    for (int i = 0; i < N_test_cases; i++) {
+  289|      0|        double x0 = (static_cast<double>(std::rand() % range) - range2) / 100.f;
+  290|      0|        double x1 = (static_cast<double>(std::rand() % range) - range2) / 100.f;
+  291|       |
+  292|      0|        int predict = ada.predict({x0, x1});
+  293|       |
+  294|      0|        std::cout << "Predict for x=(" << x0 << "," << x1 << "): " << predict;
+  295|       |
+  296|      0|        int expected_val = (x0 + 3. * x1) > -1 ? 1 : -1;
+  297|      0|        assert(predict == expected_val);
+  298|      0|        std::cout << " ...passed" << std::endl;
+  299|      0|    }
+  300|      0|}
+  301|       |
+  302|       |/**
+  303|       | * test function to predict points in a 3D coordinate system lying within the
+  304|       | * sphere of radius 1 and centre at origin as +1 and others as -1. Note that
+  305|       | * each point is defined by 3 values but we use 6 features. The function will
+  306|       | * create random sample points for training and test purposes.
+  307|       | * The sphere centred at origin and radius 1 is defined as:
+  308|       | * \f$x^2+y^2+z^2=r^2=1\f$ and if the \f$r^2<1\f$, point lies within the sphere
+  309|       | * else, outside.
+  310|       | *
+  311|       | * \param[in] eta learning rate (optional, default=0.01)
+  312|       | */
+  313|      0|void test3(double eta = 0.01) {
+  314|      0|    adaline ada(6, eta);  // 2 features
+  315|       |
+  316|      0|    const int N = 100;  // number of sample points
+  317|       |
+  318|      0|    std::array<std::vector<double>, N> X;
+  319|      0|    std::array<int, N> Y{};  // corresponding y-values
+  320|       |
+  321|       |    // generate sample points in the interval
+  322|       |    // [-range2/100 , (range2-1)/100]
+  323|      0|    int range = 200;          // sample points full-range
+  324|      0|    int range2 = range >> 1;  // sample points half-range
+  325|      0|    for (int i = 0; i < N; i++) {
+  326|      0|        double x0 = (static_cast<double>(std::rand() % range) - range2) / 100.f;
+  327|      0|        double x1 = (static_cast<double>(std::rand() % range) - range2) / 100.f;
+  328|      0|        double x2 = (static_cast<double>(std::rand() % range) - range2) / 100.f;
+  329|      0|        X[i] = std::vector<double>({x0, x1, x2, x0 * x0, x1 * x1, x2 * x2});
+  330|      0|        Y[i] = ((x0 * x0) + (x1 * x1) + (x2 * x2)) <= 1.f ? 1 : -1;
+  331|      0|    }
+  332|       |
+  333|      0|    std::cout << "------- Test 3 -------" << std::endl;
+  334|      0|    std::cout << "Model before fit: " << ada << std::endl;
+  335|       |
+  336|      0|    ada.fit(X, Y);
+  337|      0|    std::cout << "Model after fit: " << ada << std::endl;
+  338|       |
+  339|      0|    int N_test_cases = 5;
+  340|      0|    for (int i = 0; i < N_test_cases; i++) {
+  341|      0|        double x0 = (static_cast<double>(std::rand() % range) - range2) / 100.f;
+  342|      0|        double x1 = (static_cast<double>(std::rand() % range) - range2) / 100.f;
+  343|      0|        double x2 = (static_cast<double>(std::rand() % range) - range2) / 100.f;
+  344|       |
+  345|      0|        int predict = ada.predict({x0, x1, x2, x0 * x0, x1 * x1, x2 * x2});
+  346|       |
+  347|      0|        std::cout << "Predict for x=(" << x0 << "," << x1 << "," << x2
+  348|      0|                  << "): " << predict;
+  349|       |
+  350|      0|        int expected_val = ((x0 * x0) + (x1 * x1) + (x2 * x2)) <= 1.f ? 1 : -1;
+  351|      0|        assert(predict == expected_val);
+  352|      0|        std::cout << " ...passed" << std::endl;
+  353|      0|    }
+  354|      0|}
+  355|       |
+  356|       |/** Main function */
+  357|      0|int main(int argc, char **argv) {
+  358|      0|    std::srand(std::time(nullptr));  // initialize random number generator
+  359|       |
+  360|      0|    double eta = 0.1;  // default value of eta
+  361|      0|    if (argc == 2) {   // read eta value from commandline argument if present
+  362|      0|        eta = strtof(argv[1], nullptr);
+  363|      0|    }
+  364|       |
+  365|      0|    test1(eta);
+  366|      0|    test2(eta);
+  367|      0|    test3(eta);
+  368|       |
+  369|      0|    return 0;
+  370|      0|}
+

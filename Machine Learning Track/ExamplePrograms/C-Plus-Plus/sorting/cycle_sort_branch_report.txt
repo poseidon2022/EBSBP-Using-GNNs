@@ -1,0 +1,231 @@
+    1|       |/**
+    2|       | * @file
+    3|       | * @brief Implementation of [Cycle
+    4|       | * sort](https://en.wikipedia.org/wiki/Cycle_sort) algorithm
+    5|       | * @details
+    6|       | * Cycle Sort is a sorting algorithm that works in \f$O(n^2)\f$ time in the best
+    7|       | * case and works in \f$O(n^2)\f$ in worst case. If a element is already at its
+    8|       | * correct  position, do nothing. If a element is not at its correct position,
+    9|       | * we then need to move it to its correct position by computing the correct
+   10|       | * positions.Therefore, we should make sure the duplicate elements.
+   11|       | * @author [TsungHan Ho](https://github.com/dalaoqi)
+   12|       | */
+   13|       |
+   14|       |#include <algorithm>  /// for std::is_sorted, std::swap
+   15|       |#include <cassert>    /// for assert
+   16|       |#include <cstdint>
+   17|       |#include <iostream>   /// for io operations
+   18|       |#include <vector>     /// for std::vector
+   19|       |
+   20|       |/**
+   21|       | * @namespace sorting
+   22|       | * @brief Sorting algorithms
+   23|       | */
+   24|       |namespace sorting {
+   25|       |/**
+   26|       | * @namespace cycle_sort
+   27|       | * @brief Functions for [Cycle sort](https://en.wikipedia.org/wiki/Cycle_sort)
+   28|       | * algorithm
+   29|       | */
+   30|       |namespace cycle_sort {
+   31|       |/**
+   32|       | * @brief The main function implements cycleSort
+   33|       | * @tparam T type of array
+   34|       | * @param in_arr array to be sorted
+   35|       | * @returns void
+   36|       | */
+   37|       |template <typename T>
+   38|      4|std::vector<T> cycleSort(const std::vector<T> &in_arr) {
+   39|      4|    std::vector<T> arr(in_arr);
+   40|     24|    for (int cycle_start = 0; cycle_start <= arr.size() - 1; cycle_start++) {
+   41|       |        // initialize item
+   42|     20|        T item = arr[cycle_start];
+   43|       |
+   44|       |        // Count the number of elements smaller than item, this  number is the
+   45|       |        // correct index of item.
+   46|     20|        int pos = cycle_start;
+   47|     62|        for (int i = cycle_start + 1; i < arr.size(); i++) {
+   48|     42|            if (arr[i] < item) {
+   49|      9|                pos++;
+   50|      9|            }
+   51|     42|        }
+   52|       |
+   53|       |        // item is already in correct position
+   54|     20|        if (pos == cycle_start) {
+   55|     17|            continue;
+   56|     17|        }
+   57|       |
+   58|       |        // duplicate  elements
+   59|      3|        while (item == arr[pos]) pos += 1;
+   60|      3|        if (pos == cycle_start) {
+   61|      0|            continue;
+   62|      3|        } else {
+   63|      3|            std::swap(item, arr[pos]);
+   64|      3|        }
+   65|       |        // Rest of the  elements
+   66|      8|        while (pos != cycle_start) {
+   67|      5|            pos = cycle_start;
+   68|       |            // Find position where we put the element
+   69|     25|            for (size_t i = cycle_start + 1; i < arr.size(); i++) {
+   70|     20|                if (arr[i] < item) {
+   71|      5|                    pos += 1;
+   72|      5|                }
+   73|     20|            }
+   74|       |            // duplicate  elements
+   75|      5|            while (item == arr[pos]) pos += 1;
+   76|      5|            if (item == arr[pos]) {
+   77|      0|                continue;
+   78|      5|            } else {
+   79|      5|                std::swap(item, arr[pos]);
+   80|      5|            }
+   81|      5|        }
+   82|      3|    }
+   83|      4|    return arr;
+   84|      4|}
+  ------------------
+  | _ZN7sorting10cycle_sort9cycleSortIjEESt6vectorIT_SaIS3_EERKS5_:
+  |   38|      3|std::vector<T> cycleSort(const std::vector<T> &in_arr) {
+  |   39|      3|    std::vector<T> arr(in_arr);
+  |   40|     17|    for (int cycle_start = 0; cycle_start <= arr.size() - 1; cycle_start++) {
+  |   41|       |        // initialize item
+  |   42|     14|        T item = arr[cycle_start];
+  |   43|       |
+  |   44|       |        // Count the number of elements smaller than item, this  number is the
+  |   45|       |        // correct index of item.
+  |   46|     14|        int pos = cycle_start;
+  |   47|     41|        for (int i = cycle_start + 1; i < arr.size(); i++) {
+  |   48|     27|            if (arr[i] < item) {
+  |   49|      4|                pos++;
+  |   50|      4|            }
+  |   51|     27|        }
+  |   52|       |
+  |   53|       |        // item is already in correct position
+  |   54|     14|        if (pos == cycle_start) {
+  |   55|     12|            continue;
+  |   56|     12|        }
+  |   57|       |
+  |   58|       |        // duplicate  elements
+  |   59|      2|        while (item == arr[pos]) pos += 1;
+  |   60|      2|        if (pos == cycle_start) {
+  |   61|      0|            continue;
+  |   62|      2|        } else {
+  |   63|      2|            std::swap(item, arr[pos]);
+  |   64|      2|        }
+  |   65|       |        // Rest of the  elements
+  |   66|      4|        while (pos != cycle_start) {
+  |   67|      2|            pos = cycle_start;
+  |   68|       |            // Find position where we put the element
+  |   69|      7|            for (size_t i = cycle_start + 1; i < arr.size(); i++) {
+  |   70|      5|                if (arr[i] < item) {
+  |   71|      0|                    pos += 1;
+  |   72|      0|                }
+  |   73|      5|            }
+  |   74|       |            // duplicate  elements
+  |   75|      2|            while (item == arr[pos]) pos += 1;
+  |   76|      2|            if (item == arr[pos]) {
+  |   77|      0|                continue;
+  |   78|      2|            } else {
+  |   79|      2|                std::swap(item, arr[pos]);
+  |   80|      2|            }
+  |   81|      2|        }
+  |   82|      2|    }
+  |   83|      3|    return arr;
+  |   84|      3|}
+  ------------------
+  | _ZN7sorting10cycle_sort9cycleSortIdEESt6vectorIT_SaIS3_EERKS5_:
+  |   38|      1|std::vector<T> cycleSort(const std::vector<T> &in_arr) {
+  |   39|      1|    std::vector<T> arr(in_arr);
+  |   40|      7|    for (int cycle_start = 0; cycle_start <= arr.size() - 1; cycle_start++) {
+  |   41|       |        // initialize item
+  |   42|      6|        T item = arr[cycle_start];
+  |   43|       |
+  |   44|       |        // Count the number of elements smaller than item, this  number is the
+  |   45|       |        // correct index of item.
+  |   46|      6|        int pos = cycle_start;
+  |   47|     21|        for (int i = cycle_start + 1; i < arr.size(); i++) {
+  |   48|     15|            if (arr[i] < item) {
+  |   49|      5|                pos++;
+  |   50|      5|            }
+  |   51|     15|        }
+  |   52|       |
+  |   53|       |        // item is already in correct position
+  |   54|      6|        if (pos == cycle_start) {
+  |   55|      5|            continue;
+  |   56|      5|        }
+  |   57|       |
+  |   58|       |        // duplicate  elements
+  |   59|      1|        while (item == arr[pos]) pos += 1;
+  |   60|      1|        if (pos == cycle_start) {
+  |   61|      0|            continue;
+  |   62|      1|        } else {
+  |   63|      1|            std::swap(item, arr[pos]);
+  |   64|      1|        }
+  |   65|       |        // Rest of the  elements
+  |   66|      4|        while (pos != cycle_start) {
+  |   67|      3|            pos = cycle_start;
+  |   68|       |            // Find position where we put the element
+  |   69|     18|            for (size_t i = cycle_start + 1; i < arr.size(); i++) {
+  |   70|     15|                if (arr[i] < item) {
+  |   71|      5|                    pos += 1;
+  |   72|      5|                }
+  |   73|     15|            }
+  |   74|       |            // duplicate  elements
+  |   75|      3|            while (item == arr[pos]) pos += 1;
+  |   76|      3|            if (item == arr[pos]) {
+  |   77|      0|                continue;
+  |   78|      3|            } else {
+  |   79|      3|                std::swap(item, arr[pos]);
+  |   80|      3|            }
+  |   81|      3|        }
+  |   82|      1|    }
+  |   83|      1|    return arr;
+  |   84|      1|}
+  ------------------
+   85|       |}  // namespace cycle_sort
+   86|       |}  // namespace sorting
+   87|       |
+   88|       |/**
+   89|       | * @brief Test implementations
+   90|       | * @returns void
+   91|       | */
+   92|      1|static void test() {
+   93|       |    // Test 1
+   94|       |    // [4, 3, 2, 1] return [1, 2, 3, 4]
+   95|      1|    std::vector<uint32_t> array1 = {4, 3, 2, 1};
+   96|      1|    std::cout << "Test 1... ";
+   97|      1|    std::vector<uint32_t> arr1 = sorting::cycle_sort::cycleSort(array1);
+   98|      1|    assert(std::is_sorted(std::begin(arr1), std::end(arr1)));
+   99|      0|    std::cout << "passed" << std::endl;
+  100|       |
+  101|       |    // [4.3, -6.5, -7.4, 0, 2.7, 1.8] return [-7.4, -6.5, 0, 1.8, 2.7, 4.3]
+  102|      1|    std::vector<double> array2 = {4.3, -6.5, -7.4, 0, 2.7, 1.8};
+  103|      1|    std::cout << "Test 2... ";
+  104|      1|    std::vector<double> arr2 = sorting::cycle_sort::cycleSort(array2);
+  105|      1|    assert(std::is_sorted(std::begin(arr2), std::end(arr2)));
+  106|      0|    std::cout << "passed" << std::endl;
+  107|       |
+  108|       |    // Test 3
+  109|       |    // [3, 3, 3, 3] return [3, 3, 3, 3]
+  110|      1|    std::vector<uint32_t> array3 = {3, 3, 3, 3};
+  111|      1|    std::cout << "Test 3... ";
+  112|      1|    std::vector<uint32_t> arr3 = sorting::cycle_sort::cycleSort(array3);
+  113|      1|    assert(std::is_sorted(std::begin(arr3), std::end(arr3)));
+  114|      0|    std::cout << "passed" << std::endl;
+  115|       |
+  116|       |    // [9, 4, 6, 8, 14, 3] return [9, 4, 6, 8, 14, 3]
+  117|      1|    std::vector<uint32_t> array4 = {3, 4, 6, 8, 9, 14};
+  118|      1|    std::cout << "Test 4... ";
+  119|      1|    std::vector<uint32_t> arr4 = sorting::cycle_sort::cycleSort(array4);
+  120|      1|    assert(std::is_sorted(std::begin(arr4), std::end(arr4)));
+  121|      0|    std::cout << "passed" << std::endl;
+  122|      1|}
+  123|       |
+  124|       |/**
+  125|       | * @brief Main function
+  126|       | * @returns 0 on exit
+  127|       | */
+  128|      1|int main() {
+  129|      1|    test();  // execute the test
+  130|      1|    return 0;
+  131|      1|}
+

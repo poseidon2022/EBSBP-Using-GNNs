@@ -1,0 +1,143 @@
+    1|       |/**
+    2|       | * @file
+    3|       | * @brief Given a linked list L[0,....,n] of n numbers, find the middle node.
+    4|       | *
+    5|       | * @details The technique utilized in this implementation is the ["Floyd's
+    6|       | * tortoise and
+    7|       | * hare"](https://en.wikipedia.org/wiki/Cycle_detection#Floyd's_tortoise_and_hare)
+    8|       | * approach. This technique uses two pointers that iterate through the list at
+    9|       | * different 'speeds' in order to solve problems. In this implementation, for
+   10|       | * every iteration the slow pointer advances one node while the fast pointer
+   11|       | * advances two nodes. The result of this is that since the fast pointer moves
+   12|       | * twice as fast as the slow pointer, when the fast pointer reaches the end of
+   13|       | * the list the slow pointer will be pointing to the middle node of the list.
+   14|       | *
+   15|       | * Here are some example lists you can use to see how the algorithm works
+   16|       | * A = [1,2,3,4,5]
+   17|       | * B = [1,2,3,4,5,6]
+   18|       | * print median(A) #should be 39
+   19|       | * print median(B) #should be 4
+   20|       | *
+   21|       | * @author [Benjamin Weiss](https://github.com/weiss-ben)
+   22|       | * @see median_search.cpp
+   23|       | */
+   24|       |
+   25|       |#include <cassert>   /// for assert
+   26|       |#include <iostream>  /// for IO operations
+   27|       |
+   28|       |/**
+   29|       | * Definition for singly-linked list.
+   30|       | */
+   31|       |struct ListNode {
+   32|       |    int val{0};               ///< the value stored in the node
+   33|       |    ListNode* next{nullptr};  ///< pointer to the next node
+   34|     11|    ListNode() = default;     ///< default constructor
+   35|       |    explicit ListNode(int x)
+   36|      0|        : val(x) {}  ///< constructor with value for node->val provided
+   37|       |    ListNode(int x, ListNode* next)
+   38|       |        : val(x),
+   39|      0|          next(next) {
+   40|      0|    }  ///< constructor with values provided for node->val and node->next
+   41|       |};
+   42|       |
+   43|       |/**
+   44|       | * @namespace search
+   45|       | * @brief Search algorithms
+   46|       | */
+   47|       |namespace search {
+   48|       |/**
+   49|       | * @namespace median_search
+   50|       | * @brief Functions for the Median Search algorithm implementation. Wkipedia
+   51|       | * link to algorithm: https://en.wikipedia.org/wiki/Median_search
+   52|       | */
+   53|       |namespace median_search2 {
+   54|       |/**
+   55|       | * This function searches for the median of a linked list.
+   56|       | * @param head The head of the linked list.
+   57|       | * @returns Median node of the linked list.
+   58|       | */
+   59|      2|ListNode* middleNode(ListNode* head) {
+   60|      2|    if (!head) {
+   61|      0|        return nullptr;
+   62|      0|    }
+   63|       |
+   64|       |    // Fast and slow pointers
+   65|      2|    ListNode* fastptr = nullptr;
+   66|      2|    ListNode* slowptr = fastptr = head;
+   67|       |
+   68|       |    // fast jumps 2 while slow jumps 1
+   69|      6|    while (fastptr->next && fastptr->next->next) {
+   70|      4|        slowptr = slowptr->next;
+   71|      4|        fastptr = fastptr->next->next;
+   72|      4|    }
+   73|       |
+   74|      2|    return (fastptr->next) ? slowptr->next : slowptr;
+   75|      2|}
+   76|       |
+   77|     13|void deleteAll(const ListNode* const head) {
+   78|     13|    if (head) {
+   79|     11|        deleteAll(head->next);
+   80|     11|        delete head;
+   81|     11|    }
+   82|     13|}
+   83|       |}  // namespace median_search2
+   84|       |}  // namespace search
+   85|       |
+   86|       |/**
+   87|       | * @brief Self-test implementations
+   88|       | * @returns void
+   89|       | */
+   90|      1|static void test() {
+   91|      1|    auto* head1 = new ListNode;
+   92|      1|    head1->val = 1;
+   93|       |
+   94|      1|    ListNode* temp = head1;
+   95|      5|    for (int i = 2; i < 6; ++i) {
+   96|       |        // Allocate next
+   97|      4|        auto* temp1 = new ListNode;
+   98|      4|        temp1->val = i;
+   99|       |
+  100|       |        // Advance
+  101|      4|        temp->next = temp1;
+  102|      4|        temp = temp1;
+  103|      4|    }
+  104|      1|    temp->next = nullptr;
+  105|       |
+  106|      1|    const ListNode* const median = search::median_search2::middleNode(head1);
+  107|      1|    assert(3 == median->val);  // 3 is the value of the median node.
+  108|      0|    search::median_search2::deleteAll(head1);
+  109|      1|    std::cout << "test case:1 passed\n";
+  110|       |
+  111|       |    // Test case # 2
+  112|      1|    auto* head2 = new ListNode;
+  113|      1|    head2->val = 1;
+  114|       |
+  115|      1|    ListNode* temp2 = head2;
+  116|      6|    for (int i = 2; i < 7; ++i) {
+  117|       |        // Allocate next
+  118|      5|        auto* temp3 = new ListNode;
+  119|      5|        temp3->val = i;
+  120|       |
+  121|       |        // Advance
+  122|      5|        temp2->next = temp3;
+  123|      5|        temp2 = temp3;
+  124|      5|    }
+  125|      1|    temp2->next = nullptr;
+  126|       |
+  127|      1|    const ListNode* const median1 = search::median_search2::middleNode(head2);
+  128|      1|    assert(4 == median1->val);  // 4 is the value of the median node.
+  129|      0|    search::median_search2::deleteAll(head2);
+  130|      1|    std::cout << "test case:2 passed\n";
+  131|       |
+  132|      1|    std::cout << "--All tests passed--\n";
+  133|      1|}
+  134|       |
+  135|       |/**
+  136|       | * @brief Main function
+  137|       | * @returns 0 on exit
+  138|       | */
+  139|      1|int main() {
+  140|      1|    test();  // run self-test implementations
+  141|      1|    return 0;
+  142|      1|}
+

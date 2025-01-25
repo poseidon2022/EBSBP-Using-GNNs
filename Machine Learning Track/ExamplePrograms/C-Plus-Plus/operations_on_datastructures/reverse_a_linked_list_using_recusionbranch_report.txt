@@ -1,0 +1,64 @@
+    1|       |#include <iostream>
+    2|       |using namespace std;
+    3|       |
+    4|       |struct node {
+    5|       |    int val;
+    6|       |    node *next;
+    7|       |};
+    8|       |
+    9|       |node *start;
+   10|       |
+   11|      6|void insert(int x) {
+   12|      6|    node *t = start;
+   13|      6|    if (start != NULL) {
+   14|     15|        while (t->next != NULL) {
+   15|     10|            t = t->next;
+   16|     10|        }
+   17|      5|        node *n = new node;
+   18|      5|        t->next = n;
+   19|      5|        n->val = x;
+   20|      5|        n->next = NULL;
+   21|      5|    } else {
+   22|      1|        node *n = new node;
+   23|      1|        n->val = x;
+   24|      1|        n->next = NULL;
+   25|      1|        start = n;
+   26|      1|    }
+   27|      6|}
+   28|       |
+   29|      5|void reverse(node *p, node *q) {
+   30|      5|    if (q->next == NULL) {
+   31|      1|        q->next = p;
+   32|      1|        p->next = NULL;
+   33|      1|        start = q;
+   34|      1|        return;
+   35|      4|    } else {
+   36|      4|        reverse(q, q->next);
+   37|      4|        q->next = p;
+   38|      4|        p->next = NULL;
+   39|      4|    }
+   40|      5|}
+   41|       |
+   42|      1|void show() {
+   43|      1|    node *t = start;
+   44|      7|    while (t != NULL) {
+   45|      6|        cout << t->val << "\t";
+   46|      6|        t = t->next;
+   47|      6|    }
+   48|      1|}
+   49|       |
+   50|      1|int main() {
+   51|      1|    insert(1);
+   52|      1|    insert(2);
+   53|      1|    insert(3);
+   54|      1|    insert(4);
+   55|      1|    insert(5);
+   56|      1|    insert(6);
+   57|       |
+   58|      1|    reverse(start, start->next);
+   59|       |
+   60|      1|    show();
+   61|       |
+   62|      1|    return 0;
+   63|      1|}
+

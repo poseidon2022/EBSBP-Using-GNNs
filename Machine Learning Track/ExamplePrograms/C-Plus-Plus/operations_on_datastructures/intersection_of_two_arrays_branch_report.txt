@@ -1,0 +1,204 @@
+    1|       |/**
+    2|       | * @file
+    3|       | * @brief Implementation for the [Intersection of two sorted
+    4|       | * Arrays](https://en.wikipedia.org/wiki/Intersection_(set_theory))
+    5|       | * algorithm.
+    6|       | * @details The intersection of two arrays is the collection of all the elements
+    7|       | * that are common in both the first and second arrays. This implementation uses
+    8|       | * ordered arrays, and an algorithm to correctly order them and return the
+    9|       | * result as a new array (vector).
+   10|       | * @see union_of_two_arrays.cpp
+   11|       | * @author [Alvin](https://github.com/polarvoid)
+   12|       | */
+   13|       |
+   14|       |#include <algorithm>  /// for std::sort
+   15|       |#include <cassert>    /// for assert
+   16|       |#include <iostream>   /// for IO operations
+   17|       |#include <vector>     /// for std::vector
+   18|       |
+   19|       |/**
+   20|       | * @namespace operations_on_datastructures
+   21|       | * @brief Operations on Data Structures
+   22|       | */
+   23|       |namespace operations_on_datastructures {
+   24|       |
+   25|       |/**
+   26|       | * @brief Prints the values of a vector sequentially, ending with a newline
+   27|       | * character.
+   28|       | * @param array Reference to the array to be printed
+   29|       | * @returns void
+   30|       | */
+   31|      6|void print(const std::vector<int32_t> &array) {
+   32|      8|    for (int32_t i : array) {
+   33|      8|        std::cout << i << " ";  /// Print each value in the array
+   34|      8|    }
+   35|      6|    std::cout << "\n";  /// Print newline
+   36|      6|}
+   37|       |
+   38|       |/**
+   39|       | * @brief Gets the intersection of two sorted arrays, and returns them in a
+   40|       | * vector.
+   41|       | * @details An algorithm is used that compares the elements of the two vectors,
+   42|       | * incrementing the index of the smaller of the two. If the elements are the
+   43|       | * same, the element is appended to the result array to be returned.
+   44|       | * @param first A std::vector of sorted integer values
+   45|       | * @param second A std::vector of sorted integer values
+   46|       | * @returns A std::vector of the intersection of the two arrays, in ascending
+   47|       | * order
+   48|       | */
+   49|       |std::vector<int32_t> get_intersection(const std::vector<int32_t> &first,
+   50|      6|                                      const std::vector<int32_t> &second) {
+   51|      6|    std::vector<int32_t> res;         ///< Vector to hold the intersection
+   52|      6|    size_t f_index = 0;               ///< Index for the first array
+   53|      6|    size_t s_index = 0;               ///< Index for the second array
+   54|      6|    size_t f_length = first.size();   ///< Length of first array
+   55|      6|    size_t s_length = second.size();  ///< Length of second array
+   56|       |
+   57|     30|    while (f_index < f_length && s_index < s_length) {
+   58|     24|        if (first[f_index] < second[s_index]) {
+   59|     10|            f_index++;  ///< Increment index of second array
+   60|     14|        } else if (first[f_index] > second[s_index]) {
+   61|      6|            s_index++;  ///< Increment index of second array
+   62|      8|        } else {
+   63|      8|            if ((res.size() == 0) || (first[f_index] != res.back())) {
+   64|      8|                res.push_back(
+   65|      8|                    first[f_index]);  ///< Add the element if it is unique
+   66|      8|            }
+   67|      8|            f_index++;  ///< Increment index of first array
+   68|      8|            s_index++;  ///< Increment index of second array too
+   69|      8|        }
+   70|     24|    }
+   71|      6|    return res;
+   72|      6|}
+   73|       |
+   74|       |}  // namespace operations_on_datastructures
+   75|       |
+   76|       |/**
+   77|       | * @namespace tests
+   78|       | * @brief Testcases to check intersection of Two Arrays.
+   79|       | */
+   80|       |namespace tests {
+   81|       |using operations_on_datastructures::get_intersection;
+   82|       |using operations_on_datastructures::print;
+   83|       |/**
+   84|       | * @brief A Test to check an edge case (two empty arrays)
+   85|       | * @returns void
+   86|       | */
+   87|      1|void test1() {
+   88|      1|    std::cout << "TEST CASE 1\n";
+   89|      1|    std::cout << "Intialized a = {} b = {}\n";
+   90|      1|    std::cout << "Expected result: {}\n";
+   91|      1|    std::vector<int32_t> a = {};
+   92|      1|    std::vector<int32_t> b = {};
+   93|      1|    std::vector<int32_t> result = get_intersection(a, b);
+   94|      1|    assert(result == a);  ///< Check if result is empty
+   95|      0|    print(result);        ///< Should only print newline
+   96|      1|    std::cout << "TEST PASSED!\n\n";
+   97|      1|}
+   98|       |/**
+   99|       | * @brief A Test to check an edge case (one empty array)
+  100|       | * @returns void
+  101|       | */
+  102|      1|void test2() {
+  103|      1|    std::cout << "TEST CASE 2\n";
+  104|      1|    std::cout << "Intialized a = {} b = {2, 3}\n";
+  105|      1|    std::cout << "Expected result: {}\n";
+  106|      1|    std::vector<int32_t> a = {};
+  107|      1|    std::vector<int32_t> b = {2, 3};
+  108|      1|    std::vector<int32_t> result = get_intersection(a, b);
+  109|      1|    assert(result == a);  ///< Check if result is equal to a
+  110|      0|    print(result);        ///< Should only print newline
+  111|      1|    std::cout << "TEST PASSED!\n\n";
+  112|      1|}
+  113|       |/**
+  114|       | * @brief A Test to check correct functionality with a simple test case
+  115|       | * @returns void
+  116|       | */
+  117|      1|void test3() {
+  118|      1|    std::cout << "TEST CASE 3\n";
+  119|      1|    std::cout << "Intialized a = {4, 6} b = {3, 6}\n";
+  120|      1|    std::cout << "Expected result: {6}\n";
+  121|      1|    std::vector<int32_t> a = {4, 6};
+  122|      1|    std::vector<int32_t> b = {3, 6};
+  123|      1|    std::vector<int32_t> result = get_intersection(a, b);
+  124|      1|    std::vector<int32_t> expected = {6};
+  125|      1|    assert(result == expected);  ///< Check if result is correct
+  126|      0|    print(result);               ///< Should print 6
+  127|      1|    std::cout << "TEST PASSED!\n\n";
+  128|      1|}
+  129|       |/**
+  130|       | * @brief A Test to check correct functionality with duplicate values
+  131|       | * @returns void
+  132|       | */
+  133|      1|void test4() {
+  134|      1|    std::cout << "TEST CASE 4\n";
+  135|      1|    std::cout << "Intialized a = {4, 6, 6, 6} b = {2, 4, 4, 6}\n";
+  136|      1|    std::cout << "Expected result: {4, 6}\n";
+  137|      1|    std::vector<int32_t> a = {4, 6, 6, 6};
+  138|      1|    std::vector<int32_t> b = {2, 4, 4, 6};
+  139|      1|    std::vector<int32_t> result = get_intersection(a, b);
+  140|      1|    std::vector<int32_t> expected = {4, 6};
+  141|      1|    assert(result == expected);  ///< Check if result is correct
+  142|      0|    print(result);               ///< Should print 4 6
+  143|      1|    std::cout << "TEST PASSED!\n\n";
+  144|      1|}
+  145|       |/**
+  146|       | * @brief A Test to check correct functionality with a harder test case
+  147|       | * @returns void
+  148|       | */
+  149|      1|void test5() {
+  150|      1|    std::cout << "TEST CASE 5\n";
+  151|      1|    std::cout << "Intialized a = {1, 2, 3, 4, 6, 7, 9} b = {2, 3, 4, 5}\n";
+  152|      1|    std::cout << "Expected result: {2, 3, 4}\n";
+  153|      1|    std::vector<int32_t> a = {1, 2, 3, 4, 6, 7, 9};
+  154|      1|    std::vector<int32_t> b = {2, 3, 4, 5};
+  155|      1|    std::vector<int32_t> result = get_intersection(a, b);
+  156|      1|    std::vector<int32_t> expected = {2, 3, 4};
+  157|      1|    assert(result == expected);  ///< Check if result is correct
+  158|      0|    print(result);               ///< Should print 2 3 4
+  159|      1|    std::cout << "TEST PASSED!\n\n";
+  160|      1|}
+  161|       |/**
+  162|       | * @brief A Test to check correct functionality with an array sorted using
+  163|       | * std::sort
+  164|       | * @returns void
+  165|       | */
+  166|      1|void test6() {
+  167|      1|    std::cout << "TEST CASE 6\n";
+  168|      1|    std::cout << "Intialized a = {1, 3, 3, 2, 5, 9, 4, 7, 3, 2} ";
+  169|      1|    std::cout << "b = {11, 3, 7, 8, 6}\n";
+  170|      1|    std::cout << "Expected result: {3, 7}\n";
+  171|      1|    std::vector<int32_t> a = {1, 3, 3, 2, 5, 9, 4, 7, 3, 2};
+  172|      1|    std::vector<int32_t> b = {11, 3, 7, 8, 6};
+  173|      1|    std::sort(a.begin(), a.end());  ///< Sort vector a
+  174|      1|    std::sort(b.begin(), b.end());  ///< Sort vector b
+  175|      1|    std::vector<int32_t> result = get_intersection(a, b);
+  176|      1|    std::vector<int32_t> expected = {3, 7};
+  177|      1|    assert(result == expected);  ///< Check if result is correct
+  178|      0|    print(result);               ///< Should print 3 7
+  179|      1|    std::cout << "TEST PASSED!\n\n";
+  180|      1|}
+  181|       |}  // namespace tests
+  182|       |
+  183|       |/**
+  184|       | * @brief Function to test the correctness of get_intersection() function
+  185|       | * @returns void
+  186|       | */
+  187|      1|static void test() {
+  188|      1|    tests::test1();
+  189|      1|    tests::test2();
+  190|      1|    tests::test3();
+  191|      1|    tests::test4();
+  192|      1|    tests::test5();
+  193|      1|    tests::test6();
+  194|      1|}
+  195|       |
+  196|       |/**
+  197|       | * @brief main function
+  198|       | * @returns 0 on exit
+  199|       | */
+  200|      1|int main() {
+  201|      1|    test();  // run self-test implementations
+  202|      1|    return 0;
+  203|      1|}
+

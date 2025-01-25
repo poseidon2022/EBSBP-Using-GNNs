@@ -1,0 +1,63 @@
+    1|       |#include <iostream>
+    2|       |using namespace std;
+    3|       |
+    4|      1|int Max(int Arr[], int N) {
+    5|      1|    int max = Arr[0];
+    6|     20|    for (int i = 1; i < N; i++)
+    7|     19|        if (Arr[i] > max)
+    8|      6|            max = Arr[i];
+    9|      1|    return max;
+   10|      1|}
+   11|       |
+   12|      1|int Min(int Arr[], int N) {
+   13|      1|    int min = Arr[0];
+   14|     20|    for (int i = 1; i < N; i++)
+   15|     19|        if (Arr[i] < min)
+   16|      3|            min = Arr[i];
+   17|      1|    return min;
+   18|      1|}
+   19|       |
+   20|      2|void Print(int Arr[], int N) {
+   21|     42|    for (int i = 0; i < N; i++) cout << Arr[i] << ", ";
+   22|      2|}
+   23|       |
+   24|      1|int *Counting_Sort(int Arr[], int N) {
+   25|      1|    int max = Max(Arr, N);
+   26|      1|    int min = Min(Arr, N);
+   27|      1|    int *Sorted_Arr = new int[N];
+   28|       |
+   29|      1|    int *Count = new int[max - min + 1];
+   30|     84|    for (int i = 0; i < max - min + 1; ++i) {
+   31|     83|        Count[i] = 0;
+   32|     83|    }
+   33|       |
+   34|     21|    for (int i = 0; i < N; i++) Count[Arr[i] - min]++;
+   35|       |
+   36|     83|    for (int i = 1; i < (max - min + 1); i++) Count[i] += Count[i - 1];
+   37|       |
+   38|     21|    for (int i = N - 1; i >= 0; i--) {
+   39|     20|        Sorted_Arr[Count[Arr[i] - min] - 1] = Arr[i];
+   40|     20|        Count[Arr[i] - min]--;
+   41|     20|    }
+   42|       |
+   43|      1|    delete[] Count;
+   44|      1|    return Sorted_Arr;
+   45|      1|}
+   46|       |
+   47|      1|int main() {
+   48|      1|    int Arr[] = {47, 65, 20, 66, 25, 53, 64, 69, 72, 22,
+   49|      1|                 74, 25, 53, 15, 42, 36, 4,  69, 86, 19},
+   50|      1|        N = 20;
+   51|      1|    int *Sorted_Arr;
+   52|       |
+   53|      1|    cout << "\n\tOrignal Array = ";
+   54|      1|    Print(Arr, N);
+   55|      1|    Sorted_Arr = Counting_Sort(Arr, N);
+   56|      1|    cout << "\n\t Sorted Array = ";
+   57|      1|    Print(Sorted_Arr, N);
+   58|      1|    delete[] Sorted_Arr;
+   59|      1|    cout << endl;
+   60|       |
+   61|      1|    return 0;
+   62|      1|}
+

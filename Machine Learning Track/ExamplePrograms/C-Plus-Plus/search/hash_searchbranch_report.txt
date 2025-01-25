@@ -1,0 +1,140 @@
+    1|       |/**
+    2|       | * \file
+    3|       | * \brief Hash Search Algorithm - Best Time Complexity Ω(1)
+    4|       | *
+    5|       | * \copyright 2020 Arctic2333
+    6|       | *
+    7|       | * In this algorithm, we use the method of division and reservation remainder to
+    8|       | * construct the hash function, and use the method of chain address to solve the
+    9|       | * conflict, that is, we link a chain list after the data, and store all the
+   10|       | * records whose keywords are synonyms in the same linear chain list.
+   11|       | *
+   12|       | * @warning This program is only for educational purposes. It has serious flaws
+   13|       | * in implementation with regards to memory management resulting in large
+   14|       | * amounts of memory leaks.
+   15|       | * @todo fix the program for memory leaks and better structure in C++ and not C
+   16|       | * fashion
+   17|       | */
+   18|       |#include <cstdlib>
+   19|       |#include <iostream>
+   20|       |
+   21|      7|#define MAX 6      ///< Determines how much data
+   22|     13|#define HASHMAX 5  ///< Determines the length of the hash table
+   23|       |
+   24|       |int data[MAX] = {1, 10, 15, 5, 8, 7};  //!< test data
+   25|       |
+   26|       |/**
+   27|       | * a one-way linked list
+   28|       | */
+   29|       |typedef struct list {
+   30|       |    int key;            //!< key value for node
+   31|       |    struct list* next;  //!< pointer to next link in the chain
+   32|       |} node,                 /**< define node as one item list */
+   33|       |    *link;              ///< pointer to nodes
+   34|       |
+   35|       |node hashtab[HASHMAX];  ///< array of nodes
+   36|       |
+   37|       |// int counter = 1;
+   38|       |
+   39|       |/**
+   40|       | * Mode of hash detection :
+   41|       | * Division method
+   42|       | * \param [in] key to hash
+   43|       | * \returns hash value for `key`
+   44|       | */
+   45|      7|int h(int key) { return key % HASHMAX; }
+   46|       |
+   47|       |/**
+   48|       | * The same after the remainder will be added after the same hash header
+   49|       | * To avoid conflict, zipper method is used
+   50|       | * Insert elements into the linked list in the header
+   51|       | * \param [in] key key to add to list
+   52|       | * \warning dynamic memory allocated to `n` never gets freed.
+   53|       | * \todo fix memory leak
+   54|       | */
+   55|      6|void create_list(int key) {  // Construct hash table
+   56|      6|    link p, n;
+   57|      6|    int index;
+   58|      6|    n = (link)malloc(sizeof(node));
+   59|      6|    n->key = key;
+   60|      6|    n->next = NULL;
+   61|      6|    index = h(key);
+   62|      6|    p = hashtab[index].next;
+   63|      6|    if (p != NULL) {
+   64|      2|        n->next = p;
+   65|      2|        hashtab[index].next = n;
+   66|      4|    } else {
+   67|      4|        hashtab[index].next = n;
+   68|      4|    }
+   69|      6|}
+   70|       |
+   71|       |/**
+   72|       | * Input the key to be searched, and get the hash header position through the H
+   73|       | * (int key) function, then one-dimensional linear search. If found @return
+   74|       | * element depth and number of searches If not found @return -1
+   75|       | */
+   76|      1|int hash_search(int key, int* counter) {  // Hash lookup function
+   77|      1|    link pointer;
+   78|      1|    int index;
+   79|       |
+   80|      1|    *counter = 0;
+   81|      1|    index = h(key);
+   82|      1|    pointer = hashtab[index].next;
+   83|       |
+   84|      1|    std::cout << "data[" << index << "]:";
+   85|       |
+   86|      3|    while (pointer != NULL) {
+   87|      3|        counter[0]++;
+   88|      3|        std::cout << "data[" << pointer->key << "]:";
+   89|      3|        if (pointer->key == key)
+   90|      1|            return 1;
+   91|      2|        else
+   92|      2|            pointer = pointer->next;
+   93|      3|    }
+   94|       |
+   95|      0|    return 0;
+   96|      1|}
+   97|       |
+   98|       |/** main function */
+   99|      1|int main() {
+  100|      1|    link p;
+  101|      1|    int key, index, i, counter;  // Key is the value to be found
+  102|      1|    index = 0;
+  103|       |
+  104|       |    // You can write the input mode here
+  105|      7|    while (index < MAX) {  // Construct hash table
+  106|      6|        create_list(data[index]);
+  107|      6|        index++;
+  108|      6|    }
+  109|       |
+  110|      6|    for (i = 0; i < HASHMAX; i++) {  // Output hash table
+  111|      5|        std::cout << "hashtab [" << i << "]\n";
+  112|       |
+  113|      5|        p = hashtab[i].next;
+  114|       |
+  115|     11|        while (p != NULL) {
+  116|      6|            std::cout << "please int key:";
+  117|      6|            if (p->key > 0)
+  118|      6|                std::cout << "[" << p->key << "]";
+  119|      6|            p = p->next;
+  120|      6|        }
+  121|      5|        std::cout << std::endl;
+  122|      5|    }
+  123|       |
+  124|      2|    while (key != -1) {
+  125|       |        // You can write the input mode here
+  126|       |        // test key = 10
+  127|      1|        key = 10;
+  128|      1|        if (hash_search(key, &counter))
+  129|      1|            std::cout << "search time = " << counter << std::endl;
+  130|      0|        else
+  131|      0|            std::cout << "no found!\n";
+  132|      1|        key = -1;  // Exit test
+  133|       |        /* The test sample is returned as:
+  134|       |         * data[0]:data[5]:data[15]:data[10]:search time = 3 The search is
+  135|       |         * successful. There are 10 in this set of data */
+  136|      1|    }
+  137|       |
+  138|      1|    return 0;
+  139|      1|}
+

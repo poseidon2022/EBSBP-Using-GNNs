@@ -1,0 +1,259 @@
+    1|       |/**
+    2|       | * @file
+    3|       | * @brief A balanced binary search tree (BST) on the basis of binary search tree
+    4|       | * and heap: the [Treap](https://en.wikipedia.org/wiki/Treap) algorithm
+    5|       | * implementation
+    6|       | *
+    7|       | * @details
+    8|       | * Implementation of the treap data structre
+    9|       | *
+   10|       | * Support operations including insert, erase, and query (the rank of specified
+   11|       | * element or the element ranked x) as the same as BST
+   12|       | *
+   13|       | * But these operations take O(log N) time, since treap keeps property of heap
+   14|       | * using rotate operation, and the desired depth of the tree is O(log N).
+   15|       | * There's very little chance that it will degenerate into a chain like BST
+   16|       | *
+   17|       | * @author [Kairao ZHENG](https://github.com/fgmn)
+   18|       | */
+   19|       |
+   20|       |#include <array>     /// For array
+   21|       |#include <cassert>   /// For assert
+   22|       |#include <cstdint>
+   23|       |#include <iostream>  /// For IO operations
+   24|       |
+   25|       |/**
+   26|       | * @namespace
+   27|       | * @brief Data Structures
+   28|       | */
+   29|       |namespace data_structures {
+   30|       |/**
+   31|       | * @namespace
+   32|       | * @brief Functions for the [Treap](https://en.wikipedia.org/wiki/Treap)
+   33|       | * algorithm implementation
+   34|       | */
+   35|       |namespace treap {
+   36|       |const int maxNode = 1e5 + 5;  ///< maximum number of nodes
+   37|       |/**
+   38|       | * @brief Struct representation of the treap
+   39|       | */
+   40|       |struct Treap {
+   41|       |    int root = 0;      ///< root of the treap
+   42|       |    int treapCnt = 0;  ///< Total number of current nodes in the treap
+   43|       |    std::array<int, maxNode> key = {};       ///< Node identifier
+   44|       |    std::array<int, maxNode> priority = {};  ///< Random priority
+   45|       |    std::array<std::array<int, 2>, maxNode> childs = {
+   46|       |        {}};  ///< [i][0] represents the
+   47|       |              ///< left child of node i, and
+   48|       |              ///[i][1] represents the right
+   49|       |    std::array<int, maxNode> cnt =
+   50|       |        {};  ///< Maintains the subtree size for ranking query
+   51|       |    std::array<int, maxNode> size = {};  ///< The number of copies per node
+   52|       |    /**
+   53|       |     * @brief Initialization
+   54|       |     */
+   55|      1|    Treap() : treapCnt(1) {
+   56|      1|        priority[0] = INT32_MAX;
+   57|      1|        size[0] = 0;
+   58|      1|    }
+   59|       |    /**
+   60|       |     * @brief Update the subtree size of the node
+   61|       |     * @param x The node to update
+   62|       |     */
+   63|     39|    void update(int x) {
+   64|     39|        size[x] = size[childs[x][0]] + cnt[x] + size[childs[x][1]];
+   65|     39|    }
+   66|       |    /**
+   67|       |     * @brief Rotate without breaking the property of BST
+   68|       |     * @param x The node to rotate
+   69|       |     * @param t 0 represent left hand, while 1 right hand
+   70|       |     */
+   71|      6|    void rotate(int &x, int t) {
+   72|      6|        int y = childs[x][t];
+   73|      6|        childs[x][t] = childs[y][1 - t];
+   74|      6|        childs[y][1 - t] = x;
+   75|       |        // The rotation will only change itself and its son nodes
+   76|      6|        update(x);
+   77|      6|        update(y);
+   78|      6|        x = y;
+   79|      6|    }
+   80|       |    /**
+   81|       |     * @brief Insert a value into the specified subtree (internal method)
+   82|       |     * @param x Insert into the subtree of node x (Usually x=root)
+   83|       |     * @param k Key to insert
+   84|       |     */
+   85|     22|    void _insert(int &x, int k) {
+   86|     22|        if (x) {
+   87|     14|            if (key[x] == k) {
+   88|      0|                cnt[x]++;
+   89|      0|            }  // If the node already exists, the number of copies is ++
+   90|     14|            else {
+   91|     14|                int t = (key[x] < k);  // Insert according to BST properties
+   92|     14|                _insert(childs[x][t], k);
+   93|       |                // After insertion, the heap properties are retained by rotation
+   94|     14|                if (priority[childs[x][t]] < priority[x]) {
+   95|      5|                    rotate(x, t);
+   96|      5|                }
+   97|     14|            }
+   98|     14|        } else {  // Create a new node
+   99|      8|            x = treapCnt++;
+  100|      8|            key[x] = k;
+  101|      8|            cnt[x] = 1;
+  102|      8|            priority[x] = rand();  // Random priority
+  103|      8|            childs[x][0] = childs[x][1] = 0;
+  104|      8|        }
+  105|     22|        update(x);
+  106|     22|    }
+  107|       |    /**
+  108|       |     * @brief Erase a value from the specified subtree (internal method)
+  109|       |     * @param x Erase from the subtree of node x (Usually x=root)
+  110|       |     * @param k Key to erase
+  111|       |     */
+  112|      6|    void _erase(int &x, int k) {
+  113|      6|        if (key[x] == k) {
+  114|      2|            if (cnt[x] > 1) {
+  115|      0|                cnt[x]--;
+  116|      0|            }  // If the node has more than one copy, the number of copies --
+  117|      2|            else {
+  118|      2|                if (childs[x][0] == 0 && childs[x][1] == 0) {
+  119|      1|                    x = 0;
+  120|      1|                    return;
+  121|      1|                }  // If there are no children, delete and return
+  122|       |                // Otherwise, we need to rotate the sons and delete them
+  123|       |                // recursively
+  124|      1|                int t = (priority[childs[x][0]] > priority[childs[x][1]]);
+  125|      1|                rotate(x, t);
+  126|      1|                _erase(x, k);
+  127|      1|            }
+  128|      4|        } else {  // Find the target value based on BST properties
+  129|      4|            _erase(childs[x][key[x] < k], k);
+  130|      4|        }
+  131|      5|        update(x);
+  132|      5|    }
+  133|       |    /**
+  134|       |     * @brief Find the KTH largest value (internal method)
+  135|       |     * @param x Query the subtree of node x (Usually x=root)
+  136|       |     * @param k The queried rank
+  137|       |     * @return The element ranked number k
+  138|       |     */
+  139|      5|    int _get_k_th(int &x, int k) {
+  140|      5|        if (k <= size[childs[x][0]]) {
+  141|      1|            return _get_k_th(childs[x][0], k);
+  142|      1|        }
+  143|      4|        k -= size[childs[x][0]] + cnt[x];
+  144|      4|        if (k <= 0) {
+  145|      2|            return key[x];
+  146|      2|        }
+  147|      2|        return _get_k_th(childs[x][1], k);
+  148|      4|    }
+  149|       |    /**
+  150|       |     * @brief Query the rank of specified element (internal method)
+  151|       |     * @param x Query the subtree of node x (Usually x=root)
+  152|       |     * @param k The queried element
+  153|       |     * @return The rank of element k
+  154|       |     */
+  155|      7|    int _get_rank(int x, int k) {
+  156|      7|        if (!x) {
+  157|      0|            return 0;
+  158|      0|        }
+  159|      7|        if (k == key[x]) {
+  160|      2|            return size[childs[x][0]] + 1;
+  161|      5|        } else if (k < key[x]) {
+  162|      1|            return _get_rank(childs[x][0], k);
+  163|      4|        } else {
+  164|      4|            return size[childs[x][0]] + cnt[x] + _get_rank(childs[x][1], k);
+  165|      4|        }
+  166|      7|    }
+  167|       |    /**
+  168|       |     * @brief Get the predecessor node of element k
+  169|       |     * @param k The queried element
+  170|       |     * @return The predecessor
+  171|       |     */
+  172|      2|    int get_predecessor(int k) {
+  173|      2|        int x = root, pre = -1;
+  174|      7|        while (x) {
+  175|      5|            if (key[x] < k) {
+  176|      3|                pre = key[x], x = childs[x][1];
+  177|      3|            } else {
+  178|      2|                x = childs[x][0];
+  179|      2|            }
+  180|      5|        }
+  181|      2|        return pre;
+  182|      2|    }
+  183|       |    /**
+  184|       |     * @brief Get the successor node of element k
+  185|       |     * @param k The queried element
+  186|       |     * @return The successor
+  187|       |     */
+  188|      1|    int get_next(int k) {
+  189|      1|        int x = root, next = -1;
+  190|      6|        while (x) {
+  191|      5|            if (key[x] > k) {
+  192|      2|                next = key[x], x = childs[x][0];
+  193|      3|            } else {
+  194|      3|                x = childs[x][1];
+  195|      3|            }
+  196|      5|        }
+  197|      1|        return next;
+  198|      1|    }
+  199|       |    /**
+  200|       |     * @brief Insert element (External method)
+  201|       |     * @param k Key to insert
+  202|       |     */
+  203|      8|    void insert(int k) { _insert(root, k); }
+  204|       |    /**
+  205|       |     * @brief Erase element (External method)
+  206|       |     * @param k Key to erase
+  207|       |     */
+  208|      1|    void erase(int k) { _erase(root, k); }
+  209|       |    /**
+  210|       |     * @brief Get the KTH largest value (External method)
+  211|       |     * @param k The queried rank
+  212|       |     * @return The element ranked number x
+  213|       |     */
+  214|      2|    int get_k_th(int k) { return _get_k_th(root, k); }
+  215|       |    /**
+  216|       |     * @brief Get the rank of specified element (External method)
+  217|       |     * @param k The queried element
+  218|       |     * @return The rank of element k
+  219|       |     */
+  220|      2|    int get_rank(int k) { return _get_rank(root, k); }
+  221|       |};
+  222|       |}  // namespace treap
+  223|       |}  // namespace data_structures
+  224|       |
+  225|       |/**
+  226|       | * @brief Self-test implementations
+  227|       | * @returns void
+  228|       | */
+  229|      1|static void test() {
+  230|      1|    data_structures::treap::Treap mTreap;  ///< Treap object instance
+  231|       |
+  232|      1|    mTreap.insert(1);
+  233|      1|    mTreap.insert(2);
+  234|      1|    mTreap.insert(3);
+  235|      1|    assert(mTreap.get_k_th(2) == 2);
+  236|      0|    mTreap.insert(4);
+  237|      1|    mTreap.insert(5);
+  238|      1|    mTreap.insert(6);
+  239|      1|    assert(mTreap.get_next(4) == 5);
+  240|      0|    mTreap.insert(7);
+  241|      1|    assert(mTreap.get_predecessor(7) == 6);
+  242|      0|    mTreap.erase(4);
+  243|      1|    assert(mTreap.get_k_th(4) == 5);
+  244|      0|    assert(mTreap.get_rank(5) == 4);
+  245|      0|    mTreap.insert(10);
+  246|      1|    assert(mTreap.get_rank(10) == 7);
+  247|      0|    assert(mTreap.get_predecessor(10) == 7);
+  248|       |
+  249|      0|    std::cout << "All tests have successfully passed!\n";
+  250|      1|}
+  251|       |/**
+  252|       | * @brief Main function
+  253|       | * @returns 0 on exit
+  254|       | */
+  255|      1|int main() {
+  256|      1|    test();  // run self-test implementations
+  257|      1|    return 0;
+  258|      1|}
+

@@ -1,0 +1,104 @@
+    1|       |/**
+    2|       | * @author [aminos 🇮🇳](https://github.com/amino19)
+    3|       | * @file
+    4|       | *
+    5|       | * @brief [Program to count digits
+    6|       | * in an
+    7|       | * integer](https://www.geeksforgeeks.org/program-count-digits-integer-3-different-methods)
+    8|       | * @details It is a very basic math of finding number of digits in a given
+    9|       | * number i.e, we can use it by inputting values whether it can be a
+   10|       | * positive/negative value, let's say: an integer. There is also a second
+   11|       | * method: by using "K = floor(log10(N) + 1)", but it's only applicable for
+   12|       | * numbers (not integers). The code for that is also included
+   13|       | * (finding_number_of_digits_in_a_number_using_log). For more details, refer to
+   14|       | * the
+   15|       | * [Algorithms-Explanation](https://github.com/TheAlgorithms/Algorithms-Explanation/blob/master/en/Basic%20Math/Finding
+   16|       | * the number of digits in a number.md) repository.
+   17|       | */
+   18|       |
+   19|       |#include <cassert>   /// for assert
+   20|       |#include <cmath>     /// for log calculation
+   21|       |#include <cstdint>
+   22|       |#include <iostream>  /// for IO operations
+   23|       |
+   24|       |/**
+   25|       | * @brief The main function that checks
+   26|       | * the number of digits in a number.
+   27|       | * TC : O(number of digits)
+   28|       | * @param n the number to check its digits
+   29|       | * @returns the digits count
+   30|       | */
+   31|      7|uint64_t finding_number_of_digits_in_a_number(uint64_t n) {
+   32|      7|    uint64_t count = 0;  ///< the variable used for the digits count
+   33|       |
+   34|       |    // iterate until `n` becomes 0
+   35|       |    // remove last digit from `n` in each iteration
+   36|       |    // increase `count` by 1 in each iteration
+   37|     28|    while (n != 0) {
+   38|       |        // we can also use `n = n / 10`
+   39|     21|        n /= 10;
+   40|       |        // each time the loop is running, `count` will be incremented by 1.
+   41|     21|        ++count;
+   42|     21|    }
+   43|       |
+   44|      7|    return count;
+   45|      7|}
+   46|       |
+   47|       |/**
+   48|       | * @brief This function finds the number of digits
+   49|       | * in constant time using logarithmic function
+   50|       | * TC: O(1)
+   51|       | * @param n the number to check its digits
+   52|       | * @returns the digits count
+   53|       | */
+   54|      7|double finding_number_of_digits_in_a_number_using_log(double n) {
+   55|       |    // log(0) is undefined
+   56|      7|    if (n == 0) {
+   57|      1|        return 0;
+   58|      1|    }
+   59|       |
+   60|       |    // to handle the negative numbers
+   61|      6|    if (n < 0) {
+   62|      0|        n = -n;
+   63|      0|    }
+   64|       |
+   65|      6|    double count = floor(log10(n) + 1);
+   66|       |
+   67|      6|    return count;
+   68|      7|}
+   69|       |
+   70|       |/**
+   71|       | * @brief Self-test implementations
+   72|       | * @returns void
+   73|       | */
+   74|      1|static void first_test() {
+   75|      1|    assert(finding_number_of_digits_in_a_number(5492) == 4);
+   76|      0|    assert(finding_number_of_digits_in_a_number(-0) == 0);
+   77|      0|    assert(finding_number_of_digits_in_a_number(10000) == 5);
+   78|      0|    assert(finding_number_of_digits_in_a_number(9) == 1);
+   79|      0|    assert(finding_number_of_digits_in_a_number(100000) == 6);
+   80|      0|    assert(finding_number_of_digits_in_a_number(13) == 2);
+   81|      0|    assert(finding_number_of_digits_in_a_number(564) == 3);
+   82|      1|}
+   83|       |
+   84|      1|static void second_test() {
+   85|      1|    assert(finding_number_of_digits_in_a_number_using_log(5492) == 4);
+   86|      0|    assert(finding_number_of_digits_in_a_number_using_log(-0) == 0);
+   87|      0|    assert(finding_number_of_digits_in_a_number_using_log(10000) == 5);
+   88|      0|    assert(finding_number_of_digits_in_a_number_using_log(9) == 1);
+   89|      0|    assert(finding_number_of_digits_in_a_number_using_log(100000) == 6);
+   90|      0|    assert(finding_number_of_digits_in_a_number_using_log(13) == 2);
+   91|      0|    assert(finding_number_of_digits_in_a_number_using_log(564) == 3);
+   92|      1|}
+   93|       |/**
+   94|       | * @brief Main function
+   95|       | * @returns 0 on exit
+   96|       | */
+   97|      1|int main() {
+   98|       |    // run self-test implementations
+   99|      1|    first_test();
+  100|      1|    second_test();
+  101|      1|    std::cout << "All tests have successfully passed!\n";
+  102|      1|    return 0;
+  103|      1|}
+

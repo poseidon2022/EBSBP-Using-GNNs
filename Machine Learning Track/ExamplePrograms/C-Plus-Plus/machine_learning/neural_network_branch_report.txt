@@ -1,0 +1,1355 @@
+/home/kidus/Desktop/GNNs/ExamplePrograms/C-Plus-Plus/machine_learning/neural_network.cpp:
+    1|       |/**
+    2|       | * @file
+    3|       | * @author [Deep Raval](https://github.com/imdeep2905)
+    4|       | *
+    5|       | * @brief Implementation of [Multilayer Perceptron]
+    6|       | * (https://en.wikipedia.org/wiki/Multilayer_perceptron).
+    7|       | *
+    8|       | * @details
+    9|       | * A multilayer perceptron (MLP) is a class of feedforward artificial neural
+   10|       | * network (ANN). The term MLP is used ambiguously, sometimes loosely to any
+   11|       | * feedforward ANN, sometimes strictly to refer to networks composed of multiple
+   12|       | * layers of perceptrons (with threshold activation). Multilayer perceptrons are
+   13|       | * sometimes colloquially referred to as "vanilla" neural networks, especially
+   14|       | * when they have a single hidden layer.
+   15|       | *
+   16|       | * An MLP consists of at least three layers of nodes: an input layer, a hidden
+   17|       | * layer and an output layer. Except for the input nodes, each node is a neuron
+   18|       | * that uses a nonlinear activation function. MLP utilizes a supervised learning
+   19|       | * technique called backpropagation for training. Its multiple layers and
+   20|       | * non-linear activation distinguish MLP from a linear perceptron. It can
+   21|       | * distinguish data that is not linearly separable.
+   22|       | *
+   23|       | * See [Backpropagation](https://en.wikipedia.org/wiki/Backpropagation) for
+   24|       | * training algorithm.
+   25|       | *
+   26|       | * \note This implementation uses mini-batch gradient descent as optimizer and
+   27|       | * MSE as loss function. Bias is also not included.
+   28|       | */
+   29|       |
+   30|       |#include <algorithm>
+   31|       |#include <cassert>
+   32|       |#include <chrono>
+   33|       |#include <cmath>
+   34|       |#include <fstream>
+   35|       |#include <iostream>
+   36|       |#include <sstream>
+   37|       |#include <string>
+   38|       |#include <valarray>
+   39|       |#include <vector>
+   40|       |
+   41|       |#include "vector_ops.hpp"  // Custom header file for vector operations
+   42|       |
+   43|       |/** \namespace machine_learning
+   44|       | * \brief Machine learning algorithms
+   45|       | */
+   46|       |namespace machine_learning {
+   47|       |/** \namespace neural_network
+   48|       | * \brief Neural Network or Multilayer Perceptron
+   49|       | */
+   50|       |namespace neural_network {
+   51|       |/** \namespace activations
+   52|       | * \brief Various activation functions used in Neural network
+   53|       | */
+   54|       |namespace activations {
+   55|       |/**
+   56|       | * Sigmoid function
+   57|       | * @param X Value
+   58|       | * @return Returns sigmoid(x)
+   59|       | */
+   60|  90.0k|double sigmoid(const double &x) { return 1.0 / (1.0 + std::exp(-x)); }
+   61|       |
+   62|       |/**
+   63|       | * Derivative of sigmoid function
+   64|       | * @param X Value
+   65|       | * @return Returns derivative of sigmoid(x)
+   66|       | */
+   67|      0|double dsigmoid(const double &x) { return x * (1 - x); }
+   68|       |
+   69|       |/**
+   70|       | * Relu function
+   71|       | * @param X Value
+   72|       | * @returns relu(x)
+   73|       | */
+   74|  90.0k|double relu(const double &x) { return std::max(0.0, x); }
+   75|       |
+   76|       |/**
+   77|       | * Derivative of relu function
+   78|       | * @param X Value
+   79|       | * @returns derivative of relu(x)
+   80|       | */
+   81|  90.0k|double drelu(const double &x) { return x >= 0.0 ? 1.0 : 0.0; }
+   82|       |
+   83|       |/**
+   84|       | * Tanh function
+   85|       | * @param X Value
+   86|       | * @return Returns tanh(x)
+   87|       | */
+   88|      0|double tanh(const double &x) { return 2 / (1 + std::exp(-2 * x)) - 1; }
+   89|       |
+   90|       |/**
+   91|       | * Derivative of Sigmoid function
+   92|       | * @param X Value
+   93|       | * @return Returns derivative of tanh(x)
+   94|       | */
+   95|      0|double dtanh(const double &x) { return 1 - x * x; }
+   96|       |}  // namespace activations
+   97|       |/** \namespace util_functions
+   98|       | * \brief Various utility functions used in Neural network
+   99|       | */
+  100|       |namespace util_functions {
+  101|       |/**
+  102|       | * Square function
+  103|       | * @param X Value
+  104|       | * @return Returns x * x
+  105|       | */
+  106|  45.0k|double square(const double &x) { return x * x; }
+  107|       |/**
+  108|       | * Identity function
+  109|       | * @param X Value
+  110|       | * @return Returns x
+  111|       | */
+  112|  60.0k|double identity_function(const double &x) { return x; }
+  113|       |}  // namespace util_functions
+  114|       |/** \namespace layers
+  115|       | * \brief This namespace contains layers used
+  116|       | * in MLP.
+  117|       | */
+  118|       |namespace layers {
+  119|       |/**
+  120|       | * neural_network::layers::DenseLayer class is used to store all necessary
+  121|       | * information about the layers (i.e. neurons, activation and kernel). This
+  122|       | * class is used by NeuralNetwork class to store layers.
+  123|       | *
+  124|       | */
+  125|       |class DenseLayer {
+  126|       | public:
+  127|       |    // To store activation function and it's derivative
+  128|       |    double (*activation_function)(const double &);
+  129|       |    double (*dactivation_function)(const double &);
+  130|       |    int neurons;             // To store number of neurons (used in summary)
+  131|       |    std::string activation;  // To store activation name (used in summary)
+  132|       |    std::vector<std::valarray<double>> kernel;  // To store kernel (aka weights)
+  133|       |
+  134|       |    /**
+  135|       |     * Constructor for neural_network::layers::DenseLayer class
+  136|       |     * @param neurons number of neurons
+  137|       |     * @param activation activation function for layer
+  138|       |     * @param kernel_shape shape of kernel
+  139|       |     * @param random_kernel flag for whether to initialize kernel randomly
+  140|       |     */
+  141|       |    DenseLayer(const int &neurons, const std::string &activation,
+  142|       |               const std::pair<size_t, size_t> &kernel_shape,
+  143|      3|               const bool &random_kernel) {
+  144|       |        // Choosing activation (and it's derivative)
+  145|      3|        if (activation == "sigmoid") {
+  146|      1|            activation_function = neural_network::activations::sigmoid;
+  147|      1|            dactivation_function = neural_network::activations::sigmoid;
+  148|      2|        } else if (activation == "relu") {
+  149|      1|            activation_function = neural_network::activations::relu;
+  150|      1|            dactivation_function = neural_network::activations::drelu;
+  151|      1|        } else if (activation == "tanh") {
+  152|      0|            activation_function = neural_network::activations::tanh;
+  153|      0|            dactivation_function = neural_network::activations::dtanh;
+  154|      1|        } else if (activation == "none") {
+  155|       |            // Set identity function in casse of none is supplied
+  156|      1|            activation_function =
+  157|      1|                neural_network::util_functions::identity_function;
+  158|      1|            dactivation_function =
+  159|      1|                neural_network::util_functions::identity_function;
+  160|      1|        } else {
+  161|       |            // If supplied activation is invalid
+  162|      0|            std::cerr << "ERROR (" << __func__ << ") : ";
+  163|      0|            std::cerr << "Invalid argument. Expected {none, sigmoid, relu, "
+  164|      0|                         "tanh} got ";
+  165|      0|            std::cerr << activation << std::endl;
+  166|      0|            std::exit(EXIT_FAILURE);
+  167|      0|        }
+  168|      3|        this->activation = activation;  // Setting activation name
+  169|      3|        this->neurons = neurons;        // Setting number of neurons
+  170|       |        // Initialize kernel according to flag
+  171|      3|        if (random_kernel) {
+  172|      2|            uniform_random_initialization(kernel, kernel_shape, -1.0, 1.0);
+  173|      2|        } else {
+  174|      1|            unit_matrix_initialization(kernel, kernel_shape);
+  175|      1|        }
+  176|      3|    }
+  177|       |    /**
+  178|       |     * Constructor for neural_network::layers::DenseLayer class
+  179|       |     * @param neurons number of neurons
+  180|       |     * @param activation activation function for layer
+  181|       |     * @param kernel values of kernel (useful in loading model)
+  182|       |     */
+  183|       |    DenseLayer(const int &neurons, const std::string &activation,
+  184|      0|               const std::vector<std::valarray<double>> &kernel) {
+  185|      0|        // Choosing activation (and it's derivative)
+  186|      0|        if (activation == "sigmoid") {
+  187|      0|            activation_function = neural_network::activations::sigmoid;
+  188|      0|            dactivation_function = neural_network::activations::sigmoid;
+  189|      0|        } else if (activation == "relu") {
+  190|      0|            activation_function = neural_network::activations::relu;
+  191|      0|            dactivation_function = neural_network::activations::drelu;
+  192|      0|        } else if (activation == "tanh") {
+  193|      0|            activation_function = neural_network::activations::tanh;
+  194|      0|            dactivation_function = neural_network::activations::dtanh;
+  195|      0|        } else if (activation == "none") {
+  196|      0|            // Set identity function in casse of none is supplied
+  197|      0|            activation_function =
+  198|      0|                neural_network::util_functions::identity_function;
+  199|      0|            dactivation_function =
+  200|      0|                neural_network::util_functions::identity_function;
+  201|      0|        } else {
+  202|      0|            // If supplied activation is invalid
+  203|      0|            std::cerr << "ERROR (" << __func__ << ") : ";
+  204|      0|            std::cerr << "Invalid argument. Expected {none, sigmoid, relu, "
+  205|      0|                         "tanh} got ";
+  206|      0|            std::cerr << activation << std::endl;
+  207|      0|            std::exit(EXIT_FAILURE);
+  208|      0|        }
+  209|      0|        this->activation = activation;  // Setting activation name
+  210|      0|        this->neurons = neurons;        // Setting number of neurons
+  211|      0|        this->kernel = kernel;          // Setting supplied kernel values
+  212|      0|    }
+  213|       |
+  214|       |    /**
+  215|       |     * Copy Constructor for class DenseLayer.
+  216|       |     *
+  217|       |     * @param model instance of class to be copied.
+  218|       |     */
+  219|       |    DenseLayer(const DenseLayer &layer) = default;
+  220|       |
+  221|       |    /**
+  222|       |     * Destructor for class DenseLayer.
+  223|       |     */
+  224|      9|    ~DenseLayer() = default;
+  225|       |
+  226|       |    /**
+  227|       |     * Copy assignment operator for class DenseLayer
+  228|       |     */
+  229|       |    DenseLayer &operator=(const DenseLayer &layer) = default;
+  230|       |
+  231|       |    /**
+  232|       |     * Move constructor for class DenseLayer
+  233|       |     */
+  234|      6|    DenseLayer(DenseLayer &&) = default;
+  235|       |
+  236|       |    /**
+  237|       |     * Move assignment operator for class DenseLayer
+  238|       |     */
+  239|       |    DenseLayer &operator=(DenseLayer &&) = default;
+  240|       |};
+  241|       |}  // namespace layers
+  242|       |/**
+  243|       | * NeuralNetwork class is implements MLP. This class is
+  244|       | * used by actual user to create and train networks.
+  245|       | *
+  246|       | */
+  247|       |class NeuralNetwork {
+  248|       | private:
+  249|       |    std::vector<neural_network::layers::DenseLayer> layers;  // To store layers
+  250|       |    /**
+  251|       |     * Private Constructor for class NeuralNetwork. This constructor
+  252|       |     * is used internally to load model.
+  253|       |     * @param config vector containing pair (neurons, activation)
+  254|       |     * @param kernels vector containing all pretrained kernels
+  255|       |     */
+  256|       |    NeuralNetwork(
+  257|       |        const std::vector<std::pair<int, std::string>> &config,
+  258|      0|        const std::vector<std::vector<std::valarray<double>>> &kernels) {
+  259|      0|        // First layer should not have activation
+  260|      0|        if (config.begin()->second != "none") {
+  261|      0|            std::cerr << "ERROR (" << __func__ << ") : ";
+  262|      0|            std::cerr
+  263|      0|                << "First layer can't have activation other than none got "
+  264|      0|                << config.begin()->second;
+  265|      0|            std::cerr << std::endl;
+  266|      0|            std::exit(EXIT_FAILURE);
+  267|      0|        }
+  268|      0|        // Network should have atleast two layers
+  269|      0|        if (config.size() <= 1) {
+  270|      0|            std::cerr << "ERROR (" << __func__ << ") : ";
+  271|      0|            std::cerr << "Invalid size of network, ";
+  272|      0|            std::cerr << "Atleast two layers are required";
+  273|      0|            std::exit(EXIT_FAILURE);
+  274|      0|        }
+  275|      0|        // Reconstructing all pretrained layers
+  276|      0|        for (size_t i = 0; i < config.size(); i++) {
+  277|      0|            layers.emplace_back(neural_network::layers::DenseLayer(
+  278|      0|                config[i].first, config[i].second, kernels[i]));
+  279|      0|        }
+  280|      0|        std::cout << "INFO: Network constructed successfully" << std::endl;
+  281|      0|    }
+  282|       |    /**
+  283|       |     * Private function to get detailed predictions (i.e.
+  284|       |     * activated neuron values). This function is used in
+  285|       |     * backpropagation, single predict and batch predict.
+  286|       |     * @param X input vector
+  287|       |     */
+  288|       |    std::vector<std::vector<std::valarray<double>>>
+  289|  15.0k|    __detailed_single_prediction(const std::vector<std::valarray<double>> &X) {
+  290|  15.0k|        std::vector<std::vector<std::valarray<double>>> details;
+  291|  15.0k|        std::vector<std::valarray<double>> current_pass = X;
+  292|  15.0k|        details.emplace_back(X);
+  293|  45.0k|        for (const auto &l : layers) {
+  294|  45.0k|            current_pass = multiply(current_pass, l.kernel);
+  295|  45.0k|            current_pass = apply_function(current_pass, l.activation_function);
+  296|  45.0k|            details.emplace_back(current_pass);
+  297|  45.0k|        }
+  298|  15.0k|        return details;
+  299|  15.0k|    }
+  300|       |
+  301|       | public:
+  302|       |    /**
+  303|       |     * Default Constructor for class NeuralNetwork. This constructor
+  304|       |     * is used to create empty variable of type NeuralNetwork class.
+  305|       |     */
+  306|       |    NeuralNetwork() = default;
+  307|       |
+  308|       |    /**
+  309|       |     * Constructor for class NeuralNetwork. This constructor
+  310|       |     * is used by user.
+  311|       |     * @param config vector containing pair (neurons, activation)
+  312|       |     */
+  313|       |    explicit NeuralNetwork(
+  314|      1|        const std::vector<std::pair<int, std::string>> &config) {
+  315|       |        // First layer should not have activation
+  316|      1|        if (config.begin()->second != "none") {
+  317|      0|            std::cerr << "ERROR (" << __func__ << ") : ";
+  318|      0|            std::cerr
+  319|      0|                << "First layer can't have activation other than none got "
+  320|      0|                << config.begin()->second;
+  321|      0|            std::cerr << std::endl;
+  322|      0|            std::exit(EXIT_FAILURE);
+  323|      0|        }
+  324|       |        // Network should have atleast two layers
+  325|      1|        if (config.size() <= 1) {
+  326|      0|            std::cerr << "ERROR (" << __func__ << ") : ";
+  327|      0|            std::cerr << "Invalid size of network, ";
+  328|      0|            std::cerr << "Atleast two layers are required";
+  329|      0|            std::exit(EXIT_FAILURE);
+  330|      0|        }
+  331|       |        // Separately creating first layer so it can have unit matrix
+  332|       |        // as kernel.
+  333|      1|        layers.push_back(neural_network::layers::DenseLayer(
+  334|      1|            config[0].first, config[0].second,
+  335|      1|            {config[0].first, config[0].first}, false));
+  336|       |        // Creating remaining layers
+  337|      3|        for (size_t i = 1; i < config.size(); i++) {
+  338|      2|            layers.push_back(neural_network::layers::DenseLayer(
+  339|      2|                config[i].first, config[i].second,
+  340|      2|                {config[i - 1].first, config[i].first}, true));
+  341|      2|        }
+  342|      1|        std::cout << "INFO: Network constructed successfully" << std::endl;
+  343|      1|    }
+  344|       |
+  345|       |    /**
+  346|       |     * Copy Constructor for class NeuralNetwork.
+  347|       |     *
+  348|       |     * @param model instance of class to be copied.
+  349|       |     */
+  350|       |    NeuralNetwork(const NeuralNetwork &model) = default;
+  351|       |
+  352|       |    /**
+  353|       |     * Destructor for class NeuralNetwork.
+  354|       |     */
+  355|      1|    ~NeuralNetwork() = default;
+  356|       |
+  357|       |    /**
+  358|       |     * Copy assignment operator for class NeuralNetwork
+  359|       |     */
+  360|       |    NeuralNetwork &operator=(const NeuralNetwork &model) = default;
+  361|       |
+  362|       |    /**
+  363|       |     * Move constructor for class NeuralNetwork
+  364|       |     */
+  365|       |    NeuralNetwork(NeuralNetwork &&) = default;
+  366|       |
+  367|       |    /**
+  368|       |     * Move assignment operator for class NeuralNetwork
+  369|       |     */
+  370|       |    NeuralNetwork &operator=(NeuralNetwork &&) = default;
+  371|       |
+  372|       |    /**
+  373|       |     * Function to get X and Y from csv file (where X = data, Y = label)
+  374|       |     * @param file_name csv file name
+  375|       |     * @param last_label flag for whether label is in first or last column
+  376|       |     * @param normalize flag for whether to normalize data
+  377|       |     * @param slip_lines number of lines to skip
+  378|       |     * @return returns pair of X and Y
+  379|       |     */
+  380|       |    std::pair<std::vector<std::vector<std::valarray<double>>>,
+  381|       |              std::vector<std::vector<std::valarray<double>>>>
+  382|       |    get_XY_from_csv(const std::string &file_name, const bool &last_label,
+  383|      1|                    const bool &normalize, const int &slip_lines = 1) {
+  384|      1|        std::ifstream in_file;                          // Ifstream to read file
+  385|      1|        in_file.open(file_name.c_str(), std::ios::in);  // Open file
+  386|       |        // If there is any problem in opening file
+  387|      1|        if (!in_file.is_open()) {
+  388|      0|            std::cerr << "ERROR (" << __func__ << ") : ";
+  389|      0|            std::cerr << "Unable to open file: " << file_name << std::endl;
+  390|      0|            std::exit(EXIT_FAILURE);
+  391|      0|        }
+  392|      1|        std::vector<std::vector<std::valarray<double>>> X,
+  393|      1|            Y;             // To store X and Y
+  394|      1|        std::string line;  // To store each line
+  395|       |        // Skip lines
+  396|      3|        for (int i = 0; i < slip_lines; i++) {
+  397|      2|            std::getline(in_file, line, '\n');  // Ignore line
+  398|      2|        }
+  399|       |        // While file has information
+  400|    151|        while (!in_file.eof() && std::getline(in_file, line, '\n')) {
+  401|    150|            std::valarray<double> x_data,
+  402|    150|                y_data;                  // To store single sample and label
+  403|    150|            std::stringstream ss(line);  // Constructing stringstream from line
+  404|    150|            std::string token;  // To store each token in line (seprated by ',')
+  405|    900|            while (std::getline(ss, token, ',')) {  // For each token
+  406|       |                // Insert numerical value of token in x_data
+  407|    750|                x_data = insert_element(x_data, std::stod(token));
+  408|    750|            }
+  409|       |            // If label is in last column
+  410|    150|            if (last_label) {
+  411|    150|                y_data.resize(this->layers.back().neurons);
+  412|       |                // If task is classification
+  413|    150|                if (y_data.size() > 1) {
+  414|    150|                    y_data[x_data[x_data.size() - 1]] = 1;
+  415|    150|                }
+  416|       |                // If task is regrssion (of single value)
+  417|      0|                else {
+  418|      0|                    y_data[0] = x_data[x_data.size() - 1];
+  419|      0|                }
+  420|    150|                x_data = pop_back(x_data);  // Remove label from x_data
+  421|    150|            } else {
+  422|      0|                y_data.resize(this->layers.back().neurons);
+  423|       |                // If task is classification
+  424|      0|                if (y_data.size() > 1) {
+  425|      0|                    y_data[x_data[x_data.size() - 1]] = 1;
+  426|      0|                }
+  427|       |                // If task is regrssion (of single value)
+  428|      0|                else {
+  429|      0|                    y_data[0] = x_data[x_data.size() - 1];
+  430|      0|                }
+  431|      0|                x_data = pop_front(x_data);  // Remove label from x_data
+  432|      0|            }
+  433|       |            // Push collected X_data and y_data in X and Y
+  434|    150|            X.push_back({x_data});
+  435|    150|            Y.push_back({y_data});
+  436|    150|        }
+  437|       |        // Normalize training data if flag is set
+  438|      1|        if (normalize) {
+  439|       |            // Scale data between 0 and 1 using min-max scaler
+  440|      0|            X = minmax_scaler(X, 0.01, 1.0);
+  441|      0|        }
+  442|      1|        in_file.close();         // Closing file
+  443|      1|        return make_pair(X, Y);  // Return pair of X and Y
+  444|      1|    }
+  445|       |
+  446|       |    /**
+  447|       |     * Function to get prediction of model on single sample.
+  448|       |     * @param X array of feature vectors
+  449|       |     * @return returns predictions as vector
+  450|       |     */
+  451|       |    std::vector<std::valarray<double>> single_predict(
+  452|      3|        const std::vector<std::valarray<double>> &X) {
+  453|       |        // Get activations of all layers
+  454|      3|        auto activations = this->__detailed_single_prediction(X);
+  455|       |        // Return activations of last layer (actual predicted values)
+  456|      3|        return activations.back();
+  457|      3|    }
+  458|       |
+  459|       |    /**
+  460|       |     * Function to get prediction of model on batch
+  461|       |     * @param X array of feature vectors
+  462|       |     * @return returns predicted values as vector
+  463|       |     */
+  464|       |    std::vector<std::vector<std::valarray<double>>> batch_predict(
+  465|      0|        const std::vector<std::vector<std::valarray<double>>> &X) {
+  466|      0|        // Store predicted values
+  467|      0|        std::vector<std::vector<std::valarray<double>>> predicted_batch(
+  468|      0|            X.size());
+  469|      0|        for (size_t i = 0; i < X.size(); i++) {  // For every sample
+  470|      0|            // Push predicted values
+  471|      0|            predicted_batch[i] = this->single_predict(X[i]);
+  472|      0|        }
+  473|      0|        return predicted_batch;  // Return predicted values
+  474|      0|    }
+  475|       |
+  476|       |    /**
+  477|       |     * Function to fit model on supplied data
+  478|       |     * @param X array of feature vectors
+  479|       |     * @param Y array of target values
+  480|       |     * @param epochs number of epochs (default = 100)
+  481|       |     * @param learning_rate learning rate (default = 0.01)
+  482|       |     * @param batch_size batch size for gradient descent (default = 32)
+  483|       |     * @param shuffle flag for whether to shuffle data (default = true)
+  484|       |     */
+  485|       |    void fit(const std::vector<std::vector<std::valarray<double>>> &X_,
+  486|       |             const std::vector<std::vector<std::valarray<double>>> &Y_,
+  487|       |             const int &epochs = 100, const double &learning_rate = 0.01,
+  488|      1|             const size_t &batch_size = 32, const bool &shuffle = true) {
+  489|      1|        std::vector<std::vector<std::valarray<double>>> X = X_, Y = Y_;
+  490|       |        // Both label and input data should have same size
+  491|      1|        if (X.size() != Y.size()) {
+  492|      0|            std::cerr << "ERROR (" << __func__ << ") : ";
+  493|      0|            std::cerr << "X and Y in fit have different sizes" << std::endl;
+  494|      0|            std::exit(EXIT_FAILURE);
+  495|      0|        }
+  496|      1|        std::cout << "INFO: Training Started" << std::endl;
+  497|    101|        for (int epoch = 1; epoch <= epochs; epoch++) {  // For every epoch
+  498|       |            // Shuffle X and Y if flag is set
+  499|    100|            if (shuffle) {
+  500|    100|                equal_shuffle(X, Y);
+  501|    100|            }
+  502|    100|            auto start =
+  503|    100|                std::chrono::high_resolution_clock::now();  // Start clock
+  504|    100|            double loss = 0,
+  505|    100|                   acc = 0;  // Initialize performance metrics with zero
+  506|       |            // For each starting index of batch
+  507|    600|            for (size_t batch_start = 0; batch_start < X.size();
+  508|    500|                 batch_start += batch_size) {
+  509|    500|                for (size_t i = batch_start;
+  510|  15.5k|                     i < std::min(X.size(), batch_start + batch_size); i++) {
+  511|  15.0k|                    std::vector<std::valarray<double>> grad, cur_error,
+  512|  15.0k|                        predicted;
+  513|  15.0k|                    auto activations = this->__detailed_single_prediction(X[i]);
+  514|       |                    // Gradients vector to store gradients for all layers
+  515|       |                    // They will be averaged and applied to kernel
+  516|  15.0k|                    std::vector<std::vector<std::valarray<double>>> gradients;
+  517|  15.0k|                    gradients.resize(this->layers.size());
+  518|       |                    // First initialize gradients to zero
+  519|  60.0k|                    for (size_t i = 0; i < gradients.size(); i++) {
+  520|  45.0k|                        zeroes_initialization(
+  521|  45.0k|                            gradients[i], get_shape(this->layers[i].kernel));
+  522|  45.0k|                    }
+  523|  15.0k|                    predicted = activations.back();  // Predicted vector
+  524|  15.0k|                    cur_error = predicted - Y[i];    // Absoulute error
+  525|       |                    // Calculating loss with MSE
+  526|  15.0k|                    loss += sum(apply_function(
+  527|  15.0k|                        cur_error, neural_network::util_functions::square));
+  528|       |                    // If prediction is correct
+  529|  15.0k|                    if (argmax(predicted) == argmax(Y[i])) {
+  530|  13.5k|                        acc += 1;
+  531|  13.5k|                    }
+  532|       |                    // For every layer (except first) starting from last one
+  533|  45.0k|                    for (size_t j = this->layers.size() - 1; j >= 1; j--) {
+  534|       |                        // Backpropogating errors
+  535|  30.0k|                        cur_error = hadamard_product(
+  536|  30.0k|                            cur_error,
+  537|  30.0k|                            apply_function(
+  538|  30.0k|                                activations[j + 1],
+  539|  30.0k|                                this->layers[j].dactivation_function));
+  540|       |                        // Calculating gradient for current layer
+  541|  30.0k|                        grad = multiply(transpose(activations[j]), cur_error);
+  542|       |                        // Change error according to current kernel values
+  543|  30.0k|                        cur_error = multiply(cur_error,
+  544|  30.0k|                                             transpose(this->layers[j].kernel));
+  545|       |                        // Adding gradient values to collection of gradients
+  546|  30.0k|                        gradients[j] = gradients[j] + grad / double(batch_size);
+  547|  30.0k|                    }
+  548|       |                    // Applying gradients
+  549|  45.0k|                    for (size_t j = this->layers.size() - 1; j >= 1; j--) {
+  550|       |                        // Updating kernel (aka weights)
+  551|  30.0k|                        this->layers[j].kernel = this->layers[j].kernel -
+  552|  30.0k|                                                 gradients[j] * learning_rate;
+  553|  30.0k|                    }
+  554|  15.0k|                }
+  555|    500|            }
+  556|    100|            auto stop =
+  557|    100|                std::chrono::high_resolution_clock::now();  // Stoping the clock
+  558|       |            // Calculate time taken by epoch
+  559|    100|            auto duration =
+  560|    100|                std::chrono::duration_cast<std::chrono::microseconds>(stop -
+  561|    100|                                                                      start);
+  562|    100|            loss /= X.size();        // Averaging loss
+  563|    100|            acc /= X.size();         // Averaging accuracy
+  564|    100|            std::cout.precision(4);  // set output precision to 4
+  565|       |            // Printing training stats
+  566|    100|            std::cout << "Training: Epoch " << epoch << '/' << epochs;
+  567|    100|            std::cout << ", Loss: " << loss;
+  568|    100|            std::cout << ", Accuracy: " << acc;
+  569|    100|            std::cout << ", Taken time: " << duration.count() / 1e6
+  570|    100|                      << " seconds";
+  571|    100|            std::cout << std::endl;
+  572|    100|        }
+  573|      1|        return;
+  574|      1|    }
+  575|       |
+  576|       |    /**
+  577|       |     * Function to fit model on data stored in csv file
+  578|       |     * @param file_name csv file name
+  579|       |     * @param last_label flag for whether label is in first or last column
+  580|       |     * @param epochs number of epochs
+  581|       |     * @param learning_rate learning rate
+  582|       |     * @param normalize flag for whether to normalize data
+  583|       |     * @param slip_lines number of lines to skip
+  584|       |     * @param batch_size batch size for gradient descent (default = 32)
+  585|       |     * @param shuffle flag for whether to shuffle data (default = true)
+  586|       |     */
+  587|       |    void fit_from_csv(const std::string &file_name, const bool &last_label,
+  588|       |                      const int &epochs, const double &learning_rate,
+  589|       |                      const bool &normalize, const int &slip_lines = 1,
+  590|       |                      const size_t &batch_size = 32,
+  591|      1|                      const bool &shuffle = true) {
+  592|       |        // Getting training data from csv file
+  593|      1|        auto data =
+  594|      1|            this->get_XY_from_csv(file_name, last_label, normalize, slip_lines);
+  595|       |        // Fit the model on training data
+  596|      1|        this->fit(data.first, data.second, epochs, learning_rate, batch_size,
+  597|      1|                  shuffle);
+  598|      1|        return;
+  599|      1|    }
+  600|       |
+  601|       |    /**
+  602|       |     * Function to evaluate model on supplied data
+  603|       |     * @param X array of feature vectors (input data)
+  604|       |     * @param Y array of target values (label)
+  605|       |     */
+  606|       |    void evaluate(const std::vector<std::vector<std::valarray<double>>> &X,
+  607|      0|                  const std::vector<std::vector<std::valarray<double>>> &Y) {
+  608|      0|        std::cout << "INFO: Evaluation Started" << std::endl;
+  609|      0|        double acc = 0, loss = 0;  // initialize performance metrics with zero
+  610|      0|        for (size_t i = 0; i < X.size(); i++) {  // For every sample in input
+  611|      0|            // Get predictions
+  612|      0|            std::vector<std::valarray<double>> pred =
+  613|      0|                this->single_predict(X[i]);
+  614|      0|            // If predicted class is correct
+  615|      0|            if (argmax(pred) == argmax(Y[i])) {
+  616|      0|                acc += 1;  // Increment accuracy
+  617|      0|            }
+  618|      0|            // Calculating loss - Mean Squared Error
+  619|      0|            loss += sum(apply_function((Y[i] - pred),
+  620|      0|                                       neural_network::util_functions::square) *
+  621|      0|                        0.5);
+  622|      0|        }
+  623|      0|        acc /= X.size();   // Averaging accuracy
+  624|      0|        loss /= X.size();  // Averaging loss
+  625|      0|        // Prinitng performance of the model
+  626|      0|        std::cout << "Evaluation: Loss: " << loss;
+  627|      0|        std::cout << ", Accuracy: " << acc << std::endl;
+  628|      0|        return;
+  629|      0|    }
+  630|       |
+  631|       |    /**
+  632|       |     * Function to evaluate model on data stored in csv file
+  633|       |     * @param file_name csv file name
+  634|       |     * @param last_label flag for whether label is in first or last column
+  635|       |     * @param normalize flag for whether to normalize data
+  636|       |     * @param slip_lines number of lines to skip
+  637|       |     */
+  638|       |    void evaluate_from_csv(const std::string &file_name, const bool &last_label,
+  639|      0|                           const bool &normalize, const int &slip_lines = 1) {
+  640|      0|        // Getting training data from csv file
+  641|      0|        auto data =
+  642|      0|            this->get_XY_from_csv(file_name, last_label, normalize, slip_lines);
+  643|      0|        // Evaluating model
+  644|      0|        this->evaluate(data.first, data.second);
+  645|      0|        return;
+  646|      0|    }
+  647|       |
+  648|       |    /**
+  649|       |     * Function to save current model.
+  650|       |     * @param file_name file name to save model (*.model)
+  651|       |     */
+  652|      0|    void save_model(const std::string &_file_name) {
+  653|      0|        std::string file_name = _file_name;
+  654|      0|        // Adding ".model" extension if it is not already there in name
+  655|      0|        if (file_name.find(".model") == file_name.npos) {
+  656|      0|            file_name += ".model";
+  657|      0|        }
+  658|      0|        std::ofstream out_file;  // Ofstream to write in file
+  659|      0|        // Open file in out|trunc mode
+  660|      0|        out_file.open(file_name.c_str(),
+  661|      0|                      std::ofstream::out | std::ofstream::trunc);
+  662|      0|        // If there is any problem in opening file
+  663|      0|        if (!out_file.is_open()) {
+  664|      0|            std::cerr << "ERROR (" << __func__ << ") : ";
+  665|      0|            std::cerr << "Unable to open file: " << file_name << std::endl;
+  666|      0|            std::exit(EXIT_FAILURE);
+  667|      0|        }
+  668|      0|        /**
+  669|      0|            Format in which model is saved:
+  670|      0|
+  671|      0|            total_layers
+  672|      0|            neurons(1st neural_network::layers::DenseLayer) activation_name(1st
+  673|      0|           neural_network::layers::DenseLayer) kernel_shape(1st
+  674|      0|           neural_network::layers::DenseLayer) kernel_values
+  675|      0|            .
+  676|      0|            .
+  677|      0|            .
+  678|      0|            neurons(Nth neural_network::layers::DenseLayer) activation_name(Nth
+  679|      0|           neural_network::layers::DenseLayer) kernel_shape(Nth
+  680|      0|           neural_network::layers::DenseLayer) kernel_value
+  681|      0|
+  682|      0|            For Example, pretrained model with 3 layers:
+  683|      0|            <pre>
+  684|      0|            3
+  685|      0|            4 none
+  686|      0|            4 4
+  687|      0|            1 0 0 0
+  688|      0|            0 1 0 0
+  689|      0|            0 0 1 0
+  690|      0|            0 0 0 1
+  691|      0|            6 relu
+  692|      0|            4 6
+  693|      0|            -1.88963 -3.61165 1.30757 -0.443906 -2.41039 -2.69653
+  694|      0|            -0.684753 0.0891452 0.795294 -2.39619 2.73377 0.318202
+  695|      0|            -2.91451 -4.43249 -0.804187 2.51995 -6.97524 -1.07049
+  696|      0|            -0.571531 -1.81689 -1.24485 1.92264 -2.81322 1.01741
+  697|      0|            3 sigmoid
+  698|      0|            6 3
+  699|      0|            0.390267 -0.391703 -0.0989607
+  700|      0|            0.499234 -0.564539 -0.28097
+  701|      0|            0.553386 -0.153974 -1.92493
+  702|      0|            -2.01336 -0.0219682 1.44145
+  703|      0|            1.72853 -0.465264 -0.705373
+  704|      0|            -0.908409 -0.740547 0.376416
+  705|      0|            </pre>
+  706|      0|        */
+  707|      0|        // Saving model in the same format
+  708|      0|        out_file << layers.size();
+  709|      0|        out_file << std::endl;
+  710|      0|        for (const auto &layer : this->layers) {
+  711|      0|            out_file << layer.neurons << ' ' << layer.activation << std::endl;
+  712|      0|            const auto shape = get_shape(layer.kernel);
+  713|      0|            out_file << shape.first << ' ' << shape.second << std::endl;
+  714|      0|            for (const auto &row : layer.kernel) {
+  715|      0|                for (const auto &val : row) {
+  716|      0|                    out_file << val << ' ';
+  717|      0|                }
+  718|      0|                out_file << std::endl;
+  719|      0|            }
+  720|      0|        }
+  721|      0|        std::cout << "INFO: Model saved successfully with name : ";
+  722|      0|        std::cout << file_name << std::endl;
+  723|      0|        out_file.close();  // Closing file
+  724|      0|        return;
+  725|      0|    }
+  726|       |
+  727|       |    /**
+  728|       |     * Function to load earlier saved model.
+  729|       |     * @param file_name file from which model will be loaded (*.model)
+  730|       |     * @return instance of NeuralNetwork class with pretrained weights
+  731|       |     */
+  732|      0|    NeuralNetwork load_model(const std::string &file_name) {
+  733|      0|        std::ifstream in_file;            // Ifstream to read file
+  734|      0|        in_file.open(file_name.c_str());  // Openinig file
+  735|      0|        // If there is any problem in opening file
+  736|      0|        if (!in_file.is_open()) {
+  737|      0|            std::cerr << "ERROR (" << __func__ << ") : ";
+  738|      0|            std::cerr << "Unable to open file: " << file_name << std::endl;
+  739|      0|            std::exit(EXIT_FAILURE);
+  740|      0|        }
+  741|      0|        std::vector<std::pair<int, std::string>> config;  // To store config
+  742|      0|        std::vector<std::vector<std::valarray<double>>>
+  743|      0|            kernels;  // To store pretrained kernels
+  744|      0|        // Loading model from saved file format
+  745|      0|        size_t total_layers = 0;
+  746|      0|        in_file >> total_layers;
+  747|      0|        for (size_t i = 0; i < total_layers; i++) {
+  748|      0|            int neurons = 0;
+  749|      0|            std::string activation;
+  750|      0|            size_t shape_a = 0, shape_b = 0;
+  751|      0|            std::vector<std::valarray<double>> kernel;
+  752|      0|            in_file >> neurons >> activation >> shape_a >> shape_b;
+  753|      0|            for (size_t r = 0; r < shape_a; r++) {
+  754|      0|                std::valarray<double> row(shape_b);
+  755|      0|                for (size_t c = 0; c < shape_b; c++) {
+  756|      0|                    in_file >> row[c];
+  757|      0|                }
+  758|      0|                kernel.push_back(row);
+  759|      0|            }
+  760|      0|            config.emplace_back(make_pair(neurons, activation));
+  761|      0|            ;
+  762|      0|            kernels.emplace_back(kernel);
+  763|      0|        }
+  764|      0|        std::cout << "INFO: Model loaded successfully" << std::endl;
+  765|      0|        in_file.close();  // Closing file
+  766|      0|        return NeuralNetwork(
+  767|      0|            config, kernels);  // Return instance of NeuralNetwork class
+  768|      0|    }
+  769|       |
+  770|       |    /**
+  771|       |     * Function to print summary of the network.
+  772|       |     */
+  773|      1|    void summary() {
+  774|       |        // Printing Summary
+  775|      1|        std::cout
+  776|      1|            << "==============================================================="
+  777|      1|            << std::endl;
+  778|      1|        std::cout << "\t\t+ MODEL SUMMARY +\t\t\n";
+  779|      1|        std::cout
+  780|      1|            << "==============================================================="
+  781|      1|            << std::endl;
+  782|      4|        for (size_t i = 1; i <= layers.size(); i++) {  // For every layer
+  783|      3|            std::cout << i << ")";
+  784|      3|            std::cout << " Neurons : "
+  785|      3|                      << layers[i - 1].neurons;  // number of neurons
+  786|      3|            std::cout << ", Activation : "
+  787|      3|                      << layers[i - 1].activation;  // activation
+  788|      3|            std::cout << ", kernel Shape : "
+  789|      3|                      << get_shape(layers[i - 1].kernel);  // kernel shape
+  790|      3|            std::cout << std::endl;
+  791|      3|        }
+  792|      1|        std::cout
+  793|      1|            << "==============================================================="
+  794|      1|            << std::endl;
+  795|      1|        return;
+  796|      1|    }
+  797|       |};
+  798|       |}  // namespace neural_network
+  799|       |}  // namespace machine_learning
+  800|       |
+  801|       |/**
+  802|       | * Function to test neural network
+  803|       | * @returns none
+  804|       | */
+  805|      1|static void test() {
+  806|       |    // Creating network with 3 layers for "iris.csv"
+  807|      1|    machine_learning::neural_network::NeuralNetwork myNN =
+  808|      1|        machine_learning::neural_network::NeuralNetwork({
+  809|      1|            {4, "none"},  // First layer with 3 neurons and "none" as activation
+  810|      1|            {6,
+  811|      1|             "relu"},  // Second layer with 6 neurons and "relu" as activation
+  812|      1|            {3, "sigmoid"}  // Third layer with 3 neurons and "sigmoid" as
+  813|       |                            // activation
+  814|      1|        });
+  815|       |    // Printing summary of model
+  816|      1|    myNN.summary();
+  817|       |    // Training Model
+  818|      1|    myNN.fit_from_csv("iris.csv", true, 100, 0.3, false, 2, 32, true);
+  819|       |    // Testing predictions of model
+  820|      1|    assert(machine_learning::argmax(
+  821|      1|               myNN.single_predict({{5, 3.4, 1.6, 0.4}})) == 0);
+  822|      0|    assert(machine_learning::argmax(
+  823|      1|               myNN.single_predict({{6.4, 2.9, 4.3, 1.3}})) == 1);
+  824|      0|    assert(machine_learning::argmax(
+  825|      1|               myNN.single_predict({{6.2, 3.4, 5.4, 2.3}})) == 2);
+  826|      0|    return;
+  827|      1|}
+  828|       |
+  829|       |/**
+  830|       | * @brief Main function
+  831|       | * @returns 0 on exit
+  832|       | */
+  833|      1|int main() {
+  834|       |    // Testing
+  835|      1|    test();
+  836|      1|    return 0;
+  837|      1|}
+
+/home/kidus/Desktop/GNNs/ExamplePrograms/C-Plus-Plus/machine_learning/vector_ops.hpp:
+    1|       |/**
+    2|       | * @file vector_ops.hpp
+    3|       | * @author [Deep Raval](https://github.com/imdeep2905)
+    4|       | *
+    5|       | * @brief Various functions for vectors associated with [NeuralNetwork (aka
+    6|       | * Multilayer Perceptron)]
+    7|       | * (https://en.wikipedia.org/wiki/Multilayer_perceptron).
+    8|       | *
+    9|       | */
+   10|       |#ifndef VECTOR_OPS_FOR_NN
+   11|       |#define VECTOR_OPS_FOR_NN
+   12|       |
+   13|       |#include <algorithm>
+   14|       |#include <chrono>
+   15|       |#include <iostream>
+   16|       |#include <random>
+   17|       |#include <valarray>
+   18|       |#include <vector>
+   19|       |
+   20|       |/**
+   21|       | * @namespace machine_learning
+   22|       | * @brief Machine Learning algorithms
+   23|       | */
+   24|       |namespace machine_learning {
+   25|       |/**
+   26|       | * Overloaded operator "<<" to print 2D vector
+   27|       | * @tparam T typename of the vector
+   28|       | * @param out std::ostream to output
+   29|       | * @param A 2D vector to be printed
+   30|       | */
+   31|       |template <typename T>
+   32|       |std::ostream &operator<<(std::ostream &out,
+   33|       |                         std::vector<std::valarray<T>> const &A) {
+   34|       |    // Setting output precision to 4 in case of floating point numbers
+   35|       |    out.precision(4);
+   36|       |    for (const auto &a : A) {       // For each row in A
+   37|       |        for (const auto &x : a) {   // For each element in row
+   38|       |            std::cout << x << ' ';  // print element
+   39|       |        }
+   40|       |        std::cout << std::endl;
+   41|       |    }
+   42|       |    return out;
+   43|       |}
+   44|       |
+   45|       |/**
+   46|       | * Overloaded operator "<<" to print a pair
+   47|       | * @tparam T typename of the pair
+   48|       | * @param out std::ostream to output
+   49|       | * @param A Pair to be printed
+   50|       | */
+   51|       |template <typename T>
+   52|      3|std::ostream &operator<<(std::ostream &out, const std::pair<T, T> &A) {
+   53|       |    // Setting output precision to 4 in case of floating point numbers
+   54|      3|    out.precision(4);
+   55|       |    // printing pair in the form (p, q)
+   56|      3|    std::cout << "(" << A.first << ", " << A.second << ")";
+   57|      3|    return out;
+   58|      3|}
+   59|       |
+   60|       |/**
+   61|       | * Overloaded operator "<<" to print a 1D vector
+   62|       | * @tparam T typename of the vector
+   63|       | * @param out std::ostream to output
+   64|       | * @param A 1D vector to be printed
+   65|       | */
+   66|       |template <typename T>
+   67|       |std::ostream &operator<<(std::ostream &out, const std::valarray<T> &A) {
+   68|       |    // Setting output precision to 4 in case of floating point numbers
+   69|       |    out.precision(4);
+   70|       |    for (const auto &a : A) {   // For every element in the vector.
+   71|       |        std::cout << a << ' ';  // Print element
+   72|       |    }
+   73|       |    std::cout << std::endl;
+   74|       |    return out;
+   75|       |}
+   76|       |
+   77|       |/**
+   78|       | * Function to insert element into 1D vector
+   79|       | * @tparam T typename of the 1D vector and the element
+   80|       | * @param A 1D vector in which element will to be inserted
+   81|       | * @param ele element to be inserted
+   82|       | * @return new resultant vector
+   83|       | */
+   84|       |template <typename T>
+   85|    750|std::valarray<T> insert_element(const std::valarray<T> &A, const T &ele) {
+   86|    750|    std::valarray<T> B;      // New 1D vector to store resultant vector
+   87|    750|    B.resize(A.size() + 1);  // Resizing it accordingly
+   88|  2.25k|    for (size_t i = 0; i < A.size(); i++) {  // For every element in A
+   89|  1.50k|        B[i] = A[i];                         // Copy element in B
+   90|  1.50k|    }
+   91|    750|    B[B.size() - 1] = ele;  // Inserting new element in last position
+   92|    750|    return B;               // Return resultant vector
+   93|    750|}
+   94|       |
+   95|       |/**
+   96|       | * Function to remove first element from 1D vector
+   97|       | * @tparam T typename of the vector
+   98|       | * @param A 1D vector from which first element will be removed
+   99|       | * @return new resultant vector
+  100|       | */
+  101|       |template <typename T>
+  102|      0|std::valarray<T> pop_front(const std::valarray<T> &A) {
+  103|      0|    std::valarray<T> B;      // New 1D vector to store resultant vector
+  104|      0|    B.resize(A.size() - 1);  // Resizing it accordingly
+  105|      0|    for (size_t i = 1; i < A.size();
+  106|      0|         i++) {           // // For every (except first) element in A
+  107|      0|        B[i - 1] = A[i];  // Copy element in B with left shifted position
+  108|      0|    }
+  109|      0|    return B;  // Return resultant vector
+  110|      0|}
+  111|       |
+  112|       |/**
+  113|       | * Function to remove last element from 1D vector
+  114|       | * @tparam T typename of the vector
+  115|       | * @param A 1D vector from which last element will be removed
+  116|       | * @return new resultant vector
+  117|       | */
+  118|       |template <typename T>
+  119|    150|std::valarray<T> pop_back(const std::valarray<T> &A) {
+  120|    150|    std::valarray<T> B;      // New 1D vector to store resultant vector
+  121|    150|    B.resize(A.size() - 1);  // Resizing it accordingly
+  122|    750|    for (size_t i = 0; i < A.size() - 1;
+  123|    600|         i++) {       // For every (except last) element in A
+  124|    600|        B[i] = A[i];  // Copy element in B
+  125|    600|    }
+  126|    150|    return B;  // Return resultant vector
+  127|    150|}
+  128|       |
+  129|       |/**
+  130|       | * Function to equally shuffle two 3D vectors (used for shuffling training data)
+  131|       | * @tparam T typename of the vector
+  132|       | * @param A First 3D vector
+  133|       | * @param B Second 3D vector
+  134|       | */
+  135|       |template <typename T>
+  136|       |void equal_shuffle(std::vector<std::vector<std::valarray<T>>> &A,
+  137|    100|                   std::vector<std::vector<std::valarray<T>>> &B) {
+  138|       |    // If two vectors have different sizes
+  139|    100|    if (A.size() != B.size()) {
+  140|      0|        std::cerr << "ERROR (" << __func__ << ") : ";
+  141|      0|        std::cerr
+  142|      0|            << "Can not equally shuffle two vectors with different sizes: ";
+  143|      0|        std::cerr << A.size() << " and " << B.size() << std::endl;
+  144|      0|        std::exit(EXIT_FAILURE);
+  145|      0|    }
+  146|  15.1k|    for (size_t i = 0; i < A.size(); i++) {  // For every element in A and B
+  147|       |        // Genrating random index < size of A and B
+  148|  15.0k|        std::srand(std::chrono::system_clock::now().time_since_epoch().count());
+  149|  15.0k|        size_t random_index = std::rand() % A.size();
+  150|       |        // Swap elements in both A and B with same random index
+  151|  15.0k|        std::swap(A[i], A[random_index]);
+  152|  15.0k|        std::swap(B[i], B[random_index]);
+  153|  15.0k|    }
+  154|    100|    return;
+  155|    100|}
+  156|       |
+  157|       |/**
+  158|       | * Function to initialize given 2D vector using uniform random initialization
+  159|       | * @tparam T typename of the vector
+  160|       | * @param A 2D vector to be initialized
+  161|       | * @param shape required shape
+  162|       | * @param low lower limit on value
+  163|       | * @param high upper limit on value
+  164|       | */
+  165|       |template <typename T>
+  166|       |void uniform_random_initialization(std::vector<std::valarray<T>> &A,
+  167|       |                                   const std::pair<size_t, size_t> &shape,
+  168|      2|                                   const T &low, const T &high) {
+  169|      2|    A.clear();  // Making A empty
+  170|       |    // Uniform distribution in range [low, high]
+  171|      2|    std::default_random_engine generator(
+  172|      2|        std::chrono::system_clock::now().time_since_epoch().count());
+  173|      2|    std::uniform_real_distribution<T> distribution(low, high);
+  174|     12|    for (size_t i = 0; i < shape.first; i++) {  // For every row
+  175|     10|        std::valarray<T>
+  176|     10|            row;  // Making empty row which will be inserted in vector
+  177|     10|        row.resize(shape.second);
+  178|     42|        for (auto &r : row) {             // For every element in row
+  179|     42|            r = distribution(generator);  // copy random number
+  180|     42|        }
+  181|     10|        A.push_back(row);  // Insert new row in vector
+  182|     10|    }
+  183|      2|    return;
+  184|      2|}
+  185|       |
+  186|       |/**
+  187|       | * Function to Intialize 2D vector as unit matrix
+  188|       | * @tparam T typename of the vector
+  189|       | * @param A 2D vector to be initialized
+  190|       | * @param shape required shape
+  191|       | */
+  192|       |template <typename T>
+  193|       |void unit_matrix_initialization(std::vector<std::valarray<T>> &A,
+  194|      1|                                const std::pair<size_t, size_t> &shape) {
+  195|      1|    A.clear();  // Making A empty
+  196|      5|    for (size_t i = 0; i < shape.first; i++) {
+  197|      4|        std::valarray<T>
+  198|      4|            row;  // Making empty row which will be inserted in vector
+  199|      4|        row.resize(shape.second);
+  200|      4|        row[i] = T(1);     // Insert 1 at ith position
+  201|      4|        A.push_back(row);  // Insert new row in vector
+  202|      4|    }
+  203|      1|    return;
+  204|      1|}
+  205|       |
+  206|       |/**
+  207|       | * Function to Intialize 2D vector as zeroes
+  208|       | * @tparam T typename of the vector
+  209|       | * @param A 2D vector to be initialized
+  210|       | * @param shape required shape
+  211|       | */
+  212|       |template <typename T>
+  213|       |void zeroes_initialization(std::vector<std::valarray<T>> &A,
+  214|  45.0k|                           const std::pair<size_t, size_t> &shape) {
+  215|  45.0k|    A.clear();  // Making A empty
+  216|   255k|    for (size_t i = 0; i < shape.first; i++) {
+  217|   210k|        std::valarray<T>
+  218|   210k|            row;  // Making empty row which will be inserted in vector
+  219|   210k|        row.resize(shape.second);  // By default all elements are zero
+  220|   210k|        A.push_back(row);          // Insert new row in vector
+  221|   210k|    }
+  222|  45.0k|    return;
+  223|  45.0k|}
+  224|       |
+  225|       |/**
+  226|       | * Function to get sum of all elements in 2D vector
+  227|       | * @tparam T typename of the vector
+  228|       | * @param A 2D vector for which sum is required
+  229|       | * @return returns sum of all elements of 2D vector
+  230|       | */
+  231|       |template <typename T>
+  232|  15.0k|T sum(const std::vector<std::valarray<T>> &A) {
+  233|  15.0k|    T cur_sum = 0;             // Initially sum is zero
+  234|  15.0k|    for (const auto &a : A) {  // For every row in A
+  235|  15.0k|        cur_sum += a.sum();    // Add sum of that row to current sum
+  236|  15.0k|    }
+  237|  15.0k|    return cur_sum;  // Return sum
+  238|  15.0k|}
+  239|       |
+  240|       |/**
+  241|       | * Function to get shape of given 2D vector
+  242|       | * @tparam T typename of the vector
+  243|       | * @param A 2D vector for which shape is required
+  244|       | * @return shape as pair
+  245|       | */
+  246|       |template <typename T>
+  247|   555k|std::pair<size_t, size_t> get_shape(const std::vector<std::valarray<T>> &A) {
+  248|   555k|    const size_t sub_size = (*A.begin()).size();
+  249|  1.71M|    for (const auto &a : A) {
+  250|       |        // If supplied vector don't have same shape in all rows
+  251|  1.71M|        if (a.size() != sub_size) {
+  252|      0|            std::cerr << "ERROR (" << __func__ << ") : ";
+  253|      0|            std::cerr << "Supplied vector is not 2D Matrix" << std::endl;
+  254|      0|            std::exit(EXIT_FAILURE);
+  255|      0|        }
+  256|  1.71M|    }
+  257|   555k|    return std::make_pair(A.size(), sub_size);  // Return shape as pair
+  258|   555k|}
+  259|       |
+  260|       |/**
+  261|       | * Function to scale given 3D vector using min-max scaler
+  262|       | * @tparam T typename of the vector
+  263|       | * @param A 3D vector which will be scaled
+  264|       | * @param low new minimum value
+  265|       | * @param high new maximum value
+  266|       | * @return new scaled 3D vector
+  267|       | */
+  268|       |template <typename T>
+  269|       |std::vector<std::vector<std::valarray<T>>> minmax_scaler(
+  270|       |    const std::vector<std::vector<std::valarray<T>>> &A, const T &low,
+  271|      0|    const T &high) {
+  272|      0|    std::vector<std::vector<std::valarray<T>>> B =
+  273|      0|        A;                               // Copying into new vector B
+  274|      0|    const auto shape = get_shape(B[0]);  // Storing shape of B's every element
+  275|       |    // As this function is used for scaling training data vector should be of
+  276|       |    // shape (1, X)
+  277|      0|    if (shape.first != 1) {
+  278|      0|        std::cerr << "ERROR (" << __func__ << ") : ";
+  279|      0|        std::cerr
+  280|      0|            << "Supplied vector is not supported for minmax scaling, shape: ";
+  281|      0|        std::cerr << shape << std::endl;
+  282|      0|        std::exit(EXIT_FAILURE);
+  283|      0|    }
+  284|      0|    for (size_t i = 0; i < shape.second; i++) {
+  285|      0|        T min = B[0][0][i], max = B[0][0][i];
+  286|      0|        for (size_t j = 0; j < B.size(); j++) {
+  287|       |            // Updating minimum and maximum values
+  288|      0|            min = std::min(min, B[j][0][i]);
+  289|      0|            max = std::max(max, B[j][0][i]);
+  290|      0|        }
+  291|      0|        for (size_t j = 0; j < B.size(); j++) {
+  292|       |            // Applying min-max scaler formula
+  293|      0|            B[j][0][i] =
+  294|      0|                ((B[j][0][i] - min) / (max - min)) * (high - low) + low;
+  295|      0|        }
+  296|      0|    }
+  297|      0|    return B;  // Return new resultant 3D vector
+  298|      0|}
+  299|       |
+  300|       |/**
+  301|       | * Function to get index of maximum element in 2D vector
+  302|       | * @tparam T typename of the vector
+  303|       | * @param A 2D vector for which maximum index is required
+  304|       | * @return index of maximum element
+  305|       | */
+  306|       |template <typename T>
+  307|  30.0k|size_t argmax(const std::vector<std::valarray<T>> &A) {
+  308|  30.0k|    const auto shape = get_shape(A);
+  309|       |    // As this function is used on predicted (or target) vector, shape should be
+  310|       |    // (1, X)
+  311|  30.0k|    if (shape.first != 1) {
+  312|      0|        std::cerr << "ERROR (" << __func__ << ") : ";
+  313|      0|        std::cerr << "Supplied vector is ineligible for argmax" << std::endl;
+  314|      0|        std::exit(EXIT_FAILURE);
+  315|      0|    }
+  316|       |    // Return distance of max element from first element (i.e. index)
+  317|  30.0k|    return std::distance(std::begin(A[0]),
+  318|  30.0k|                         std::max_element(std::begin(A[0]), std::end(A[0])));
+  319|  30.0k|}
+  320|       |
+  321|       |/**
+  322|       | * Function which applys supplied function to every element of 2D vector
+  323|       | * @tparam T typename of the vector
+  324|       | * @param A 2D vector on which function will be applied
+  325|       | * @param func Function to be applied
+  326|       | * @return new resultant vector
+  327|       | */
+  328|       |template <typename T>
+  329|       |std::vector<std::valarray<T>> apply_function(
+  330|  90.0k|    const std::vector<std::valarray<T>> &A, T (*func)(const T &)) {
+  331|  90.0k|    std::vector<std::valarray<double>> B =
+  332|  90.0k|        A;                  // New vector to store resultant vector
+  333|  90.0k|    for (auto &b : B) {     // For every row in vector
+  334|  90.0k|        b = b.apply(func);  // Apply function to that row
+  335|  90.0k|    }
+  336|  90.0k|    return B;  // Return new resultant 2D vector
+  337|  90.0k|}
+  338|       |
+  339|       |/**
+  340|       | * Overloaded operator "*" to multiply given 2D vector with scaler
+  341|       | * @tparam T typename of both vector and the scaler
+  342|       | * @param A 2D vector to which scaler will be multiplied
+  343|       | * @param val Scaler value which will be multiplied
+  344|       | * @return new resultant vector
+  345|       | */
+  346|       |template <typename T>
+  347|       |std::vector<std::valarray<T>> operator*(const std::vector<std::valarray<T>> &A,
+  348|  30.0k|                                        const T &val) {
+  349|  30.0k|    std::vector<std::valarray<double>> B =
+  350|  30.0k|        A;               // New vector to store resultant vector
+  351|   150k|    for (auto &b : B) {  // For every row in vector
+  352|   150k|        b = b * val;     // Multiply row with scaler
+  353|   150k|    }
+  354|  30.0k|    return B;  // Return new resultant 2D vector
+  355|  30.0k|}
+  356|       |
+  357|       |/**
+  358|       | * Overloaded operator "/" to divide given 2D vector with scaler
+  359|       | * @tparam T typename of the vector and the scaler
+  360|       | * @param A 2D vector to which scaler will be divided
+  361|       | * @param val Scaler value which will be divided
+  362|       | * @return new resultant vector
+  363|       | */
+  364|       |template <typename T>
+  365|       |std::vector<std::valarray<T>> operator/(const std::vector<std::valarray<T>> &A,
+  366|  30.0k|                                        const T &val) {
+  367|  30.0k|    std::vector<std::valarray<double>> B =
+  368|  30.0k|        A;               // New vector to store resultant vector
+  369|   150k|    for (auto &b : B) {  // For every row in vector
+  370|   150k|        b = b / val;     // Divide row with scaler
+  371|   150k|    }
+  372|  30.0k|    return B;  // Return new resultant 2D vector
+  373|  30.0k|}
+  374|       |
+  375|       |/**
+  376|       | * Function to get transpose of 2D vector
+  377|       | * @tparam T typename of the vector
+  378|       | * @param A 2D vector which will be transposed
+  379|       | * @return new resultant vector
+  380|       | */
+  381|       |template <typename T>
+  382|       |std::vector<std::valarray<T>> transpose(
+  383|  60.0k|    const std::vector<std::valarray<T>> &A) {
+  384|  60.0k|    const auto shape = get_shape(A);  // Current shape of vector
+  385|  60.0k|    std::vector<std::valarray<T>> B;  // New vector to store result
+  386|       |    // Storing transpose values of A in B
+  387|   345k|    for (size_t j = 0; j < shape.second; j++) {
+  388|   285k|        std::valarray<T> row;
+  389|   285k|        row.resize(shape.first);
+  390|  1.06M|        for (size_t i = 0; i < shape.first; i++) {
+  391|   780k|            row[i] = A[i][j];
+  392|   780k|        }
+  393|   285k|        B.push_back(row);
+  394|   285k|    }
+  395|  60.0k|    return B;  // Return new resultant 2D vector
+  396|  60.0k|}
+  397|       |
+  398|       |/**
+  399|       | * Overloaded operator "+" to add two 2D vectors
+  400|       | * @tparam T typename of the vector
+  401|       | * @param A First 2D vector
+  402|       | * @param B Second 2D vector
+  403|       | * @return new resultant vector
+  404|       | */
+  405|       |template <typename T>
+  406|       |std::vector<std::valarray<T>> operator+(
+  407|       |    const std::vector<std::valarray<T>> &A,
+  408|  30.0k|    const std::vector<std::valarray<T>> &B) {
+  409|  30.0k|    const auto shape_a = get_shape(A);
+  410|  30.0k|    const auto shape_b = get_shape(B);
+  411|       |    // If vectors don't have equal shape
+  412|  30.0k|    if (shape_a.first != shape_b.first || shape_a.second != shape_b.second) {
+  413|      0|        std::cerr << "ERROR (" << __func__ << ") : ";
+  414|      0|        std::cerr << "Supplied vectors have different shapes ";
+  415|      0|        std::cerr << shape_a << " and " << shape_b << std::endl;
+  416|      0|        std::exit(EXIT_FAILURE);
+  417|      0|    }
+  418|  30.0k|    std::vector<std::valarray<T>> C;
+  419|   180k|    for (size_t i = 0; i < A.size(); i++) {  // For every row
+  420|   150k|        C.push_back(A[i] + B[i]);            // Elementwise addition
+  421|   150k|    }
+  422|  30.0k|    return C;  // Return new resultant 2D vector
+  423|  30.0k|}
+  424|       |
+  425|       |/**
+  426|       | * Overloaded operator "-" to add subtract 2D vectors
+  427|       | * @tparam T typename of the vector
+  428|       | * @param A First 2D vector
+  429|       | * @param B Second 2D vector
+  430|       | * @return new resultant vector
+  431|       | */
+  432|       |template <typename T>
+  433|       |std::vector<std::valarray<T>> operator-(
+  434|       |    const std::vector<std::valarray<T>> &A,
+  435|  45.0k|    const std::vector<std::valarray<T>> &B) {
+  436|  45.0k|    const auto shape_a = get_shape(A);
+  437|  45.0k|    const auto shape_b = get_shape(B);
+  438|       |    // If vectors don't have equal shape
+  439|  45.0k|    if (shape_a.first != shape_b.first || shape_a.second != shape_b.second) {
+  440|      0|        std::cerr << "ERROR (" << __func__ << ") : ";
+  441|      0|        std::cerr << "Supplied vectors have different shapes ";
+  442|      0|        std::cerr << shape_a << " and " << shape_b << std::endl;
+  443|      0|        std::exit(EXIT_FAILURE);
+  444|      0|    }
+  445|  45.0k|    std::vector<std::valarray<T>> C;         // Vector to store result
+  446|   210k|    for (size_t i = 0; i < A.size(); i++) {  // For every row
+  447|   165k|        C.push_back(A[i] - B[i]);            // Elementwise substraction
+  448|   165k|    }
+  449|  45.0k|    return C;  // Return new resultant 2D vector
+  450|  45.0k|}
+  451|       |
+  452|       |/**
+  453|       | * Function to multiply two 2D vectors
+  454|       | * @tparam T typename of the vector
+  455|       | * @param A First 2D vector
+  456|       | * @param B Second 2D vector
+  457|       | * @return new resultant vector
+  458|       | */
+  459|       |template <typename T>
+  460|       |std::vector<std::valarray<T>> multiply(const std::vector<std::valarray<T>> &A,
+  461|   105k|                                       const std::vector<std::valarray<T>> &B) {
+  462|   105k|    const auto shape_a = get_shape(A);
+  463|   105k|    const auto shape_b = get_shape(B);
+  464|       |    // If vectors are not eligible for multiplication
+  465|   105k|    if (shape_a.second != shape_b.first) {
+  466|      0|        std::cerr << "ERROR (" << __func__ << ") : ";
+  467|      0|        std::cerr << "Vectors are not eligible for multiplication ";
+  468|      0|        std::cerr << shape_a << " and " << shape_b << std::endl;
+  469|      0|        std::exit(EXIT_FAILURE);
+  470|      0|    }
+  471|   105k|    std::vector<std::valarray<T>> C;  // Vector to store result
+  472|       |    // Normal matrix multiplication
+  473|   330k|    for (size_t i = 0; i < shape_a.first; i++) {
+  474|   225k|        std::valarray<T> row;
+  475|   225k|        row.resize(shape_b.second);
+  476|  1.20M|        for (size_t j = 0; j < shape_b.second; j++) {
+  477|  3.10M|            for (size_t k = 0; k < shape_a.second; k++) {
+  478|  2.13M|                row[j] += A[i][k] * B[k][j];
+  479|  2.13M|            }
+  480|   975k|        }
+  481|   225k|        C.push_back(row);
+  482|   225k|    }
+  483|   105k|    return C;  // Return new resultant 2D vector
+  484|   105k|}
+  485|       |
+  486|       |/**
+  487|       | * Function to get hadamard product of two 2D vectors
+  488|       | * @tparam T typename of the vector
+  489|       | * @param A First 2D vector
+  490|       | * @param B Second 2D vector
+  491|       | * @return new resultant vector
+  492|       | */
+  493|       |template <typename T>
+  494|       |std::vector<std::valarray<T>> hadamard_product(
+  495|       |    const std::vector<std::valarray<T>> &A,
+  496|  30.0k|    const std::vector<std::valarray<T>> &B) {
+  497|  30.0k|    const auto shape_a = get_shape(A);
+  498|  30.0k|    const auto shape_b = get_shape(B);
+  499|       |    // If vectors are not eligible for hadamard product
+  500|  30.0k|    if (shape_a.first != shape_b.first || shape_a.second != shape_b.second) {
+  501|      0|        std::cerr << "ERROR (" << __func__ << ") : ";
+  502|      0|        std::cerr << "Vectors have different shapes ";
+  503|      0|        std::cerr << shape_a << " and " << shape_b << std::endl;
+  504|      0|        std::exit(EXIT_FAILURE);
+  505|      0|    }
+  506|  30.0k|    std::vector<std::valarray<T>> C;  // Vector to store result
+  507|  60.0k|    for (size_t i = 0; i < A.size(); i++) {
+  508|  30.0k|        C.push_back(A[i] * B[i]);  // Elementwise multiplication
+  509|  30.0k|    }
+  510|  30.0k|    return C;  // Return new resultant 2D vector
+  511|  30.0k|}
+  512|       |}  // namespace machine_learning
+  513|       |
+  514|       |#endif
+

@@ -1,0 +1,211 @@
+    1|       |/**
+    2|       | * \file
+    3|       | * \brief [Binary Insertion Sort Algorithm
+    4|       | * (Insertion Sort)](https://en.wikipedia.org/wiki/Insertion_sort)
+    5|       | *
+    6|       | * \details
+    7|       | * If the cost of comparisons exceeds the cost of swaps, as is the case for
+    8|       | * example with string keys stored by reference or with human interaction (such
+    9|       | * as choosing one of a pair displayed side-by-side), then using binary
+   10|       | * insertion sort may yield better performance. Binary insertion sort employs a
+   11|       | * binary search to determine the correct location to insert new elements, and
+   12|       | * therefore performs ⌈log2 n⌉ comparisons in the worst case. When each element
+   13|       | * in the array is searched for and inserted this is O(n log n). The algorithm
+   14|       | * as a whole still has a running time of O(n2) on average because of the series
+   15|       | * * of swaps required for each insertion. However it has several advantages
+   16|       | * such as
+   17|       | * 1. Easy to implement
+   18|       | * 2. For small set of data it is quite efficient
+   19|       | * 3. More efficient that other Quadratic complexity algorithms like
+   20|       | *    Selection sort or bubble sort.
+   21|       | * 4. It is efficient to use it when the cost of comparison is high.
+   22|       | * 5. It's stable that is it does not change the relative order of
+   23|       | *    elements with equal keys.
+   24|       | * 6. It can sort the array or list as it receives.
+   25|       | *
+   26|       | * Example execution steps:
+   27|       | * 1. Suppose initially we have
+   28|       | * \f{bmatrix}{40 &30 &20 &50 &10\f}
+   29|       | * 2. We start traversing from 40 till we reach 10
+   30|       | * when we reach at 30 we find that it is not at it's correct place so we take
+   31|       | * 30 and place it at a correct position thus the array will become
+   32|       | * \f{bmatrix}{30 &40 &20 &50 &10\f}
+   33|       | * 3. In the next iteration we are at 20 we find that this is also misplaced so
+   34|       | * we place it at the correct sorted position thus the array in this iteration
+   35|       | * becomes
+   36|       | * \f{bmatrix}{20 &30 &40 &50 &10\f}
+   37|       | * 4. We do not do anything with 50 and move on to the next iteration and
+   38|       | * select 10 which is misplaced and place it at correct position. Thus, we have
+   39|       | * \f{bmatrix}{10 &20 &30 &40 &50\f}
+   40|       | */
+   41|       |
+   42|       |#include <algorithm>  /// for algorithm functions
+   43|       |#include <cassert>    /// for assert
+   44|       |#include <iostream>   /// for IO operations
+   45|       |#include <vector>     /// for working with vectors
+   46|       |
+   47|       |/**
+   48|       | * \namespace sorting
+   49|       | * @brief Sorting algorithms
+   50|       | */
+   51|       |namespace sorting {
+   52|       |
+   53|       |/**
+   54|       | * \brief Binary search function to find the most suitable pace for an element.
+   55|       | * \tparam T The generic data type.
+   56|       | * \param arr The actual vector in which we are searching a suitable place for
+   57|       | * the element. \param val The value for which suitable place is to be found.
+   58|       | * \param low The lower bound of the range we are searching in.
+   59|       | * \param high The upper bound of the range we are searching in.
+   60|       | * \returns the index of most suitable position of val.
+   61|       | */
+   62|       |template <class T>
+   63|     38|int64_t binary_search(std::vector<T> &arr, T val, int64_t low, int64_t high) {
+   64|     38|    if (high <= low) {
+   65|     18|        return (val > arr[low]) ? (low + 1) : low;
+   66|     18|    }
+   67|     20|    int64_t mid = low + (high - low) / 2;
+   68|     20|    if (arr[mid] > val) {
+   69|      5|        return binary_search(arr, val, low, mid - 1);
+   70|     15|    } else if (arr[mid] < val) {
+   71|     15|        return binary_search(arr, val, mid + 1, high);
+   72|     15|    } else {
+   73|      0|        return mid + 1;
+   74|      0|    }
+   75|     20|}
+  ------------------
+  | _ZN7sorting13binary_searchIlEElRSt6vectorIT_SaIS2_EES2_ll:
+  |   63|     22|int64_t binary_search(std::vector<T> &arr, T val, int64_t low, int64_t high) {
+  |   64|     22|    if (high <= low) {
+  |   65|     10|        return (val > arr[low]) ? (low + 1) : low;
+  |   66|     10|    }
+  |   67|     12|    int64_t mid = low + (high - low) / 2;
+  |   68|     12|    if (arr[mid] > val) {
+  |   69|      2|        return binary_search(arr, val, low, mid - 1);
+  |   70|     10|    } else if (arr[mid] < val) {
+  |   71|     10|        return binary_search(arr, val, mid + 1, high);
+  |   72|     10|    } else {
+  |   73|      0|        return mid + 1;
+  |   74|      0|    }
+  |   75|     12|}
+  ------------------
+  | _ZN7sorting13binary_searchIfEElRSt6vectorIT_SaIS2_EES2_ll:
+  |   63|     16|int64_t binary_search(std::vector<T> &arr, T val, int64_t low, int64_t high) {
+  |   64|     16|    if (high <= low) {
+  |   65|      8|        return (val > arr[low]) ? (low + 1) : low;
+  |   66|      8|    }
+  |   67|      8|    int64_t mid = low + (high - low) / 2;
+  |   68|      8|    if (arr[mid] > val) {
+  |   69|      3|        return binary_search(arr, val, low, mid - 1);
+  |   70|      5|    } else if (arr[mid] < val) {
+  |   71|      5|        return binary_search(arr, val, mid + 1, high);
+  |   72|      5|    } else {
+  |   73|      0|        return mid + 1;
+  |   74|      0|    }
+  |   75|      8|}
+  ------------------
+   76|       |
+   77|       |/**
+   78|       | * \brief Insertion sort function to sort the vector.
+   79|       | * \tparam T The generic data type.
+   80|       | * \param arr The actual vector to sort.
+   81|       | * \returns Void.
+   82|       | */
+   83|       |template <typename T>
+   84|      4|void insertionSort_binsrch(std::vector<T> &arr) {
+   85|      4|    int64_t n = arr.size();
+   86|       |
+   87|     22|    for (int64_t i = 1; i < n; i++) {
+   88|     18|        T key = arr[i];
+   89|     18|        int64_t j = i - 1;
+   90|     18|        int64_t loc = sorting::binary_search(arr, key, 0, j);
+   91|     38|        while (j >= loc) {
+   92|     20|            arr[j + 1] = arr[j];
+   93|     20|            j--;
+   94|     20|        }
+   95|     18|        arr[j + 1] = key;
+   96|     18|    }
+   97|      4|}
+  ------------------
+  | _ZN7sorting21insertionSort_binsrchIlEEvRSt6vectorIT_SaIS2_EE:
+  |   84|      2|void insertionSort_binsrch(std::vector<T> &arr) {
+  |   85|      2|    int64_t n = arr.size();
+  |   86|       |
+  |   87|     12|    for (int64_t i = 1; i < n; i++) {
+  |   88|     10|        T key = arr[i];
+  |   89|     10|        int64_t j = i - 1;
+  |   90|     10|        int64_t loc = sorting::binary_search(arr, key, 0, j);
+  |   91|     19|        while (j >= loc) {
+  |   92|      9|            arr[j + 1] = arr[j];
+  |   93|      9|            j--;
+  |   94|      9|        }
+  |   95|     10|        arr[j + 1] = key;
+  |   96|     10|    }
+  |   97|      2|}
+  ------------------
+  | _ZN7sorting21insertionSort_binsrchIfEEvRSt6vectorIT_SaIS2_EE:
+  |   84|      2|void insertionSort_binsrch(std::vector<T> &arr) {
+  |   85|      2|    int64_t n = arr.size();
+  |   86|       |
+  |   87|     10|    for (int64_t i = 1; i < n; i++) {
+  |   88|      8|        T key = arr[i];
+  |   89|      8|        int64_t j = i - 1;
+  |   90|      8|        int64_t loc = sorting::binary_search(arr, key, 0, j);
+  |   91|     19|        while (j >= loc) {
+  |   92|     11|            arr[j + 1] = arr[j];
+  |   93|     11|            j--;
+  |   94|     11|        }
+  |   95|      8|        arr[j + 1] = key;
+  |   96|      8|    }
+  |   97|      2|}
+  ------------------
+   98|       |}  // namespace sorting
+   99|       |
+  100|       |/**
+  101|       | * @brief Self-test implementations
+  102|       | * @returns void
+  103|       | */
+  104|      1|static void test() {
+  105|       |    /* descriptions of the following test */
+  106|       |    /* 1st test:
+  107|       |       [5, -3, -1, -2, 7] returns [-3, -2, -1, 5, 7] */
+  108|      1|    std::vector<int64_t> arr1({5, -3, -1, -2, 7});
+  109|      1|    std::cout << "1st test... ";
+  110|      1|    sorting::insertionSort_binsrch(arr1);
+  111|      1|    assert(std::is_sorted(std::begin(arr1), std::end(arr1)));
+  112|      0|    std::cout << "passed" << std::endl;
+  113|       |
+  114|       |    /* 2nd test:
+  115|       |       [12, 26, 15, 91, 32, 54, 41] returns [12, 15, 26, 32, 41, 54, 91] */
+  116|      1|    std::vector<int64_t> arr2({12, 26, 15, 91, 32, 54, 41});
+  117|      1|    std::cout << "2nd test... ";
+  118|      1|    sorting::insertionSort_binsrch(arr2);
+  119|      1|    assert(std::is_sorted(std::begin(arr2), std::end(arr2)));
+  120|      0|    std::cout << "passed" << std::endl;
+  121|       |
+  122|       |    /* 3rd test:
+  123|       |       [7.1, -2.5, -4.0, -2.1, 5.7] returns [-4.0, -2.5, -2.1, 5.7, 7.1] */
+  124|      1|    std::vector<float> arr3({7.1, -2.5, -4.0, -2.1, 5.7});
+  125|      1|    std::cout << "3rd test... ";
+  126|      1|    sorting::insertionSort_binsrch(arr3);
+  127|      1|    assert(std::is_sorted(std::begin(arr3), std::end(arr3)));
+  128|      0|    std::cout << "passed" << std::endl;
+  129|       |
+  130|       |    /* 4th test:
+  131|       |       [12.8, -3.7, -20.7, -7.1, 2.2] returns [-20.7, -7.1, -3.7, 2.2, 12.8] */
+  132|      1|    std::vector<float> arr4({12.8, -3.7, -20.7, -7.1, 2.2});
+  133|      1|    std::cout << "4th test... ";
+  134|      1|    sorting::insertionSort_binsrch(arr4);
+  135|      1|    assert(std::is_sorted(std::begin(arr4), std::end(arr4)));
+  136|      0|    std::cout << "passed" << std::endl;
+  137|      1|}
+  138|       |
+  139|       |/**
+  140|       | * @brief Main function
+  141|       | * @return 0 on exit.
+  142|       | */
+  143|      1|int main() {
+  144|      1|    test();  // run self-test implementations
+  145|      1|    return 0;
+  146|      1|}
+

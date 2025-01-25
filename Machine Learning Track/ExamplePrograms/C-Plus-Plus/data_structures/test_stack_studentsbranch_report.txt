@@ -1,0 +1,137 @@
+/home/kidus/Desktop/GNNs/ExamplePrograms/C-Plus-Plus/data_structures/stack.hpp:
+    1|       |/**
+    2|       | * @file
+    3|       | * @author danghai
+    4|       | * @author [Piotr Idzik](https://github.com/vil02)
+    5|       | * @brief  This class specifies the basic operation on a stack as a linked list
+    6|       | **/
+    7|       |#ifndef DATA_STRUCTURES_STACK_HPP_
+    8|       |#define DATA_STRUCTURES_STACK_HPP_
+    9|       |
+   10|       |#include <stdexcept>  /// for std::invalid_argument
+   11|       |
+   12|       |#include "node.hpp"  /// for Node
+   13|       |
+   14|       |/** Definition of the stack class
+   15|       | * \tparam value_type type of data nodes of the linked list in the stack should
+   16|       | * contain
+   17|       | */
+   18|       |template <class ValueType>
+   19|       |class stack {
+   20|       | public:
+   21|       |    using value_type = ValueType;
+   22|       |
+   23|       |    /** Show stack */
+   24|       |    void display() const {
+   25|       |        std::cout << "Top --> ";
+   26|       |        display_all(this->stackTop.get());
+   27|       |        std::cout << '\n';
+   28|       |        std::cout << "Size of stack: " << size << std::endl;
+   29|       |    }
+   30|       |
+   31|       |    std::vector<value_type> toVector() const {
+   32|       |        return push_all_to_vector(this->stackTop.get(), this->size);
+   33|       |    }
+   34|       |
+   35|       | private:
+   36|      0|    void ensureNotEmpty() const {
+   37|      0|        if (isEmptyStack()) {
+   38|      0|            throw std::invalid_argument("Stack is empty.");
+   39|      0|        }
+   40|      0|    }
+   41|       |
+   42|       | public:
+   43|       |    /** Determine whether the stack is empty */
+   44|      0|    bool isEmptyStack() const { return (stackTop == nullptr); }
+   45|       |
+   46|       |    /** Add new item to the stack */
+   47|      0|    void push(const value_type& item) {
+   48|      0|        auto newNode = std::make_shared<Node<value_type>>();
+   49|      0|        newNode->data = item;
+   50|      0|        newNode->next = stackTop;
+   51|      0|        stackTop = newNode;
+   52|      0|        size++;
+   53|      0|    }
+   54|       |
+   55|       |    /** Return the top element of the stack */
+   56|      0|    value_type top() const {
+   57|      0|        ensureNotEmpty();
+   58|      0|        return stackTop->data;
+   59|      0|    }
+   60|       |
+   61|       |    /** Remove the top element of the stack */
+   62|      0|    void pop() {
+   63|      0|        ensureNotEmpty();
+   64|      0|        stackTop = stackTop->next;
+   65|      0|        size--;
+   66|      0|    }
+   67|       |
+   68|       |    /** Clear stack */
+   69|      0|    void clear() {
+   70|      0|        stackTop = nullptr;
+   71|      0|        size = 0;
+   72|      0|    }
+   73|       |
+   74|       | private:
+   75|       |    std::shared_ptr<Node<value_type>> stackTop =
+   76|       |        {};                /**< Pointer to the stack */
+   77|       |    std::size_t size = 0;  ///< size of stack
+   78|       |};
+   79|       |
+   80|       |#endif  // DATA_STRUCTURES_STACK_HPP_
+
+/home/kidus/Desktop/GNNs/ExamplePrograms/C-Plus-Plus/data_structures/test_stack_students.cpp:
+    1|       |/*
+    2|       | * This program reads a data file consisting of students' GPAs
+    3|       | * followed by their names. The program then prints the highest
+    4|       | * GPA and the names of the students with the highest GPA.
+    5|       | * It uses stack to store the names of the students
+    6|       | * Run:
+    7|       | *     make all
+    8|       | *     ./main student.txt
+    9|       | ************************************************************
+   10|       | * */
+   11|       |#include <cassert>
+   12|       |#include <cmath>
+   13|       |#include <fstream>
+   14|       |#include <iomanip>
+   15|       |#include <iostream>
+   16|       |#include <string>
+   17|       |
+   18|       |#include "./stack.hpp"
+   19|       |
+   20|      0|int main(int argc, char* argv[]) {
+   21|      0|    double GPA = NAN;
+   22|      0|    double highestGPA = NAN;
+   23|      0|    std::string name;
+   24|       |
+   25|      0|    assert(argc == 2);
+   26|      0|    std::ifstream infile;
+   27|      0|    stack<std::string> stk;
+   28|       |
+   29|      0|    infile.open(argv[1]);
+   30|      0|    std::cout << std::fixed << std::showpoint;
+   31|      0|    std::cout << std::setprecision(2);
+   32|      0|    infile >> GPA >> name;
+   33|      0|    highestGPA = GPA;
+   34|       |
+   35|      0|    while (infile) {
+   36|      0|        if (GPA > highestGPA) {
+   37|      0|            stk.clear();
+   38|      0|            stk.push(name);
+   39|      0|            highestGPA = GPA;
+   40|      0|        } else if (GPA == highestGPA) {
+   41|      0|            stk.push(name);
+   42|      0|        }
+   43|      0|        infile >> GPA >> name;
+   44|      0|    }
+   45|      0|    std::cout << "Highest GPA: " << highestGPA << std::endl;
+   46|      0|    std::cout << "Students the highest GPA are: " << std::endl;
+   47|      0|    while (!stk.isEmptyStack()) {
+   48|      0|        std::cout << stk.top() << std::endl;
+   49|      0|        stk.pop();
+   50|      0|    }
+   51|      0|    std::cout << std::endl;
+   52|      0|    return 0;
+   53|      0|}
+

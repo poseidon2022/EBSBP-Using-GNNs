@@ -1,0 +1,102 @@
+    1|       |#include <iostream>
+    2|       |#include <queue>
+    3|       |
+    4|       |/**************************
+    5|       |    @author shrutisheoran
+    6|       |**************************/
+    7|       |
+    8|       |using namespace std;
+    9|       |
+   10|       |struct Btree {
+   11|       |    int data;
+   12|       |    struct Btree *left;   // Pointer to left subtree
+   13|       |    struct Btree *right;  // Pointer to right subtree
+   14|       |};
+   15|       |
+   16|      7|void insert(Btree **root, int d) {
+   17|      7|    Btree *nn = new Btree();  // Creating new node
+   18|      7|    nn->data = d;
+   19|      7|    nn->left = NULL;
+   20|      7|    nn->right = NULL;
+   21|      7|    if (*root == NULL) {
+   22|      1|        *root = nn;
+   23|      1|        return;
+   24|      6|    } else {
+   25|      6|        queue<Btree *> q;
+   26|       |        // Adding root node to queue
+   27|      6|        q.push(*root);
+   28|     12|        while (!q.empty()) {
+   29|     12|            Btree *node = q.front();
+   30|       |            // Removing parent node from queue
+   31|     12|            q.pop();
+   32|     12|            if (node->left)
+   33|       |                // Adding left child of removed node to queue
+   34|      9|                q.push(node->left);
+   35|      3|            else {
+   36|       |                // Adding new node if no left child is present
+   37|      3|                node->left = nn;
+   38|      3|                return;
+   39|      3|            }
+   40|      9|            if (node->right)
+   41|       |                // Adding right child of removed node to queue
+   42|      6|                q.push(node->right);
+   43|      3|            else {
+   44|       |                // Adding new node if no right child is present
+   45|      3|                node->right = nn;
+   46|      3|                return;
+   47|      3|            }
+   48|      9|        }
+   49|      6|    }
+   50|      7|}
+   51|       |
+   52|      1|void morrisInorder(Btree *root) {
+   53|      1|    Btree *curr = root;
+   54|      1|    Btree *temp;
+   55|     11|    while (curr) {
+   56|     10|        if (curr->left == NULL) {
+   57|      4|            cout << curr->data << " ";
+   58|       |            // If left of current node is NULL then curr is shifted to right
+   59|      4|            curr = curr->right;
+   60|      6|        } else {
+   61|       |            // Left of current node is stored in temp
+   62|      6|            temp = curr->left;
+   63|       |            // Moving to extreme right of temp
+   64|      8|            while (temp->right && temp->right != curr) temp = temp->right;
+   65|       |            // If extreme right is null it is made to point to currrent node
+   66|       |            // (will be used for backtracking)
+   67|      6|            if (temp->right == NULL) {
+   68|      3|                temp->right = curr;
+   69|       |                // current node is made to point its left subtree
+   70|      3|                curr = curr->left;
+   71|      3|            }
+   72|       |            // If extreme right already points to currrent node it it set to
+   73|       |            // null
+   74|      3|            else if (temp->right == curr) {
+   75|      3|                cout << curr->data << " ";
+   76|      3|                temp->right = NULL;
+   77|       |                // current node is made to point its right subtree
+   78|      3|                curr = curr->right;
+   79|      3|            }
+   80|      6|        }
+   81|     10|    }
+   82|      1|}
+   83|       |
+   84|     15|void deleteAll(const Btree *const root) {
+   85|     15|    if (root) {
+   86|      7|        deleteAll(root->left);
+   87|      7|        deleteAll(root->right);
+   88|      7|        delete root;
+   89|      7|    }
+   90|     15|}
+   91|       |
+   92|      1|int main() {
+   93|       |    // Testing morrisInorder funtion
+   94|      1|    Btree *root = NULL;
+   95|      1|    int i;
+   96|      8|    for (i = 1; i <= 7; i++) insert(&root, i);
+   97|      1|    cout << "Morris Inorder: ";
+   98|      1|    morrisInorder(root);
+   99|      1|    deleteAll(root);
+  100|      1|    return 0;
+  101|      1|}
+

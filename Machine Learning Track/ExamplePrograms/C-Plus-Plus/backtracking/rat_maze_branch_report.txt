@@ -1,0 +1,116 @@
+    1|       |/**
+    2|       | * @file
+    3|       | * @brief Implements [Rat in a
+    4|       | * Maze](https://www.codesdope.com/blog/article/backtracking-to-
+    5|       | * solve-a-rat-in-a-maze-c-java-pytho/) algorithm
+    6|       | *
+    7|       | * @details
+    8|       | * A Maze is given as N*N binary matrix of blocks where source block is the
+    9|       | * upper left most block i.e., maze[0][0] and destination block is lower
+   10|       | * rightmost block i.e., maze[N-1][N-1]. A rat starts from source and has to
+   11|       | * reach destination. The rat can move only in two directions: forward and down.
+   12|       | * In the maze matrix, 0 means the block is dead end and 1 means the block can
+   13|       | * be used in the path from source to destination.
+   14|       | *
+   15|       | * @author [Vaibhav Thakkar](https://github.com/vaithak)
+   16|       | * @author [David Leal](https://github.com/Panquesito7)
+   17|       | */
+   18|       |
+   19|       |#include <array>     /// for std::array
+   20|       |#include <cassert>   /// for assert
+   21|       |#include <iostream>  /// for IO operations
+   22|       |
+   23|       |/**
+   24|       | * @namespace backtracking
+   25|       | * @brief Backtracking algorithms
+   26|       | */
+   27|       |namespace backtracking {
+   28|       |/**
+   29|       | * @namespace rat_maze
+   30|       | * @brief Functions for [Rat in a
+   31|       | * Maze](https://www.codesdope.com/blog/article/backtracking-to-
+   32|       | * solve-a-rat-in-a-maze-c-java-pytho/) algorithm
+   33|       | */
+   34|       |namespace rat_maze {
+   35|       |/**
+   36|       | * @brief Solve rat maze problem
+   37|       | * @tparam size number of matrix size
+   38|       | * @param currposrow current position in rows
+   39|       | * @param currposcol current position in columns
+   40|       | * @param maze matrix where numbers are saved
+   41|       | * @param soln matrix to problem solution
+   42|       | * @returns `true` if there exists a solution to move one step ahead in a column
+   43|       | * or in a row
+   44|       | * @returns `false` for the backtracking part
+   45|       | */
+   46|       |template <size_t size>
+   47|       |bool solveMaze(int currposrow, int currposcol,
+   48|       |               const std::array<std::array<int, size>, size> &maze,
+   49|      7|               std::array<std::array<int, size>, size> soln) {
+   50|      7|    if ((currposrow == size - 1) && (currposcol == size - 1)) {
+   51|      1|        soln[currposrow][currposcol] = 1;
+   52|      5|        for (int i = 0; i < size; ++i) {
+   53|     20|            for (int j = 0; j < size; ++j) {
+   54|     16|                std::cout << soln[i][j] << " ";
+   55|     16|            }
+   56|      4|            std::cout << std::endl;
+   57|      4|        }
+   58|      1|        return true;
+   59|      6|    } else {
+   60|      6|        soln[currposrow][currposcol] = 1;
+   61|       |
+   62|       |        // if there exist a solution by moving one step ahead in a column
+   63|      6|        if ((currposcol < size - 1) && maze[currposrow][currposcol + 1] == 1 &&
+   64|      6|            solveMaze(currposrow, currposcol + 1, maze, soln)) {
+   65|      3|            return true;
+   66|      3|        }
+   67|       |
+   68|       |        // if there exists a solution by moving one step ahead in a row
+   69|      3|        if ((currposrow < size - 1) && maze[currposrow + 1][currposcol] == 1 &&
+   70|      3|            solveMaze(currposrow + 1, currposcol, maze, soln)) {
+   71|      3|            return true;
+   72|      3|        }
+   73|       |
+   74|       |        // the backtracking part
+   75|      0|        soln[currposrow][currposcol] = 0;
+   76|      0|        return false;
+   77|      3|    }
+   78|      7|}
+   79|       |}  // namespace rat_maze
+   80|       |}  // namespace backtracking
+   81|       |
+   82|       |/**
+   83|       | * @brief Self-test implementations
+   84|       | * @returns void
+   85|       | */
+   86|      1|static void test() {
+   87|      1|    const int size = 4;
+   88|      1|    std::array<std::array<int, size>, size> maze = {
+   89|      1|        std::array<int, size>{1, 0, 1, 0}, std::array<int, size>{1, 0, 1, 1},
+   90|      1|        std::array<int, size>{1, 0, 0, 1}, std::array<int, size>{1, 1, 1, 1}};
+   91|       |
+   92|      1|    std::array<std::array<int, size>, size> soln{};
+   93|       |
+   94|       |    // Backtracking: setup matrix solution to zero
+   95|      5|    for (int i = 0; i < size; ++i) {
+   96|     20|        for (int j = 0; j < size; ++j) {
+   97|     16|            soln[i][j] = 0;
+   98|     16|        }
+   99|      4|    }
+  100|       |
+  101|      1|    int currposrow = 0;  // Current position in the rows
+  102|      1|    int currposcol = 0;  // Current position in the columns
+  103|       |
+  104|      1|    assert(backtracking::rat_maze::solveMaze<size>(currposrow, currposcol, maze,
+  105|      1|                                                   soln) == 1);
+  106|      1|}
+  107|       |
+  108|       |/**
+  109|       | * @brief Main function
+  110|       | * @returns 0 on exit
+  111|       | */
+  112|      1|int main() {
+  113|      1|    test();  // run self-test implementations
+  114|      1|    return 0;
+  115|      1|}
+

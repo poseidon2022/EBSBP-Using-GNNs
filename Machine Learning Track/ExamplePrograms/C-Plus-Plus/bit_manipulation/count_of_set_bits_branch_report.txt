@@ -1,0 +1,84 @@
+    1|       |/**
+    2|       | * @file
+    3|       | * @brief Implementation to [count number of set bits of a number]
+    4|       | * (https://www.geeksforgeeks.org/count-set-bits-in-an-integer/) in an
+    5|       | * integer.
+    6|       | *
+    7|       | * @details
+    8|       | * We are given an integer number. We need to calculate the number of set bits
+    9|       | * in it.
+   10|       | *
+   11|       | * A binary number consists of two digits. They are 0 & 1. Digit 1 is known as
+   12|       | * set bit in computer terms.
+   13|       | * Worst Case Time Complexity: O(log n)
+   14|       | * Space complexity: O(1)
+   15|       | * @author [Swastika Gupta](https://github.com/Swastyy)
+   16|       | * @author [Prashant Thakur](https://github.com/prashant-th18)
+   17|       | */
+   18|       |#include <cassert>   /// for assert
+   19|       |#include <cstdint>
+   20|       |#include <iostream>  /// for IO operations
+   21|       |/**
+   22|       | * @namespace bit_manipulation
+   23|       | * @brief Bit manipulation algorithms
+   24|       | */
+   25|       |namespace bit_manipulation {
+   26|       |/**
+   27|       | * @namespace count_of_set_bits
+   28|       | * @brief Functions for the [count sets
+   29|       | * bits](https://www.geeksforgeeks.org/count-set-bits-in-an-integer/)
+   30|       | * implementation
+   31|       | */
+   32|       |namespace count_of_set_bits {
+   33|       |/**
+   34|       | * @brief The main function implements set bit count
+   35|       | * @param n is the number whose set bit will be counted
+   36|       | * @returns total number of set-bits in the binary representation of number `n`
+   37|       | */
+   38|       |std::uint64_t countSetBits(
+   39|      8|    std ::int64_t n) {  // int64_t is preferred over int so that
+   40|       |                        // no Overflow can be there.
+   41|       |
+   42|      8|    int count = 0;  // "count" variable is used to count number of set-bits('1')
+   43|       |                    // in binary representation of number 'n'
+   44|     31|    while (n != 0) {
+   45|     23|        ++count;
+   46|     23|        n = (n & (n - 1));
+   47|     23|    }
+   48|      8|    return count;
+   49|       |    // Why this algorithm is better than the standard one?
+   50|       |    // Because this algorithm runs the same number of times as the number of
+   51|       |    // set-bits in it. Means if my number is having "3" set bits, then this
+   52|       |    // while loop will run only "3" times!!
+   53|      8|}
+   54|       |}  // namespace count_of_set_bits
+   55|       |}  // namespace bit_manipulation
+   56|       |
+   57|      1|static void test() {
+   58|       |    // n = 4 return 1
+   59|      1|    assert(bit_manipulation::count_of_set_bits::countSetBits(4) == 1);
+   60|       |    // n = 6 return 2
+   61|      0|    assert(bit_manipulation::count_of_set_bits::countSetBits(6) == 2);
+   62|       |    // n = 13 return 3
+   63|      0|    assert(bit_manipulation::count_of_set_bits::countSetBits(13) == 3);
+   64|       |    // n = 9 return 2
+   65|      0|    assert(bit_manipulation::count_of_set_bits::countSetBits(9) == 2);
+   66|       |    // n = 15 return 4
+   67|      0|    assert(bit_manipulation::count_of_set_bits::countSetBits(15) == 4);
+   68|       |    // n = 25 return 3
+   69|      0|    assert(bit_manipulation::count_of_set_bits::countSetBits(25) == 3);
+   70|       |    // n = 97 return 3
+   71|      0|    assert(bit_manipulation::count_of_set_bits::countSetBits(97) == 3);
+   72|       |    // n = 31 return 5
+   73|      0|    assert(bit_manipulation::count_of_set_bits::countSetBits(31) == 5);
+   74|      0|    std::cout << "All test cases successfully passed!" << std::endl;
+   75|      1|}
+   76|       |/**
+   77|       | * @brief Main function
+   78|       | * @returns 0 on exit
+   79|       | */
+   80|      1|int main() {
+   81|      1|    test();  // run self-test implementations
+   82|      1|    return 0;
+   83|      1|}
+

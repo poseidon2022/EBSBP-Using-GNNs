@@ -1,0 +1,69 @@
+    1|       |// C++ program to find minimum number of swaps required to sort an array
+    2|       |#include <algorithm>
+    3|       |#include <iostream>
+    4|       |#include <utility>
+    5|       |#include <vector>
+    6|       |
+    7|       |// Function returns the minimum number of swaps
+    8|       |// required to sort the array
+    9|      1|int minSwaps(int arr[], int n) {
+   10|       |    // Create an array of pairs where first
+   11|       |    // element is array element and second element
+   12|       |    // is position of first element
+   13|      1|    std::pair<int, int> *arrPos = new std::pair<int, int>[n];
+   14|      9|    for (int i = 0; i < n; i++) {
+   15|      8|        arrPos[i].first = arr[i];
+   16|      8|        arrPos[i].second = i;
+   17|      8|    }
+   18|       |
+   19|       |    // Sort the array by array element values to
+   20|       |    // get right position of every element as second
+   21|       |    // element of pair.
+   22|      1|    std::sort(arrPos, arrPos + n);
+   23|       |
+   24|       |    // To keep track of visited elements. Initialize
+   25|       |    // all elements as not visited or false.
+   26|      1|    std::vector<bool> vis(n, false);
+   27|       |
+   28|       |    // Initialize result
+   29|      1|    int ans = 0;
+   30|       |
+   31|       |    // Traverse array elements
+   32|      9|    for (int i = 0; i < n; i++) {
+   33|       |        // already swapped and corrected or
+   34|       |        // already present at correct pos
+   35|      8|        if (vis[i] || arrPos[i].second == i)
+   36|      5|            continue;
+   37|       |
+   38|       |        // find out the number of node in
+   39|       |        // this cycle and add in ans
+   40|      3|        int cycle_size = 0;
+   41|      3|        int j = i;
+   42|      9|        while (!vis[j]) {
+   43|      6|            vis[j] = 1;
+   44|       |
+   45|       |            // move to next node
+   46|      6|            j = arrPos[j].second;
+   47|      6|            cycle_size++;
+   48|      6|        }
+   49|       |
+   50|       |        // Update answer by adding current cycle.
+   51|      3|        if (cycle_size > 0) {
+   52|      3|            ans += (cycle_size - 1);
+   53|      3|        }
+   54|      3|    }
+   55|       |
+   56|      1|    delete[] arrPos;
+   57|       |
+   58|       |    // Return result
+   59|      1|    return ans;
+   60|      1|}
+   61|       |
+   62|       |// program to test
+   63|      1|int main() {
+   64|      1|    int arr[] = {6, 7, 8, 1, 2, 3, 9, 12};
+   65|      1|    int n = (sizeof(arr) / sizeof(int));
+   66|      1|    std::cout << minSwaps(arr, n);
+   67|      1|    return 0;
+   68|      1|}
+

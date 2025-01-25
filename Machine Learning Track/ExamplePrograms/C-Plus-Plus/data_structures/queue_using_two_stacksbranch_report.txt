@@ -1,0 +1,224 @@
+    1|       |/**
+    2|       | * @author [shoniavika](https://github.com/shoniavika)
+    3|       | * @file
+    4|       | *
+    5|       | * Implementation of a Queue using two Stacks.
+    6|       | */
+    7|       |
+    8|       |#include <cassert>
+    9|       |#include <iostream>
+   10|       |#include <stack>
+   11|       |
+   12|       |namespace {
+   13|       |/**
+   14|       | * @brief Queue data structure. Stores elements in FIFO
+   15|       | * (first-in-first-out) manner.
+   16|       | * @tparam T datatype to store in the queue
+   17|       | */
+   18|       |template <typename T>
+   19|       |class MyQueue {
+   20|       | private:
+   21|       |    std::stack<T> s1, s2;
+   22|       |
+   23|       | public:
+   24|       |    /**
+   25|       |     * Constructor for queue.
+   26|       |     */
+   27|      2|    MyQueue() = default;
+  ------------------
+  | queue_using_two_stacks.cpp:_ZN12_GLOBAL__N_17MyQueueIiEC2Ev:
+  |   27|      1|    MyQueue() = default;
+  ------------------
+  | queue_using_two_stacks.cpp:_ZN12_GLOBAL__N_17MyQueueIdEC2Ev:
+  |   27|      1|    MyQueue() = default;
+  ------------------
+   28|       |
+   29|       |    /**
+   30|       |     * Pushes x to the back of queue.
+   31|       |     */
+   32|       |    void push(T x);
+   33|       |
+   34|       |    /**
+   35|       |     * Removes an element from the front of the queue.
+   36|       |     */
+   37|       |    const T& pop();
+   38|       |
+   39|       |    /**
+   40|       |     * Returns first element, without removing it.
+   41|       |     */
+   42|       |    const T& peek() const;
+   43|       |
+   44|       |    /**
+   45|       |     * Returns whether the queue is empty.
+   46|       |     */
+   47|       |    bool empty() const;
+   48|       |};
+   49|       |
+   50|       |/**
+   51|       | * Appends element to the end of the queue
+   52|       | */
+   53|       |template <typename T>
+   54|      7|void MyQueue<T>::push(T x) {
+   55|     13|    while (!s2.empty()) {
+   56|      6|        s1.push(s2.top());
+   57|      6|        s2.pop();
+   58|      6|    }
+   59|      7|    s2.push(x);
+   60|     13|    while (!s1.empty()) {
+   61|      6|        s2.push(s1.top());
+   62|      6|        s1.pop();
+   63|      6|    }
+   64|      7|}
+  ------------------
+  | queue_using_two_stacks.cpp:_ZN12_GLOBAL__N_17MyQueueIiE4pushEi:
+  |   54|      4|void MyQueue<T>::push(T x) {
+  |   55|      7|    while (!s2.empty()) {
+  |   56|      3|        s1.push(s2.top());
+  |   57|      3|        s2.pop();
+  |   58|      3|    }
+  |   59|      4|    s2.push(x);
+  |   60|      7|    while (!s1.empty()) {
+  |   61|      3|        s2.push(s1.top());
+  |   62|      3|        s1.pop();
+  |   63|      3|    }
+  |   64|      4|}
+  ------------------
+  | queue_using_two_stacks.cpp:_ZN12_GLOBAL__N_17MyQueueIdE4pushEd:
+  |   54|      3|void MyQueue<T>::push(T x) {
+  |   55|      6|    while (!s2.empty()) {
+  |   56|      3|        s1.push(s2.top());
+  |   57|      3|        s2.pop();
+  |   58|      3|    }
+  |   59|      3|    s2.push(x);
+  |   60|      6|    while (!s1.empty()) {
+  |   61|      3|        s2.push(s1.top());
+  |   62|      3|        s1.pop();
+  |   63|      3|    }
+  |   64|      3|}
+  ------------------
+   65|       |
+   66|       |/**
+   67|       | * Removes element from the front of the queue
+   68|       | */
+   69|       |template <typename T>
+   70|      7|const T& MyQueue<T>::pop() {
+   71|      7|    const T& temp = MyQueue::peek();
+   72|      7|    s2.pop();
+   73|      7|    return temp;
+   74|      7|}
+  ------------------
+  | queue_using_two_stacks.cpp:_ZN12_GLOBAL__N_17MyQueueIiE3popEv:
+  |   70|      4|const T& MyQueue<T>::pop() {
+  |   71|      4|    const T& temp = MyQueue::peek();
+  |   72|      4|    s2.pop();
+  |   73|      4|    return temp;
+  |   74|      4|}
+  ------------------
+  | queue_using_two_stacks.cpp:_ZN12_GLOBAL__N_17MyQueueIdE3popEv:
+  |   70|      3|const T& MyQueue<T>::pop() {
+  |   71|      3|    const T& temp = MyQueue::peek();
+  |   72|      3|    s2.pop();
+  |   73|      3|    return temp;
+  |   74|      3|}
+  ------------------
+   75|       |
+   76|       |/**
+   77|       | * Returns element in the front.
+   78|       | * Does not remove it.
+   79|       | */
+   80|       |template <typename T>
+   81|     14|const T& MyQueue<T>::peek() const {
+   82|     14|    if (!empty()) {
+   83|     14|        return s2.top();
+   84|     14|    }
+   85|      0|    std::cerr << "Queue is empty" << std::endl;
+   86|      0|    exit(0);
+   87|     14|}
+  ------------------
+  | queue_using_two_stacks.cpp:_ZNK12_GLOBAL__N_17MyQueueIiE4peekEv:
+  |   81|      8|const T& MyQueue<T>::peek() const {
+  |   82|      8|    if (!empty()) {
+  |   83|      8|        return s2.top();
+  |   84|      8|    }
+  |   85|      0|    std::cerr << "Queue is empty" << std::endl;
+  |   86|      0|    exit(0);
+  |   87|      8|}
+  ------------------
+  | queue_using_two_stacks.cpp:_ZNK12_GLOBAL__N_17MyQueueIdE4peekEv:
+  |   81|      6|const T& MyQueue<T>::peek() const {
+  |   82|      6|    if (!empty()) {
+  |   83|      6|        return s2.top();
+  |   84|      6|    }
+  |   85|      0|    std::cerr << "Queue is empty" << std::endl;
+  |   86|      0|    exit(0);
+  |   87|      6|}
+  ------------------
+   88|       |
+   89|       |/**
+   90|       | * Checks whether a queue is empty
+   91|       | */
+   92|       |template <typename T>
+   93|     16|bool MyQueue<T>::empty() const {
+   94|     16|    return s2.empty() && s1.empty();
+   95|     16|}
+  ------------------
+  | queue_using_two_stacks.cpp:_ZNK12_GLOBAL__N_17MyQueueIiE5emptyEv:
+  |   93|     10|bool MyQueue<T>::empty() const {
+  |   94|     10|    return s2.empty() && s1.empty();
+  |   95|     10|}
+  ------------------
+  | queue_using_two_stacks.cpp:_ZNK12_GLOBAL__N_17MyQueueIdE5emptyEv:
+  |   93|      6|bool MyQueue<T>::empty() const {
+  |   94|      6|    return s2.empty() && s1.empty();
+  |   95|      6|}
+  ------------------
+   96|       |}  // namespace
+   97|       |
+   98|       |/**
+   99|       | * Testing function
+  100|       | */
+  101|      1|void queue_test() {
+  102|      1|    MyQueue<int> que;
+  103|      1|    std::cout << "Test #1\n";
+  104|      1|    que.push(2);
+  105|      1|    que.push(5);
+  106|      1|    que.push(0);
+  107|      1|    assert(que.peek() == 2);
+  108|      0|    assert(que.pop() == 2);
+  109|      0|    assert(que.peek() == 5);
+  110|      0|    assert(que.pop() == 5);
+  111|      0|    assert(que.peek() == 0);
+  112|      0|    assert(que.pop() == 0);
+  113|      0|    assert(que.empty() == true);
+  114|      0|    std::cout << "PASSED\n";
+  115|       |
+  116|      1|    std::cout << "Test #2\n";
+  117|      1|    que.push(-1);
+  118|      1|    assert(que.empty() == false);
+  119|      0|    assert(que.peek() == -1);
+  120|      0|    assert(que.pop() == -1);
+  121|      0|    std::cout << "PASSED\n";
+  122|       |
+  123|      1|    MyQueue<double> que2;
+  124|      1|    std::cout << "Test #3\n";
+  125|      1|    que2.push(2.31223);
+  126|      1|    que2.push(3.1415926);
+  127|      1|    que2.push(2.92);
+  128|       |
+  129|      1|    assert(que2.peek() == 2.31223);
+  130|      0|    assert(que2.pop() == 2.31223);
+  131|      0|    assert(que2.peek() == 3.1415926);
+  132|      0|    assert(que2.pop() == 3.1415926);
+  133|      0|    assert(que2.peek() == 2.92);
+  134|      0|    assert(que2.pop() == 2.92);
+  135|      0|    std::cout << "PASSED\n";
+  136|      1|}
+  137|       |
+  138|       |/**
+  139|       | * Main function, calls testing function
+  140|       | */
+  141|      1|int main() {
+  142|      1|    queue_test();
+  143|      1|    return 0;
+  144|      1|}
+

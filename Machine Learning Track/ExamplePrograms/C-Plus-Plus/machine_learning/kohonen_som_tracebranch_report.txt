@@ -1,0 +1,489 @@
+    1|       |/**
+    2|       | * \addtogroup machine_learning Machine Learning Algorithms
+    3|       | * @{
+    4|       | * \file
+    5|       | * \brief [Kohonen self organizing
+    6|       | * map](https://en.wikipedia.org/wiki/Self-organizing_map) (data tracing)
+    7|       | *
+    8|       | * This example implements a powerful self organizing map algorithm.
+    9|       | * The algorithm creates a connected network of weights that closely
+   10|       | * follows the given data points. This this creates a chain of nodes that
+   11|       | * resembles the given input shape.
+   12|       | *
+   13|       | * \author [Krishna Vedala](https://github.com/kvedala)
+   14|       | *
+   15|       | * \note This C++ version of the program is considerable slower than its [C
+   16|       | * counterpart](https://github.com/kvedala/C/blob/master/machine_learning/kohonen_som_trace.c)
+   17|       | * \note The compiled code is much slower when compiled with MS Visual C++ 2019
+   18|       | * than with GCC on windows
+   19|       | * \see kohonen_som_topology.cpp
+   20|       | */
+   21|       |#define _USE_MATH_DEFINES  // required for MS Visual C++
+   22|       |#include <algorithm>
+   23|       |#include <array>
+   24|       |#include <cmath>
+   25|       |#include <cstdlib>
+   26|       |#include <ctime>
+   27|       |#include <fstream>
+   28|       |#include <iostream>
+   29|       |#include <valarray>
+   30|       |#include <vector>
+   31|       |#ifdef _OPENMP  // check if OpenMP based parallellization is available
+   32|       |#include <omp.h>
+   33|       |#endif
+   34|       |
+   35|       |/**
+   36|       | * Helper function to generate a random number in a given interval.
+   37|       | * \n Steps:
+   38|       | * 1. `r1 = rand() % 100` gets a random number between 0 and 99
+   39|       | * 2. `r2 = r1 / 100` converts random number to be between 0 and 0.99
+   40|       | * 3. scale and offset the random number to given range of \f$[a,b]\f$
+   41|       | *
+   42|       | * \param[in] a lower limit
+   43|       | * \param[in] b upper limit
+   44|       | * \returns random number in the range \f$[a,b]\f$
+   45|       | */
+   46|  3.30k|double _random(double a, double b) {
+   47|  3.30k|    return ((b - a) * (std::rand() % 100) / 100.f) + a;
+   48|  3.30k|}
+   49|       |
+   50|       |/**
+   51|       | * Save a given n-dimensional data martix to file.
+   52|       | *
+   53|       | * \param[in] fname filename to save in (gets overwriten without confirmation)
+   54|       | * \param[in] X matrix to save
+   55|       | * \returns 0 if all ok
+   56|       | * \returns -1 if file creation failed
+   57|       | */
+   58|       |int save_nd_data(const char *fname,
+   59|      9|                 const std::vector<std::valarray<double>> &X) {
+   60|      9|    size_t num_points = X.size();       // number of rows
+   61|      9|    size_t num_features = X[0].size();  // number of columns
+   62|       |
+   63|      9|    std::ofstream fp;
+   64|      9|    fp.open(fname);
+   65|      9|    if (!fp.is_open()) {
+   66|       |        // error with opening file to write
+   67|      0|        std::cerr << "Error opening file " << fname << "\n";
+   68|      0|        return -1;
+   69|      0|    }
+   70|       |
+   71|       |    // for each point in the array
+   72|  1.38k|    for (int i = 0; i < num_points; i++) {
+   73|       |        // for each feature in the array
+   74|  4.38k|        for (int j = 0; j < num_features; j++) {
+   75|  3.00k|            fp << X[i][j];               // print the feature value
+   76|  3.00k|            if (j < num_features - 1) {  // if not the last feature
+   77|  1.62k|                fp << ",";               // suffix comma
+   78|  1.62k|            }
+   79|  3.00k|        }
+   80|  1.38k|        if (i < num_points - 1) {  // if not the last row
+   81|  1.37k|            fp << "\n";            // start a new line
+   82|  1.37k|        }
+   83|  1.38k|    }
+   84|       |
+   85|      9|    fp.close();
+   86|      9|    return 0;
+   87|      9|}
+   88|       |
+   89|       |/** \namespace machine_learning
+   90|       | * \brief Machine learning algorithms
+   91|       | */
+   92|       |namespace machine_learning {
+   93|       |
+   94|       |/**
+   95|       | * Update weights of the SOM using Kohonen algorithm
+   96|       | *
+   97|       | * \param[in] X data point
+   98|       | * \param[in,out] W weights matrix
+   99|       | * \param[in,out] D temporary vector to store distances
+  100|       | * \param[in] alpha learning rate \f$0<\alpha\le1\f$
+  101|       | * \param[in] R neighborhood range
+  102|       | */
+  103|       |void update_weights(const std::valarray<double> &x,
+  104|       |                    std::vector<std::valarray<double>> *W,
+  105|   114k|                    std::valarray<double> *D, double alpha, int R) {
+  106|   114k|    int j = 0, k = 0;
+  107|   114k|    int num_out = W->size();  // number of SOM output nodes
+  108|       |    // int num_features = x.size();  // number of data features
+  109|       |
+  110|       |#ifdef _OPENMP
+  111|       |#pragma omp for
+  112|       |#endif
+  113|       |    // step 1: for each output point
+  114|  3.75M|    for (j = 0; j < num_out; j++) {
+  115|       |        // compute Euclidian distance of each output
+  116|       |        // point from the current sample
+  117|  3.63M|        (*D)[j] = (((*W)[j] - x) * ((*W)[j] - x)).sum();
+  118|  3.63M|    }
+  119|       |
+  120|       |    // step 2:  get closest node i.e., node with snallest Euclidian distance to
+  121|       |    // the current pattern
+  122|   114k|    auto result = std::min_element(std::begin(*D), std::end(*D));
+  123|       |    // double d_min = *result;
+  124|   114k|    int d_min_idx = std::distance(std::begin(*D), result);
+  125|       |
+  126|       |    // step 3a: get the neighborhood range
+  127|   114k|    int from_node = std::max(0, d_min_idx - R);
+  128|   114k|    int to_node = std::min(num_out, d_min_idx + R + 1);
+  129|       |
+  130|       |    // step 3b: update the weights of nodes in the
+  131|       |    // neighborhood
+  132|       |#ifdef _OPENMP
+  133|       |#pragma omp for
+  134|       |#endif
+  135|   974k|    for (j = from_node; j < to_node; j++) {
+  136|       |        // update weights of nodes in the neighborhood
+  137|   860k|        (*W)[j] += alpha * (x - (*W)[j]);
+  138|   860k|    }
+  139|   114k|}
+  140|       |
+  141|       |/**
+  142|       | * Apply incremental algorithm with updating neighborhood and learning rates
+  143|       | * on all samples in the given datset.
+  144|       | *
+  145|       | * \param[in] X data set
+  146|       | * \param[in,out] W weights matrix
+  147|       | * \param[in] alpha_min terminal value of alpha
+  148|       | */
+  149|       |void kohonen_som_tracer(const std::vector<std::valarray<double>> &X,
+  150|       |                        std::vector<std::valarray<double>> *W,
+  151|      3|                        double alpha_min) {
+  152|      3|    int num_samples = X.size();  // number of rows
+  153|       |    // int num_features = X[0].size();  // number of columns
+  154|      3|    int num_out = W->size();  // number of rows
+  155|      3|    int R = num_out >> 2, iter = 0;
+  156|      3|    double alpha = 1.f;
+  157|       |
+  158|      3|    std::valarray<double> D(num_out);
+  159|       |
+  160|       |    // Loop alpha from 1 to slpha_min
+  161|    288|    do {
+  162|       |        // Loop for each sample pattern in the data set
+  163|   114k|        for (int sample = 0; sample < num_samples; sample++) {
+  164|       |            // update weights for the current input pattern sample
+  165|   114k|            update_weights(X[sample], W, &D, alpha, R);
+  166|   114k|        }
+  167|       |
+  168|       |        // every 10th iteration, reduce the neighborhood range
+  169|    288|        if (iter % 10 == 0 && R > 1) {
+  170|     17|            R--;
+  171|     17|        }
+  172|       |
+  173|    288|        alpha -= 0.01;
+  174|    288|        iter++;
+  175|    288|    } while (alpha > alpha_min);
+  176|      3|}
+  177|       |
+  178|       |}  // namespace machine_learning
+  179|       |
+  180|       |/** @} */
+  181|       |
+  182|       |using machine_learning::kohonen_som_tracer;
+  183|       |
+  184|       |/** Creates a random set of points distributed *near* the circumference
+  185|       | * of a circle and trains an SOM that finds that circular pattern. The
+  186|       | * generating function is
+  187|       | * \f{eqnarray*}{
+  188|       | * r &\in& [1-\delta r, 1+\delta r)\\
+  189|       | * \theta &\in& [0, 2\pi)\\
+  190|       | * x &=& r\cos\theta\\
+  191|       | * y &=& r\sin\theta
+  192|       | * \f}
+  193|       | *
+  194|       | * \param[out] data matrix to store data in
+  195|       | */
+  196|      1|void test_circle(std::vector<std::valarray<double>> *data) {
+  197|      1|    const int N = data->size();
+  198|      1|    const double R = 0.75, dr = 0.3;
+  199|      1|    double a_t = 0., b_t = 2.f * M_PI;  // theta random between 0 and 2*pi
+  200|      1|    double a_r = R - dr, b_r = R + dr;  // radius random between R-dr and R+dr
+  201|      1|    int i = 0;
+  202|       |
+  203|       |#ifdef _OPENMP
+  204|       |#pragma omp for
+  205|       |#endif
+  206|    501|    for (i = 0; i < N; i++) {
+  207|    500|        double r = _random(a_r, b_r);      // random radius
+  208|    500|        double theta = _random(a_t, b_t);  // random theta
+  209|    500|        data[0][i][0] = r * cos(theta);    // convert from polar to cartesian
+  210|    500|        data[0][i][1] = r * sin(theta);
+  211|    500|    }
+  212|      1|}
+  213|       |
+  214|       |/** Test that creates a random set of points distributed *near* the
+  215|       | * circumference of a circle and trains an SOM that finds that circular pattern.
+  216|       | * The following [CSV](https://en.wikipedia.org/wiki/Comma-separated_values)
+  217|       | * files are created to validate the execution:
+  218|       | * * `test1.csv`: random test samples points with a circular pattern
+  219|       | * * `w11.csv`: initial random map
+  220|       | * * `w12.csv`: trained SOM map
+  221|       | *
+  222|       | * The outputs can be readily plotted in [gnuplot](https:://gnuplot.info) using
+  223|       | * the following snippet
+  224|       | * ```gnuplot
+  225|       | * set datafile separator ','
+  226|       | * plot "test1.csv" title "original", \
+  227|       | *      "w11.csv" title "w1", \
+  228|       | *      "w12.csv" title "w2"
+  229|       | * ```
+  230|       | * ![Sample execution
+  231|       | * output](https://raw.githubusercontent.com/TheAlgorithms/C-Plus-Plus/docs/images/machine_learning/kohonen/test1.svg)
+  232|       | */
+  233|      1|void test1() {
+  234|      1|    int j = 0, N = 500;
+  235|      1|    int features = 2;
+  236|      1|    int num_out = 50;
+  237|      1|    std::vector<std::valarray<double>> X(N);
+  238|      1|    std::vector<std::valarray<double>> W(num_out);
+  239|    501|    for (int i = 0; i < std::max(num_out, N); i++) {
+  240|       |        // loop till max(N, num_out)
+  241|    500|        if (i < N) {  // only add new arrays if i < N
+  242|    500|            X[i] = std::valarray<double>(features);
+  243|    500|        }
+  244|    500|        if (i < num_out) {  // only add new arrays if i < num_out
+  245|     50|            W[i] = std::valarray<double>(features);
+  246|       |
+  247|       |#ifdef _OPENMP
+  248|       |#pragma omp for
+  249|       |#endif
+  250|    150|            for (j = 0; j < features; j++) {
+  251|       |                // preallocate with random initial weights
+  252|    100|                W[i][j] = _random(-1, 1);
+  253|    100|            }
+  254|     50|        }
+  255|    500|    }
+  256|       |
+  257|      1|    test_circle(&X);  // create test data around circumference of a circle
+  258|      1|    save_nd_data("test1.csv", X);    // save test data points
+  259|      1|    save_nd_data("w11.csv", W);      // save initial random weights
+  260|      1|    kohonen_som_tracer(X, &W, 0.1);  // train the SOM
+  261|      1|    save_nd_data("w12.csv", W);      // save the resultant weights
+  262|      1|}
+  263|       |
+  264|       |/** Creates a random set of points distributed *near* the locus
+  265|       | * of the [Lamniscate of
+  266|       | * Gerono](https://en.wikipedia.org/wiki/Lemniscate_of_Gerono).
+  267|       | * \f{eqnarray*}{
+  268|       | * \delta r &=& 0.2\\
+  269|       | * \delta x &\in& [-\delta r, \delta r)\\
+  270|       | * \delta y &\in& [-\delta r, \delta r)\\
+  271|       | * \theta &\in& [0, \pi)\\
+  272|       | * x &=& \delta x + \cos\theta\\
+  273|       | * y &=& \delta y + \frac{\sin(2\theta)}{2}
+  274|       | * \f}
+  275|       | * \param[out] data matrix to store data in
+  276|       | */
+  277|      1|void test_lamniscate(std::vector<std::valarray<double>> *data) {
+  278|      1|    const int N = data->size();
+  279|      1|    const double dr = 0.2;
+  280|      1|    int i = 0;
+  281|       |
+  282|       |#ifdef _OPENMP
+  283|       |#pragma omp for
+  284|       |#endif
+  285|    501|    for (i = 0; i < N; i++) {
+  286|    500|        double dx = _random(-dr, dr);     // random change in x
+  287|    500|        double dy = _random(-dr, dr);     // random change in y
+  288|    500|        double theta = _random(0, M_PI);  // random theta
+  289|    500|        data[0][i][0] = dx + cos(theta);  // convert from polar to cartesian
+  290|    500|        data[0][i][1] = dy + sin(2. * theta) / 2.f;
+  291|    500|    }
+  292|      1|}
+  293|       |
+  294|       |/** Test that creates a random set of points distributed *near* the locus
+  295|       | * of the [Lamniscate of
+  296|       | * Gerono](https://en.wikipedia.org/wiki/Lemniscate_of_Gerono) and trains an SOM
+  297|       | * that finds that circular pattern. The following
+  298|       | * [CSV](https://en.wikipedia.org/wiki/Comma-separated_values) files are created
+  299|       | * to validate the execution:
+  300|       | * * `test2.csv`: random test samples points with a lamniscate pattern
+  301|       | * * `w21.csv`: initial random map
+  302|       | * * `w22.csv`: trained SOM map
+  303|       | *
+  304|       | * The outputs can be readily plotted in [gnuplot](https:://gnuplot.info) using
+  305|       | * the following snippet
+  306|       | * ```gnuplot
+  307|       | * set datafile separator ','
+  308|       | * plot "test2.csv" title "original", \
+  309|       | *      "w21.csv" title "w1", \
+  310|       | *      "w22.csv" title "w2"
+  311|       | * ```
+  312|       | * ![Sample execution
+  313|       | * output](https://raw.githubusercontent.com/TheAlgorithms/C-Plus-Plus/docs/images/machine_learning/kohonen/test2.svg)
+  314|       | */
+  315|      1|void test2() {
+  316|      1|    int j = 0, N = 500;
+  317|      1|    int features = 2;
+  318|      1|    int num_out = 20;
+  319|      1|    std::vector<std::valarray<double>> X(N);
+  320|      1|    std::vector<std::valarray<double>> W(num_out);
+  321|    501|    for (int i = 0; i < std::max(num_out, N); i++) {
+  322|       |        // loop till max(N, num_out)
+  323|    500|        if (i < N) {  // only add new arrays if i < N
+  324|    500|            X[i] = std::valarray<double>(features);
+  325|    500|        }
+  326|    500|        if (i < num_out) {  // only add new arrays if i < num_out
+  327|     20|            W[i] = std::valarray<double>(features);
+  328|       |
+  329|       |#ifdef _OPENMP
+  330|       |#pragma omp for
+  331|       |#endif
+  332|     60|            for (j = 0; j < features; j++) {
+  333|       |                // preallocate with random initial weights
+  334|     40|                W[i][j] = _random(-1, 1);
+  335|     40|            }
+  336|     20|        }
+  337|    500|    }
+  338|       |
+  339|      1|    test_lamniscate(&X);              // create test data around the lamniscate
+  340|      1|    save_nd_data("test2.csv", X);     // save test data points
+  341|      1|    save_nd_data("w21.csv", W);       // save initial random weights
+  342|      1|    kohonen_som_tracer(X, &W, 0.01);  // train the SOM
+  343|      1|    save_nd_data("w22.csv", W);       // save the resultant weights
+  344|      1|}
+  345|       |
+  346|       |/** Creates a random set of points distributed in six clusters in
+  347|       | * 3D space with centroids at the points
+  348|       | * * \f${0.5, 0.5, 0.5}\f$
+  349|       | * * \f${0.5, 0.5, -0.5}\f$
+  350|       | * * \f${0.5, -0.5, 0.5}\f$
+  351|       | * * \f${0.5, -0.5, -0.5}\f$
+  352|       | * * \f${-0.5, 0.5, 0.5}\f$
+  353|       | * * \f${-0.5, 0.5, -0.5}\f$
+  354|       | * * \f${-0.5, -0.5, 0.5}\f$
+  355|       | * * \f${-0.5, -0.5, -0.5}\f$
+  356|       | *
+  357|       | * \param[out] data matrix to store data in
+  358|       | */
+  359|      1|void test_3d_classes(std::vector<std::valarray<double>> *data) {
+  360|      1|    const int N = data->size();
+  361|      1|    const double R = 0.1;  // radius of cluster
+  362|      1|    int i = 0;
+  363|      1|    const int num_classes = 8;
+  364|      1|    const std::array<const std::array<double, 3>, num_classes> centres = {
+  365|       |        // centres of each class cluster
+  366|      1|        std::array<double, 3>({.5, .5, .5}),    // centre of class 0
+  367|      1|        std::array<double, 3>({.5, .5, -.5}),   // centre of class 1
+  368|      1|        std::array<double, 3>({.5, -.5, .5}),   // centre of class 2
+  369|      1|        std::array<double, 3>({.5, -.5, -.5}),  // centre of class 3
+  370|      1|        std::array<double, 3>({-.5, .5, .5}),   // centre of class 4
+  371|      1|        std::array<double, 3>({-.5, .5, -.5}),  // centre of class 5
+  372|      1|        std::array<double, 3>({-.5, -.5, .5}),  // centre of class 6
+  373|      1|        std::array<double, 3>({-.5, -.5, -.5})  // centre of class 7
+  374|      1|    };
+  375|       |
+  376|       |#ifdef _OPENMP
+  377|       |#pragma omp for
+  378|       |#endif
+  379|    201|    for (i = 0; i < N; i++) {
+  380|    200|        int cls =
+  381|    200|            std::rand() % num_classes;  // select a random class for the point
+  382|       |
+  383|       |        // create random coordinates (x,y,z) around the centre of the class
+  384|    200|        data[0][i][0] = _random(centres[cls][0] - R, centres[cls][0] + R);
+  385|    200|        data[0][i][1] = _random(centres[cls][1] - R, centres[cls][1] + R);
+  386|    200|        data[0][i][2] = _random(centres[cls][2] - R, centres[cls][2] + R);
+  387|       |
+  388|       |        /* The follosing can also be used
+  389|       |        for (int j = 0; j < 3; j++)
+  390|       |            data[0][i][j] = _random(centres[cls][j] - R, centres[cls][j] + R);
+  391|       |        */
+  392|    200|    }
+  393|      1|}
+  394|       |
+  395|       |/** Test that creates a random set of points distributed in six clusters in
+  396|       | * 3D space. The following
+  397|       | * [CSV](https://en.wikipedia.org/wiki/Comma-separated_values) files are created
+  398|       | * to validate the execution:
+  399|       | * * `test3.csv`: random test samples points with a circular pattern
+  400|       | * * `w31.csv`: initial random map
+  401|       | * * `w32.csv`: trained SOM map
+  402|       | *
+  403|       | * The outputs can be readily plotted in [gnuplot](https:://gnuplot.info) using
+  404|       | * the following snippet
+  405|       | * ```gnuplot
+  406|       | * set datafile separator ','
+  407|       | * plot "test3.csv" title "original", \
+  408|       | *      "w31.csv" title "w1", \
+  409|       | *      "w32.csv" title "w2"
+  410|       | * ```
+  411|       | * ![Sample execution
+  412|       | * output](https://raw.githubusercontent.com/TheAlgorithms/C-Plus-Plus/docs/images/machine_learning/kohonen/test3.svg)
+  413|       | */
+  414|      1|void test3() {
+  415|      1|    int j = 0, N = 200;
+  416|      1|    int features = 3;
+  417|      1|    int num_out = 20;
+  418|      1|    std::vector<std::valarray<double>> X(N);
+  419|      1|    std::vector<std::valarray<double>> W(num_out);
+  420|    201|    for (int i = 0; i < std::max(num_out, N); i++) {
+  421|       |        // loop till max(N, num_out)
+  422|    200|        if (i < N) {  // only add new arrays if i < N
+  423|    200|            X[i] = std::valarray<double>(features);
+  424|    200|        }
+  425|    200|        if (i < num_out) {  // only add new arrays if i < num_out
+  426|     20|            W[i] = std::valarray<double>(features);
+  427|       |
+  428|       |#ifdef _OPENMP
+  429|       |#pragma omp for
+  430|       |#endif
+  431|     80|            for (j = 0; j < features; j++) {
+  432|       |                // preallocate with random initial weights
+  433|     60|                W[i][j] = _random(-1, 1);
+  434|     60|            }
+  435|     20|        }
+  436|    200|    }
+  437|       |
+  438|      1|    test_3d_classes(&X);              // create test data around the lamniscate
+  439|      1|    save_nd_data("test3.csv", X);     // save test data points
+  440|      1|    save_nd_data("w31.csv", W);       // save initial random weights
+  441|      1|    kohonen_som_tracer(X, &W, 0.01);  // train the SOM
+  442|      1|    save_nd_data("w32.csv", W);       // save the resultant weights
+  443|      1|}
+  444|       |
+  445|       |/**
+  446|       | * Convert clock cycle difference to time in seconds
+  447|       | *
+  448|       | * \param[in] start_t start clock
+  449|       | * \param[in] end_t end clock
+  450|       | * \returns time difference in seconds
+  451|       | */
+  452|      3|double get_clock_diff(clock_t start_t, clock_t end_t) {
+  453|      3|    return static_cast<double>(end_t - start_t) / CLOCKS_PER_SEC;
+  454|      3|}
+  455|       |
+  456|       |/** Main function */
+  457|      1|int main(int argc, char **argv) {
+  458|       |#ifdef _OPENMP
+  459|       |    std::cout << "Using OpenMP based parallelization\n";
+  460|       |#else
+  461|      1|    std::cout << "NOT using OpenMP based parallelization\n";
+  462|      1|#endif
+  463|       |
+  464|      1|    std::srand(std::time(nullptr));
+  465|       |
+  466|      1|    std::clock_t start_clk = std::clock();
+  467|      1|    test1();
+  468|      1|    auto end_clk = std::clock();
+  469|      1|    std::cout << "Test 1 completed in " << get_clock_diff(start_clk, end_clk)
+  470|      1|              << " sec\n";
+  471|       |
+  472|      1|    start_clk = std::clock();
+  473|      1|    test2();
+  474|      1|    end_clk = std::clock();
+  475|      1|    std::cout << "Test 2 completed in " << get_clock_diff(start_clk, end_clk)
+  476|      1|              << " sec\n";
+  477|       |
+  478|      1|    start_clk = std::clock();
+  479|      1|    test3();
+  480|      1|    end_clk = std::clock();
+  481|      1|    std::cout << "Test 3 completed in " << get_clock_diff(start_clk, end_clk)
+  482|      1|              << " sec\n";
+  483|       |
+  484|      1|    std::cout
+  485|      1|        << "(Note: Calculated times include: creating test sets, training "
+  486|      1|           "model and writing files to disk.)\n\n";
+  487|      1|    return 0;
+  488|      1|}
+

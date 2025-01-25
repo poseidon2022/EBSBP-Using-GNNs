@@ -1,0 +1,230 @@
+    1|       |/**
+    2|       | * @file
+    3|       | * @brief pancake sort sorts a disordered stack of pancakes by flipping any
+    4|       | * number of pancakes using a spatula using minimum number of flips.
+    5|       | *
+    6|       | * @details
+    7|       | * Unlike a traditional sorting algorithm, which attempts to sort with the
+    8|       | * fewest comparisons possible, the goal is to sort the sequence in as few
+    9|       | * reversals as possible. Overall time complexity of pancake sort is O(n^2) For
+   10|       | * example: example 1:- Disordered pancake sizes: {2,5,3,7,8} Sorted:
+   11|       | * {2,3,5,7,8} For example: example 2:- Disordered pancake sizes:
+   12|       | * {22,51,37,73,81} Sorted: {22,37,51,73,81}
+   13|       | * @author [Divyansh Gupta](https://github.com/divyansh12323)
+   14|       | * @see more on [Pancake sort](https://en.wikipedia.org/wiki/Pancake_sorting)
+   15|       | * @see related problem at
+   16|       | * [Leetcode](https://leetcode.com/problems/pancake-sorting/)
+   17|       | */
+   18|       |
+   19|       |#include <algorithm>  // for std::is_sorted
+   20|       |#include <cassert>    // for std::assert
+   21|       |#include <iostream>   // for io operations
+   22|       |#include <vector>     // for std::vector
+   23|       |
+   24|       |/**
+   25|       | * @namespace sorting
+   26|       | * @brief Sorting algorithms
+   27|       | */
+   28|       |namespace sorting {
+   29|       |/**
+   30|       | * @namespace pancake_sort
+   31|       | * @brief Functions for [Pancake
+   32|       | * sort](https://en.wikipedia.org/wiki/Pancake_sorting) algorithm
+   33|       | */
+   34|       |namespace pancake_sort {
+   35|       |/**
+   36|       | * @brief This implementation is for reversing elements in a a C-style array .
+   37|       | * @param [start,end] arr our vector of elements.
+   38|       | * @param start starting index of array
+   39|       | * @param end ending index of array
+   40|       | * @returns void
+   41|       | */
+   42|       |template <typename T>
+   43|     26|void reverse(std::vector<T> &arr, int start, int end) {
+   44|     26|    T temp;  // Temporary variable
+   45|     88|    while (start <= end) {
+   46|     62|        temp = arr[start];
+   47|     62|        arr[start] = arr[end];
+   48|     62|        arr[end] = temp;
+   49|     62|        start++;
+   50|     62|        end--;
+   51|     62|    }
+   52|     26|}
+  ------------------
+  | _ZN7sorting12pancake_sort7reverseIiEEvRSt6vectorIT_SaIS3_EEii:
+  |   43|      8|void reverse(std::vector<T> &arr, int start, int end) {
+  |   44|      8|    T temp;  // Temporary variable
+  |   45|     27|    while (start <= end) {
+  |   46|     19|        temp = arr[start];
+  |   47|     19|        arr[start] = arr[end];
+  |   48|     19|        arr[end] = temp;
+  |   49|     19|        start++;
+  |   50|     19|        end--;
+  |   51|     19|    }
+  |   52|      8|}
+  ------------------
+  | _ZN7sorting12pancake_sort7reverseIdEEvRSt6vectorIT_SaIS3_EEii:
+  |   43|     10|void reverse(std::vector<T> &arr, int start, int end) {
+  |   44|     10|    T temp;  // Temporary variable
+  |   45|     36|    while (start <= end) {
+  |   46|     26|        temp = arr[start];
+  |   47|     26|        arr[start] = arr[end];
+  |   48|     26|        arr[end] = temp;
+  |   49|     26|        start++;
+  |   50|     26|        end--;
+  |   51|     26|    }
+  |   52|     10|}
+  ------------------
+  | _ZN7sorting12pancake_sort7reverseIfEEvRSt6vectorIT_SaIS3_EEii:
+  |   43|      8|void reverse(std::vector<T> &arr, int start, int end) {
+  |   44|      8|    T temp;  // Temporary variable
+  |   45|     25|    while (start <= end) {
+  |   46|     17|        temp = arr[start];
+  |   47|     17|        arr[start] = arr[end];
+  |   48|     17|        arr[end] = temp;
+  |   49|     17|        start++;
+  |   50|     17|        end--;
+  |   51|     17|    }
+  |   52|      8|}
+  ------------------
+   53|       |/**
+   54|       | * @brief This implementation is for a C-style array input that gets modified in
+   55|       | * place.
+   56|       | * @param [start,end] arr our vector of elements.
+   57|       | * @param size size of given array
+   58|       | * @returns 0 on exit
+   59|       | */
+   60|       |template <typename T>
+   61|      3|int pancakeSort(std::vector<T> &arr, int size) {
+   62|     22|    for (int i = size; i > 1; --i) {
+   63|     19|        int max_index = 0, j = 0;  // intialize some variables.
+   64|     19|        T max_value = 0;
+   65|    108|        for (j = 0; j < i; j++) {
+   66|     89|            if (arr[j] >= max_value) {
+   67|     42|                max_value = arr[j];
+   68|     42|                max_index = j;
+   69|     42|            }
+   70|     89|        }
+   71|     19|        if (max_index != i - 1)  // check for reversing
+   72|     13|        {
+   73|     13|            reverse(arr, 0, max_index);
+   74|     13|            reverse(arr, 0, i - 1);
+   75|     13|        }
+   76|     19|    }
+   77|      3|    return 0;
+   78|      3|}
+  ------------------
+  | _ZN7sorting12pancake_sort11pancakeSortIiEEiRSt6vectorIT_SaIS3_EEi:
+  |   61|      1|int pancakeSort(std::vector<T> &arr, int size) {
+  |   62|      7|    for (int i = size; i > 1; --i) {
+  |   63|      6|        int max_index = 0, j = 0;  // intialize some variables.
+  |   64|      6|        T max_value = 0;
+  |   65|     33|        for (j = 0; j < i; j++) {
+  |   66|     27|            if (arr[j] >= max_value) {
+  |   67|     12|                max_value = arr[j];
+  |   68|     12|                max_index = j;
+  |   69|     12|            }
+  |   70|     27|        }
+  |   71|      6|        if (max_index != i - 1)  // check for reversing
+  |   72|      4|        {
+  |   73|      4|            reverse(arr, 0, max_index);
+  |   74|      4|            reverse(arr, 0, i - 1);
+  |   75|      4|        }
+  |   76|      6|    }
+  |   77|      1|    return 0;
+  |   78|      1|}
+  ------------------
+  | _ZN7sorting12pancake_sort11pancakeSortIdEEiRSt6vectorIT_SaIS3_EEi:
+  |   61|      1|int pancakeSort(std::vector<T> &arr, int size) {
+  |   62|      8|    for (int i = size; i > 1; --i) {
+  |   63|      7|        int max_index = 0, j = 0;  // intialize some variables.
+  |   64|      7|        T max_value = 0;
+  |   65|     42|        for (j = 0; j < i; j++) {
+  |   66|     35|            if (arr[j] >= max_value) {
+  |   67|     15|                max_value = arr[j];
+  |   68|     15|                max_index = j;
+  |   69|     15|            }
+  |   70|     35|        }
+  |   71|      7|        if (max_index != i - 1)  // check for reversing
+  |   72|      5|        {
+  |   73|      5|            reverse(arr, 0, max_index);
+  |   74|      5|            reverse(arr, 0, i - 1);
+  |   75|      5|        }
+  |   76|      7|    }
+  |   77|      1|    return 0;
+  |   78|      1|}
+  ------------------
+  | _ZN7sorting12pancake_sort11pancakeSortIfEEiRSt6vectorIT_SaIS3_EEi:
+  |   61|      1|int pancakeSort(std::vector<T> &arr, int size) {
+  |   62|      7|    for (int i = size; i > 1; --i) {
+  |   63|      6|        int max_index = 0, j = 0;  // intialize some variables.
+  |   64|      6|        T max_value = 0;
+  |   65|     33|        for (j = 0; j < i; j++) {
+  |   66|     27|            if (arr[j] >= max_value) {
+  |   67|     15|                max_value = arr[j];
+  |   68|     15|                max_index = j;
+  |   69|     15|            }
+  |   70|     27|        }
+  |   71|      6|        if (max_index != i - 1)  // check for reversing
+  |   72|      4|        {
+  |   73|      4|            reverse(arr, 0, max_index);
+  |   74|      4|            reverse(arr, 0, i - 1);
+  |   75|      4|        }
+  |   76|      6|    }
+  |   77|      1|    return 0;
+  |   78|      1|}
+  ------------------
+   79|       |}  // namespace pancake_sort
+   80|       |}  // namespace sorting
+   81|       |
+   82|       |/**
+   83|       | * @brief Test implementations
+   84|       | * @returns void
+   85|       | */
+   86|      1|static void test() {
+   87|       |    // example 1: vector of int
+   88|      1|    const int size1 = 7;
+   89|      1|    std::cout << "\nTest 1- as std::vector<int>...";
+   90|      1|    std::vector<int> arr1 = {23, 10, 20, 11, 12, 6, 7};
+   91|      1|    sorting::pancake_sort::pancakeSort(arr1, size1);
+   92|      1|    assert(std::is_sorted(arr1.begin(), arr1.end()));
+   93|      0|    std::cout << "Passed\n";
+   94|      8|    for (int i = 0; i < size1; i++) {
+   95|      7|        std::cout << arr1[i] << " ,";
+   96|      7|    }
+   97|      1|    std::cout << std::endl;
+   98|       |
+   99|       |    // example 2: vector of double
+  100|      1|    const int size2 = 8;
+  101|      1|    std::cout << "\nTest 2- as std::vector<double>...";
+  102|      1|    std::vector<double> arr2 = {23.56, 10.62, 200.78, 111.484,
+  103|      1|                                3.9,   1.2,   61.77,  79.6};
+  104|      1|    sorting::pancake_sort::pancakeSort(arr2, size2);
+  105|      1|    assert(std::is_sorted(arr2.begin(), arr2.end()));
+  106|      0|    std::cout << "Passed\n";
+  107|      9|    for (int i = 0; i < size2; i++) {
+  108|      8|        std::cout << arr2[i] << ", ";
+  109|      8|    }
+  110|      1|    std::cout << std::endl;
+  111|       |
+  112|       |    // example 3:vector of float
+  113|      1|    const int size3 = 7;
+  114|      1|    std::cout << "\nTest 3- as std::vector<float>...";
+  115|      1|    std::vector<float> arr3 = {6.56, 12.62, 200.78, 768.484, 19.27, 68.87, 9.6};
+  116|      1|    sorting::pancake_sort::pancakeSort(arr3, size3);
+  117|      1|    assert(std::is_sorted(arr3.begin(), arr3.end()));
+  118|      0|    std::cout << "Passed\n";
+  119|      8|    for (int i = 0; i < size3; i++) {
+  120|      7|        std::cout << arr3[i] << ", ";
+  121|      7|    }
+  122|      1|    std::cout << std::endl;
+  123|      1|}
+  124|       |/**
+  125|       | * @brief Main function
+  126|       | * @returns 0 on exit
+  127|       | */
+  128|      1|int main() {
+  129|      1|    test();
+  130|      1|    return 0;
+  131|      1|}
+

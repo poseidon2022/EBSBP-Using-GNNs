@@ -1,0 +1,119 @@
+    1|       |/**
+    2|       | * @file
+    3|       | * @brief Implementation of [Bogosort algorithm](https://en.wikipedia.org/wiki/Bogosort)
+    4|       | *
+    5|       | * @details
+    6|       | *      In computer science, bogosort (also known as permutation sort, stupid sort, slowsort, 
+    7|       | *      shotgun sort, random sort, monkey sort, bobosort or shuffle sort) is a highly inefficient 
+    8|       | *      sorting algorithm based on the generate and test paradigm. Two versions of this algorithm 
+    9|       | *      exist: a deterministic version that enumerates all permutations until it hits a sorted one,
+   10|       | *      and a randomized version that randomly permutes its input.Randomized version is implemented here. 
+   11|       | *
+   12|       | * ### Algorithm
+   13|       | * Shuffle the array untill array is sorted.
+   14|       | *
+   15|       | * @author [Deep Raval](https://github.com/imdeep2905)
+   16|       | */
+   17|       |#include <iostream>
+   18|       |#include <algorithm>
+   19|       |#include <array>
+   20|       |#include <cassert>
+   21|       |#include <random>
+   22|       |
+   23|       |
+   24|       |/**
+   25|       | * @namespace sorting
+   26|       | * @brief Sorting algorithms
+   27|       | */
+   28|       |namespace sorting {
+   29|       |/**
+   30|       | * Function to shuffle the elements of an array. (for reference)
+   31|       | * @tparam T typename of the array
+   32|       | * @tparam N length of array
+   33|       | * @param arr array to shuffle
+   34|       | * @returns new array with elements shuffled from a given array
+   35|       | */
+   36|       |template <typename T, size_t N>
+   37|       |std::array <T, N> shuffle (std::array <T, N> arr) {
+   38|       |    for (int i = 0; i < N; i++) {
+   39|       |        // Swaps i'th  index with random index (less than array size)
+   40|       |        std::swap(arr[i], arr[std::rand() % N]);
+   41|       |    }
+   42|       |    return arr;
+   43|       |}
+   44|       |/**
+   45|       | * Implement randomized Bogosort algorithm and sort the elements of a given array.
+   46|       | * @tparam T typename of the array
+   47|       | * @tparam N length of array
+   48|       | * @param arr array to sort
+   49|       | * @returns new array with elements sorted from a given array
+   50|       | */
+   51|       |template <typename T, size_t N>
+   52|      3|std::array <T, N> randomized_bogosort (std::array <T, N> arr) {
+   53|       |    // Untill array is not sorted
+   54|      3|    std::random_device random_device;
+   55|      3|    std::mt19937 generator(random_device());
+   56|    313|    while (!std::is_sorted(arr.begin(), arr.end())) {
+   57|    310|        std::shuffle(arr.begin(), arr.end(), generator);// Shuffle the array
+   58|    310|    }
+   59|      3|    return arr;
+   60|      3|}
+   61|       |
+   62|       |}  // namespace sorting
+   63|       |
+   64|       |/**
+   65|       | * Function to display array on screen 
+   66|       | * @tparam T typename of the array
+   67|       | * @tparam N length of array
+   68|       | * @param arr array to display
+   69|       | */
+   70|       |template <typename T, size_t N>
+   71|      6|void show_array (const std::array <T, N> &arr) {
+   72|     30|    for (int x : arr) {
+   73|     30|        std::cout << x << ' ';
+   74|     30|    }
+   75|      6|    std::cout << '\n';
+   76|      6|}
+   77|       |
+   78|       |/**
+   79|       | * Function to test above algorithm
+   80|       | */
+   81|      1|void test() {
+   82|       |    // Test 1
+   83|      1|    std::array <int, 5> arr1;
+   84|      5|    for (int &x : arr1) {
+   85|      5|        x = std::rand() % 100;
+   86|      5|    }
+   87|      1|    std::cout << "Original Array : ";
+   88|      1|    show_array(arr1);
+   89|      1|    arr1 = sorting::randomized_bogosort(arr1);
+   90|      1|    std::cout << "Sorted Array : ";
+   91|      1|    show_array(arr1);
+   92|      1|    assert(std::is_sorted(arr1.begin(), arr1.end()));
+   93|       |    // Test 2
+   94|      0|    std::array <int, 5> arr2;
+   95|      5|    for (int &x : arr2) {
+   96|      5|        x = std::rand() % 100;
+   97|      5|    }
+   98|      1|    std::cout << "Original Array : ";
+   99|      1|    show_array(arr2);
+  100|      1|    arr2 = sorting::randomized_bogosort(arr2);
+  101|      1|    std::cout << "Sorted Array : ";
+  102|      1|    show_array(arr2);
+  103|      1|    assert(std::is_sorted(arr2.begin(), arr2.end()));
+  104|      1|}
+  105|       |
+  106|       |/** Driver Code */
+  107|      1|int main() {
+  108|       |    // Testing
+  109|      1|    test();
+  110|       |    // Example Usage
+  111|      1|    std::array <int, 5> arr = {3, 7, 10, 4, 1}; // Defining array which we want to sort
+  112|      1|    std::cout << "Original Array : ";
+  113|      1|    show_array(arr);
+  114|      1|    arr = sorting::randomized_bogosort(arr); // Callling bogo sort on it
+  115|      1|    std::cout << "Sorted Array : ";
+  116|      1|    show_array(arr); // Printing sorted array
+  117|      1|    return 0;
+  118|      1|}
+

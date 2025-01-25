@@ -1,0 +1,132 @@
+    1|       |/**
+    2|       | * @file
+    3|       | * @brief [N queens](https://en.wikipedia.org/wiki/Eight_queens_puzzle) all
+    4|       | * optimized
+    5|       | *
+    6|       | * @author [Sombit Bose](https://github.com/deadshotsb)
+    7|       | * @author [David Leal](https://github.com/Panquesito7)
+    8|       | */
+    9|       |
+   10|       |#include <array>
+   11|       |#include <iostream>
+   12|       |
+   13|       |/**
+   14|       | * @namespace backtracking
+   15|       | * @brief Backtracking algorithms
+   16|       | */
+   17|       |namespace backtracking {
+   18|       |/**
+   19|       | * @namespace n_queens_optimized
+   20|       | * @brief Functions for [Eight
+   21|       | * Queens](https://en.wikipedia.org/wiki/Eight_queens_puzzle) puzzle optimized.
+   22|       | */
+   23|       |namespace n_queens_optimized {
+   24|       |/**
+   25|       | * Utility function to print matrix
+   26|       | * @tparam n number of matrix size
+   27|       | * @param board matrix where numbers are saved
+   28|       | */
+   29|       |template <size_t n>
+   30|      1|void PrintSol(const std::array<std::array<int, n>, n> &board) {
+   31|      5|    for (int i = 0; i < n; i++) {
+   32|     20|        for (int j = 0; j < n; j++) {
+   33|     16|            std::cout << board[i][j] << " ";
+   34|     16|        }
+   35|      4|        std::cout << std::endl;
+   36|      4|    }
+   37|      1|    std::cout << std::endl;
+   38|      1|    if (n % 2 == 0 || (n % 2 == 1 && board[n / 2 + 1][0] != 1)) {
+   39|      5|        for (int i = 0; i < n; i++) {
+   40|     20|            for (int j = 0; j < n; j++) {
+   41|     16|                std::cout << board[j][i] << " ";
+   42|     16|            }
+   43|      4|            std::cout << std::endl;
+   44|      4|        }
+   45|      1|        std::cout << std::endl;
+   46|      1|    }
+   47|      1|}
+   48|       |
+   49|       |/**
+   50|       | * Check if a queen can be placed on matrix
+   51|       | * @tparam n number of matrix size
+   52|       | * @param board matrix where numbers are saved
+   53|       | * @param row current index in rows
+   54|       | * @param col current index in columns
+   55|       | * @returns `true` if queen can be placed on matrix
+   56|       | * @returns `false` if queen can't be placed on matrix
+   57|       | */
+   58|       |template <size_t n>
+   59|       |bool CanIMove(const std::array<std::array<int, n>, n> &board, int row,
+   60|     30|              int col) {
+   61|       |    /// check in the row
+   62|     79|    for (int i = 0; i <= col; i++) {
+   63|     63|        if (board[row][i] == 1) {
+   64|     14|            return false;
+   65|     14|        }
+   66|     63|    }
+   67|       |    /// check the first diagonal
+   68|     42|    for (int i = row, j = col; i >= 0 && j >= 0; i--, j--) {
+   69|     31|        if (board[i][j] == 1) {
+   70|      5|            return false;
+   71|      5|        }
+   72|     31|    }
+   73|       |    /// check the second diagonal
+   74|     28|    for (int i = row, j = col; i <= n - 1 && j >= 0; i++, j--) {
+   75|     20|        if (board[i][j] == 1) {
+   76|      3|            return false;
+   77|      3|        }
+   78|     20|    }
+   79|      8|    return true;
+   80|     11|}
+   81|       |
+   82|       |/**
+   83|       | * Solve n queens problem
+   84|       | * @tparam n number of matrix size
+   85|       | * @param board matrix where numbers are saved
+   86|       | * @param col current index in columns
+   87|       | */
+   88|       |template <size_t n>
+   89|      8|void NQueenSol(std::array<std::array<int, n>, n> board, int col) {
+   90|      8|    if (col >= n) {
+   91|      1|        PrintSol<n>(board);
+   92|      1|        return;
+   93|      1|    }
+   94|     35|    for (int i = 0; i < n; i++) {
+   95|     28|        if (CanIMove<n>(board, i, col)) {
+   96|      6|            board[i][col] = 1;
+   97|      6|            NQueenSol<n>(board, col + 1);
+   98|      6|            board[i][col] = 0;
+   99|      6|        }
+  100|     28|    }
+  101|      7|}
+  102|       |}  // namespace n_queens_optimized
+  103|       |}  // namespace backtracking
+  104|       |
+  105|       |/**
+  106|       | * @brief Main function
+  107|       | * @returns 0 on exit
+  108|       | */
+  109|      1|int main() {
+  110|      1|    const int n = 4;
+  111|      1|    std::array<std::array<int, n>, n> board{};
+  112|       |
+  113|      1|    if (n % 2 == 0) {
+  114|      3|        for (int i = 0; i <= n / 2 - 1; i++) {
+  115|      2|            if (backtracking::n_queens_optimized::CanIMove(board, i, 0)) {
+  116|      2|                board[i][0] = 1;
+  117|      2|                backtracking::n_queens_optimized::NQueenSol(board, 1);
+  118|      2|                board[i][0] = 0;
+  119|      2|            }
+  120|      2|        }
+  121|      1|    } else {
+  122|      0|        for (int i = 0; i <= n / 2; i++) {
+  123|      0|            if (backtracking::n_queens_optimized::CanIMove(board, i, 0)) {
+  124|      0|                board[i][0] = 1;
+  125|      0|                backtracking::n_queens_optimized::NQueenSol(board, 1);
+  126|      0|                board[i][0] = 0;
+  127|      0|            }
+  128|      0|        }
+  129|      0|    }
+  130|      1|    return 0;
+  131|      1|}
+

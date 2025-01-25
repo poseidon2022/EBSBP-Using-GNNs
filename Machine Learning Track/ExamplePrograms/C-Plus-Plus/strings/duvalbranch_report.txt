@@ -1,0 +1,212 @@
+    1|       |/**
+    2|       | * @file duval.cpp
+    3|       | * @brief Implementation of [Duval's algorithm](https://en.wikipedia.org/wiki/Lyndon_word).
+    4|       | *
+    5|       | * @details
+    6|       | * Duval's algorithm is an algorithm to find the lexicographically smallest
+    7|       | * rotation of a string. It is based on the concept of Lyndon words.
+    8|       | * Lyndon words are defined as the lexicographically smallest string in a
+    9|       | * rotation equivalence class. A rotation equivalence class is a set of strings
+   10|       | * that can be obtained by rotating a string. For example, the rotation
+   11|       | * equivalence class of "abc" is {"abc", "bca", "cab"}. The lexicographically
+   12|       | * smallest string in this class is "abc".
+   13|       | *
+   14|       | * Duval's algorithm works by iterating over the string and finding the
+   15|       | * smallest rotation of the string that is a Lyndon word. This is done by
+   16|       | * comparing the string with its suffixes and finding the smallest suffix that
+   17|       | * is lexicographically smaller than the string. This suffix is then added to
+   18|       | * the result and the process is repeated with the remaining string.
+   19|       | * The algorithm has a time complexity of O(n) where n is the length of the
+   20|       | * string.
+   21|       | *
+   22|       | * @note While Lyndon words are described in the context of strings,
+   23|       | * Duval's algorithm can be used to find the lexicographically smallest cyclic
+   24|       | * shift of any sequence of comparable elements.
+   25|       | *
+   26|       | * @author [Amine Ghoussaini](https://github.com/aminegh20)
+   27|       |*/
+   28|       |
+   29|       |#include <array>    /// for std::array
+   30|       |#include <cassert>  /// for assert
+   31|       |#include <cstddef>  /// for std::size_t
+   32|       |#include <deque>    /// for std::deque
+   33|       |#include <iostream> /// for std::cout and std::endl
+   34|       |#include <string>   /// for std::string
+   35|       |#include <vector>   /// for std::vector
+   36|       |
+   37|       |/**
+   38|       | * @brief string manipulation algorithms
+   39|       | * @namespace
+   40|       | */
+   41|       |namespace string {
+   42|       |/**
+   43|       | * @brief Find the lexicographically smallest cyclic shift of a sequence.
+   44|       | * @tparam T type of the sequence
+   45|       | * @param s the sequence
+   46|       | * @returns the 0-indexed position of the least cyclic shift of the sequence
+   47|       | */
+   48|       |template <typename T>
+   49|      7|size_t duval(const T& s) {
+   50|      7|    size_t n = s.size();
+   51|      7|    size_t i = 0, ans = 0;
+   52|     21|    while (i < n) {
+   53|     14|        ans = i;
+   54|     14|        size_t j = i + 1, k = i;
+   55|     66|        while (j < (n + n) && s[j % n] >= s[k % n]) {
+   56|     52|            if (s[k % n] < s[j % n]) {
+   57|     28|                k = i;
+   58|     28|            } else {
+   59|     24|                k++;
+   60|     24|            }
+   61|     52|            j++;
+   62|     52|        }
+   63|     29|        while (i <= k) {
+   64|     15|            i += j - k;
+   65|     15|        }
+   66|     14|    }
+   67|      7|    return ans;
+   68|       |    // returns 0-indexed position of the least cyclic shift
+   69|      7|}
+  ------------------
+  | _ZN6string5duvalINSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEEEmRKT_:
+  |   49|      3|size_t duval(const T& s) {
+  |   50|      3|    size_t n = s.size();
+  |   51|      3|    size_t i = 0, ans = 0;
+  |   52|      7|    while (i < n) {
+  |   53|      4|        ans = i;
+  |   54|      4|        size_t j = i + 1, k = i;
+  |   55|     25|        while (j < (n + n) && s[j % n] >= s[k % n]) {
+  |   56|     21|            if (s[k % n] < s[j % n]) {
+  |   57|     10|                k = i;
+  |   58|     11|            } else {
+  |   59|     11|                k++;
+  |   60|     11|            }
+  |   61|     21|            j++;
+  |   62|     21|        }
+  |   63|      8|        while (i <= k) {
+  |   64|      4|            i += j - k;
+  |   65|      4|        }
+  |   66|      4|    }
+  |   67|      3|    return ans;
+  |   68|       |    // returns 0-indexed position of the least cyclic shift
+  |   69|      3|}
+  ------------------
+  | _ZN6string5duvalISt6vectorIiSaIiEEEEmRKT_:
+  |   49|      2|size_t duval(const T& s) {
+  |   50|      2|    size_t n = s.size();
+  |   51|      2|    size_t i = 0, ans = 0;
+  |   52|      9|    while (i < n) {
+  |   53|      7|        ans = i;
+  |   54|      7|        size_t j = i + 1, k = i;
+  |   55|     20|        while (j < (n + n) && s[j % n] >= s[k % n]) {
+  |   56|     13|            if (s[k % n] < s[j % n]) {
+  |   57|      9|                k = i;
+  |   58|      9|            } else {
+  |   59|      4|                k++;
+  |   60|      4|            }
+  |   61|     13|            j++;
+  |   62|     13|        }
+  |   63|     14|        while (i <= k) {
+  |   64|      7|            i += j - k;
+  |   65|      7|        }
+  |   66|      7|    }
+  |   67|      2|    return ans;
+  |   68|       |    // returns 0-indexed position of the least cyclic shift
+  |   69|      2|}
+  ------------------
+  | _ZN6string5duvalISt5arrayIiLm5EEEEmRKT_:
+  |   49|      1|size_t duval(const T& s) {
+  |   50|      1|    size_t n = s.size();
+  |   51|      1|    size_t i = 0, ans = 0;
+  |   52|      2|    while (i < n) {
+  |   53|      1|        ans = i;
+  |   54|      1|        size_t j = i + 1, k = i;
+  |   55|     10|        while (j < (n + n) && s[j % n] >= s[k % n]) {
+  |   56|      9|            if (s[k % n] < s[j % n]) {
+  |   57|      4|                k = i;
+  |   58|      5|            } else {
+  |   59|      5|                k++;
+  |   60|      5|            }
+  |   61|      9|            j++;
+  |   62|      9|        }
+  |   63|      3|        while (i <= k) {
+  |   64|      2|            i += j - k;
+  |   65|      2|        }
+  |   66|      1|    }
+  |   67|      1|    return ans;
+  |   68|       |    // returns 0-indexed position of the least cyclic shift
+  |   69|      1|}
+  ------------------
+  | _ZN6string5duvalISt5dequeIcSaIcEEEEmRKT_:
+  |   49|      1|size_t duval(const T& s) {
+  |   50|      1|    size_t n = s.size();
+  |   51|      1|    size_t i = 0, ans = 0;
+  |   52|      3|    while (i < n) {
+  |   53|      2|        ans = i;
+  |   54|      2|        size_t j = i + 1, k = i;
+  |   55|     11|        while (j < (n + n) && s[j % n] >= s[k % n]) {
+  |   56|      9|            if (s[k % n] < s[j % n]) {
+  |   57|      5|                k = i;
+  |   58|      5|            } else {
+  |   59|      4|                k++;
+  |   60|      4|            }
+  |   61|      9|            j++;
+  |   62|      9|        }
+  |   63|      4|        while (i <= k) {
+  |   64|      2|            i += j - k;
+  |   65|      2|        }
+  |   66|      2|    }
+  |   67|      1|    return ans;
+  |   68|       |    // returns 0-indexed position of the least cyclic shift
+  |   69|      1|}
+  ------------------
+   70|       |
+   71|       |}  // namespace string
+   72|       |
+   73|       |/**
+   74|       | * @brief self test implementation
+   75|       | * returns void
+   76|       | */
+   77|      1|static void test() {
+   78|      1|    using namespace string;
+   79|       |
+   80|       |    // Test 1
+   81|      1|    std::string s1 = "abcab";
+   82|      1|    assert(duval(s1) == 3);
+   83|       |
+   84|       |    // Test 2
+   85|      0|    std::string s2 = "011100";
+   86|      1|    assert(duval(s2) == 4);
+   87|       |
+   88|       |    // Test 3
+   89|      0|    std::vector<int> v = {5, 2, 1, 3, 4};
+   90|      1|    assert(duval(v) == 2);
+   91|       |
+   92|       |    // Test 4
+   93|      0|    std::array<int, 5> a = {1, 2, 3, 4, 5};
+   94|      1|    assert(duval(a) == 0);
+   95|       |
+   96|       |    // Test 5
+   97|      0|    std::deque<char> d = {'a', 'z', 'c', 'a', 'b'};
+   98|      1|    assert(duval(d) == 3);
+   99|       |
+  100|       |    // Test 6
+  101|      0|    std::string s3;
+  102|      1|    assert(duval(s3) == 0);
+  103|       |
+  104|       |    // Test 7
+  105|      0|    std::vector<int> v2 = {5, 2, 1, 3, -4};
+  106|      1|    assert(duval(v2) == 4);
+  107|       |
+  108|      0|    std::cout << "All tests passed!" << std::endl;
+  109|      1|}
+  110|       |
+  111|       |/**
+  112|       | * @brief main function
+  113|       | * @returns 0 on exit
+  114|       | */
+  115|      1|int main() {
+  116|      1|    test();  // run self test implementations
+  117|      1|    return 0;
+  118|      1|}
+

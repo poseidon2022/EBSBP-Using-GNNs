@@ -1,0 +1,180 @@
+    1|       |/**
+    2|       | * @file
+    3|       | * @brief SCS is a string Z which is the shortest supersequence of strings X and Y (may not be continuous in Z, but order is maintained).
+    4|       | *
+    5|       | * @details
+    6|       | * The idea is to use lookup table method as used in LCS.
+    7|       | * For example: example 1:-
+    8|       | * X: 'ABCXYZ', Y: 'ABZ' then Z will be 'ABCXYZ' (y is not continuous but in order)
+    9|       | * 
+   10|       | * For example: example 2:-
+   11|       | * X: 'AGGTAB', Y: 'GXTXAYB' then Z will be 'AGGXTXAYB'
+   12|       | * @author [Ridhish Jain](https://github.com/ridhishjain)
+   13|       | * @see more on [SCS](https://en.wikipedia.org/wiki/Shortest_common_supersequence_problem)
+   14|       | * @see related problem [Leetcode](https://leetcode.com/problems/shortest-common-supersequence/)
+   15|       |*/
+   16|       |
+   17|       |// header files
+   18|       |#include <iostream>
+   19|       |#include <string>
+   20|       |#include <vector>
+   21|       |#include <algorithm>
+   22|       |#include <cassert>
+   23|       |
+   24|       |/**
+   25|       | * @namespace dynamic_programming
+   26|       | * @brief Dynamic Programming algorithms
+   27|       |*/
+   28|       |namespace dynamic_programming {
+   29|       |
+   30|       |    /**
+   31|       |    * @namespace shortest_common_supersequence
+   32|       |    * @brief Shortest Common Super Sequence algorithm
+   33|       |    */
+   34|       |    namespace shortest_common_supersequence {
+   35|       |        
+   36|       |        /**
+   37|       |         * Function implementing Shortest Common Super-Sequence algorithm using look-up table method.
+   38|       |         * @param str1 first string 'X'
+   39|       |         * @param str2 second string 'Y'
+   40|       |         * @returns string 'Z', superSequence of X and Y 
+   41|       |        */
+   42|      5|        std::string scs(const std::string &str1, const std::string &str2) {
+   43|       |
+   44|       |            // Edge cases
+   45|       |            // If either str1 or str2 or both are empty
+   46|      5|            if(str1.empty() && str2.empty()) {
+   47|      0|                return "";
+   48|      0|            }
+   49|      5|            else if(str1.empty()) {
+   50|      0|                return str2;
+   51|      0|            }
+   52|      5|            else if(str2.empty()) {
+   53|      1|                return str1;
+   54|      1|            }
+   55|       |
+   56|       |            // creating lookup table
+   57|      4|            std::vector <std::vector <int>> lookup(str1.length() + 1, std::vector <int> (str2.length() + 1, 0));
+   58|       |      
+   59|     20|            for(int i=1; i <= str1.length(); i++) {
+   60|     95|                for(int j=1; j <= str2.length(); j++) {
+   61|     79|                    if(str1[i-1] == str2[j-1]) {
+   62|     12|                        lookup[i][j] = lookup[i-1][j-1] + 1;
+   63|     12|                    }
+   64|     67|                    else {
+   65|     67|                        lookup[i][j] = std::max(lookup[i-1][j], lookup[i][j-1]);
+   66|     67|                    }
+   67|     79|                }
+   68|     16|            }
+   69|       |
+   70|       |            // making supersequence
+   71|       |            // i and j are initially pointed towards end of strings
+   72|       |            // Super-sequence will be constructed backwards
+   73|      4|            int i=str1.length();
+   74|      4|            int j=str2.length();
+   75|      4|            std::string s;
+   76|       |      
+   77|     24|            while(i>0 && j>0) {
+   78|       |
+   79|       |                // If the characters at i and j of both strings are same
+   80|       |                // We only need to add them once in s
+   81|     20|                if(str1[i-1] == str2[j-1]) {
+   82|     10|                    s.push_back(str1[i-1]);
+   83|     10|                    i--;
+   84|     10|                    j--;
+   85|     10|                }
+   86|       |                // otherwise we check lookup table for recurrences of characters
+   87|     10|                else {
+   88|     10|                    if(lookup[i-1][j] > lookup[i][j-1]) {
+   89|      3|                        s.push_back(str1[i-1]);
+   90|      3|                        i--;
+   91|      3|                    }
+   92|      7|                    else {
+   93|      7|                        s.push_back(str2[j-1]);
+   94|      7|                        j--;
+   95|      7|                    }
+   96|     10|                }
+   97|     20|            }
+   98|       |
+   99|       |            // copying remaining elements
+  100|       |            // if j becomes 0 before i
+  101|      7|            while(i > 0) {
+  102|      3|                s.push_back(str1[i-1]);
+  103|      3|                i--;
+  104|      3|            }
+  105|       |
+  106|       |            // if i becomes 0 before j
+  107|      4|            while(j > 0) {
+  108|      0|                s.push_back(str2[j-1]);
+  109|      0|                j--;
+  110|      0|            }
+  111|       |
+  112|       |            // As the super sequence is constructd backwards
+  113|       |            // reversing the string before returning gives us the correct output  
+  114|      4|            reverse(s.begin(), s.end());
+  115|      4|            return s;
+  116|      5|        }
+  117|       |    } // namespace shortest_common_supersequence
+  118|       |} // namespace dynamic_programming
+  119|       |
+  120|       |/** 
+  121|       | * Test Function
+  122|       | * @return void 
+  123|       |*/
+  124|      1|static void test() {
+  125|       |    // custom input vector
+  126|      1|    std::vector <std::vector <std::string>> scsStrings {
+  127|      1|        {"ABCXYZ", "ABZ"},
+  128|      1|        {"ABZ", "ABCXYZ"},
+  129|      1|        {"AGGTAB", "GXTXAYB"},
+  130|      1|        {"X", "Y"},
+  131|      1|    };
+  132|       |
+  133|       |    // calculated output vector by scs function
+  134|      1|    std::vector <std::string> calculatedOutput(4, "");
+  135|      1|    int i=0;
+  136|      4|    for(auto & scsString : scsStrings) {
+  137|       |        
+  138|      4|        calculatedOutput[i] = dynamic_programming::shortest_common_supersequence::scs(
+  139|      4|            scsString[0], scsString[1]
+  140|      4|        );
+  141|      4|        i++;
+  142|      4|    }
+  143|       |
+  144|       |    // expected output vector acc to problem statement
+  145|      1|    std::vector <std::string> expectedOutput {
+  146|      1|        "ABCXYZ",
+  147|      1|        "ABCXYZ",
+  148|      1|        "AGGXTXAYB",
+  149|      1|        "XY"
+  150|      1|    };
+  151|       |
+  152|       |    // Testing implementation via assert function
+  153|       |    // It will throw error if any of the expected test fails
+  154|       |    // Else it will give nothing
+  155|      5|    for(int i=0; i < scsStrings.size(); i++) {
+  156|      4|        assert(expectedOutput[i] == calculatedOutput[i]);
+  157|      4|    }
+  158|       |
+  159|      1|    std::cout << "All tests passed successfully!\n";
+  160|      1|    return;
+  161|      1|}
+  162|       |
+  163|       |/** Main function (driver code)*/
+  164|      1|int main() {
+  165|       |    // test for implementation
+  166|      1|    test();
+  167|       |
+  168|       |    // user input
+  169|      1|    std::string s1, s2;
+  170|      1|    std::cin >> s1;
+  171|      1|    std::cin >> s2;
+  172|       |
+  173|      1|    std::string ans;
+  174|       |
+  175|       |    // user output
+  176|      1|    ans = dynamic_programming::shortest_common_supersequence::scs(s1, s2);
+  177|      1|    std::cout << ans;
+  178|      1|    return 0;
+  179|      1|}
+

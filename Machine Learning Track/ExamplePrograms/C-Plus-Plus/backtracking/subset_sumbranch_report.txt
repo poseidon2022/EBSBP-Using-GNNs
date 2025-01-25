@@ -1,0 +1,108 @@
+    1|       |/**
+    2|       | * @file
+    3|       | * @brief Implementation of the [Subset
+    4|       | * Sum](https://en.wikipedia.org/wiki/Subset_sum_problem) problem.
+    5|       | * @details
+    6|       | * We are given an array and a sum value. The algorithm finds all
+    7|       | * the subsets of that array with sum equal to the given sum and return such
+    8|       | * subsets count. This approach will have exponential time complexity.
+    9|       | * @author [Swastika Gupta](https://github.com/Swastyy)
+   10|       | */
+   11|       |
+   12|       |#include <cassert>   /// for assert
+   13|       |#include <cstdint>
+   14|       |#include <iostream>  /// for IO operations
+   15|       |#include <vector>    /// for std::vector
+   16|       |
+   17|       |/**
+   18|       | * @namespace backtracking
+   19|       | * @brief Backtracking algorithms
+   20|       | */
+   21|       |namespace backtracking {
+   22|       |/**
+   23|       | * @namespace Subsets
+   24|       | * @brief Functions for the [Subset
+   25|       | * Sum](https://en.wikipedia.org/wiki/Subset_sum_problem) problem.
+   26|       | */
+   27|       |namespace subset_sum {
+   28|       |/**
+   29|       | * @brief The main function implements count of subsets
+   30|       | * @param sum is the required sum of any subset
+   31|       | * @param in_arr is the input array
+   32|       | * @returns count of the number of subsets with required sum
+   33|       | */
+   34|      5|uint64_t number_of_subsets(int32_t sum, const std::vector<int32_t> &in_arr) {
+   35|      5|    int32_t nelement = in_arr.size();
+   36|      5|    uint64_t count_of_subset = 0;
+   37|       |
+   38|     86|    for (int32_t i = 0; i < (1 << (nelement)); i++) {
+   39|     81|        int32_t check = 0;
+   40|    433|        for (int32_t j = 0; j < nelement; j++) {
+   41|    352|            if (i & (1 << j)) {
+   42|    176|                check += (in_arr[j]);
+   43|    176|            }
+   44|    352|        }
+   45|     81|        if (check == sum) {
+   46|     15|            count_of_subset++;
+   47|     15|        }
+   48|     81|    }
+   49|      5|    return count_of_subset;
+   50|      5|}
+   51|       |}  // namespace subset_sum
+   52|       |}  // namespace backtracking
+   53|       |
+   54|       |/**
+   55|       | * @brief Test implementations
+   56|       | * @returns void
+   57|       | */
+   58|      1|static void test() {
+   59|       |    // 1st test
+   60|      1|    std::cout << "1st test ";
+   61|      1|    std::vector<int32_t> array1 = {-7, -3, -2, 5, 8};  // input array
+   62|      1|    assert(backtracking::subset_sum::number_of_subsets(0, array1) ==
+   63|      1|           2);  // first argument in subset_sum function is the required sum and
+   64|       |                // second is the input array
+   65|      0|    std::cout << "passed" << std::endl;
+   66|       |
+   67|       |    // 2nd test
+   68|      1|    std::cout << "2nd test ";
+   69|      1|    std::vector<int32_t> array2 = {1, 2, 3, 3};
+   70|      1|    assert(backtracking::subset_sum::number_of_subsets(6, array2) ==
+   71|      1|           3);  // here we are expecting 3 subsets which sum up to 6 i.e.
+   72|       |                // {(1,2,3),(1,2,3),(3,3)}
+   73|      0|    std::cout << "passed" << std::endl;
+   74|       |
+   75|       |    // 3rd test
+   76|      1|    std::cout << "3rd test ";
+   77|      1|    std::vector<int32_t> array3 = {1, 1, 1, 1};
+   78|      1|    assert(backtracking::subset_sum::number_of_subsets(1, array3) ==
+   79|      1|           4);  // here we are expecting 4 subsets which sum up to 1 i.e.
+   80|       |                // {(1),(1),(1),(1)}
+   81|      0|    std::cout << "passed" << std::endl;
+   82|       |
+   83|       |    // 4th test
+   84|      1|    std::cout << "4th test ";
+   85|      1|    std::vector<int32_t> array4 = {3, 3, 3, 3};
+   86|      1|    assert(backtracking::subset_sum::number_of_subsets(6, array4) ==
+   87|      1|           6);  // here we are expecting 6 subsets which sum up to 6 i.e.
+   88|       |                // {(3,3),(3,3),(3,3),(3,3),(3,3),(3,3)}
+   89|      0|    std::cout << "passed" << std::endl;
+   90|       |
+   91|       |    // Test 5
+   92|      1|    std::cout << "5th test ";
+   93|      1|    std::vector<int32_t> array5 = {};
+   94|      1|    assert(backtracking::subset_sum::number_of_subsets(6, array5) ==
+   95|      1|           0);  // here we are expecting 0 subsets which sum up to 6 i.e. we
+   96|       |                // cannot select anything from an empty array
+   97|      0|    std::cout << "passed" << std::endl;
+   98|      1|}
+   99|       |
+  100|       |/**
+  101|       | * @brief Main function
+  102|       | * @returns 0 on exit
+  103|       | */
+  104|      1|int main() {
+  105|      1|    test();  // run self-test implementations
+  106|      1|    return 0;
+  107|      1|}
+

@@ -1,0 +1,482 @@
+/home/kidus/Desktop/GNNs/ExamplePrograms/C-Plus-Plus/math/large_factorial.cpp:
+    1|       |/**
+    2|       | * @file
+    3|       | * @brief Compute factorial of any arbitratily large number/
+    4|       | *
+    5|       | * \author [Krishna Vedala](https://github.com/kvedala)
+    6|       | * @see factorial.cpp
+    7|       | */
+    8|       |#include <cstring>
+    9|       |#include <ctime>
+   10|       |#include <iostream>
+   11|       |
+   12|       |#include "./large_number.h"
+   13|       |
+   14|       |/** Test implementation for 10! Result must be 3628800.
+   15|       | * @returns True if test pass else False
+   16|       | */
+   17|      1|bool test1() {
+   18|      1|    std::cout << "---- Check 1\t";
+   19|      1|    unsigned int i, number = 10;
+   20|      1|    large_number result;
+   21|     10|    for (i = 2; i <= number; i++) /* Multiply every number from 2 thru N */
+   22|      9|        result *= i;
+   23|       |
+   24|      1|    const char *known_reslt = "3628800";
+   25|       |
+   26|       |    /* check 1 */
+   27|      1|    if (strlen(known_reslt) != result.num_digits()) {
+   28|      0|        std::cerr << "Result lengths dont match! " << strlen(known_reslt)
+   29|      0|                  << " != " << result.num_digits() << std::endl;
+   30|      0|        return false;
+   31|      0|    }
+   32|       |
+   33|      1|    const size_t N = result.num_digits();
+   34|      8|    for (i = 0; i < N; i++) {
+   35|      7|        if (known_reslt[i] != result.digit_char(i)) {
+   36|      0|            std::cerr << i << "^th digit mismatch! " << known_reslt[i]
+   37|      0|                      << " != " << result.digit_char(i) << std::endl;
+   38|      0|            return false;
+   39|      0|        }
+   40|      7|    }
+   41|       |
+   42|      1|    std::cout << "Passed!" << std::endl;
+   43|      1|    return true;
+   44|      1|}
+   45|       |
+   46|       |/** Test implementation for 100! The result is the 156 digit number:
+   47|       | * ```
+   48|       | * 9332621544394415268169923885626670049071596826438162146859296389521759
+   49|       | * 9993229915608941463976156518286253697920827223758251185210916864000000
+   50|       | * 000000000000000000
+   51|       | * ```
+   52|       | * @returns True if test pass else False
+   53|       | */
+   54|      1|bool test2() {
+   55|      1|    std::cout << "---- Check 2\t";
+   56|      1|    unsigned int i, number = 100;
+   57|      1|    large_number result;
+   58|    100|    for (i = 2; i <= number; i++) /* Multiply every number from 2 thru N */
+   59|     99|        result *= i;
+   60|       |
+   61|      1|    const char *known_reslt =
+   62|      1|        "9332621544394415268169923885626670049071596826438162146859296389521759"
+   63|      1|        "9993229915608941463976156518286253697920827223758251185210916864000000"
+   64|      1|        "000000000000000000";
+   65|       |
+   66|       |    /* check 1 */
+   67|      1|    if (strlen(known_reslt) != result.num_digits()) {
+   68|      0|        std::cerr << "Result lengths dont match! " << strlen(known_reslt)
+   69|      0|                  << " != " << result.num_digits() << std::endl;
+   70|      0|        return false;
+   71|      0|    }
+   72|       |
+   73|      1|    const size_t N = result.num_digits();
+   74|    159|    for (i = 0; i < N; i++) {
+   75|    158|        if (known_reslt[i] != result.digit_char(i)) {
+   76|      0|            std::cerr << i << "^th digit mismatch! " << known_reslt[i]
+   77|      0|                      << " != " << result.digit_char(i) << std::endl;
+   78|      0|            return false;
+   79|      0|        }
+   80|    158|    }
+   81|       |
+   82|      1|    std::cout << "Passed!" << std::endl;
+   83|      1|    return true;
+   84|      1|}
+   85|       |
+   86|       |/**
+   87|       | * Main program
+   88|       | **/
+   89|      1|int main(int argc, char *argv[]) {
+   90|      1|    int number, i;
+   91|       |
+   92|      1|    if (argc == 2) {
+   93|      0|        number = atoi(argv[1]);
+   94|      1|    } else {
+   95|      1|        std::cout << "Enter the value of n(n starts from 0 ): ";
+   96|      1|        std::cin >> number;
+   97|      1|    }
+   98|       |
+   99|      1|    large_number result;
+  100|       |
+  101|      1|    std::clock_t start_time = std::clock();
+  102|      1|    for (i = 2; i <= number; i++) /* Multiply every number from 2 thru N */
+  103|      0|        result *= i;
+  104|      1|    std::clock_t end_time = std::clock();
+  105|      1|    double time_taken =
+  106|      1|        static_cast<double>(end_time - start_time) / CLOCKS_PER_SEC;
+  107|       |
+  108|      1|    std::cout << number << "! = " << result << std::endl
+  109|      1|              << "Number of digits: " << result.num_digits() << std::endl
+  110|      1|              << "Time taken: " << std::scientific << time_taken << " s"
+  111|      1|              << std::endl;
+  112|       |
+  113|      1|    test1();
+  114|      1|    test2();
+  115|      1|    result.test();
+  116|       |
+  117|      1|    return 0;
+  118|      1|}
+
+/home/kidus/Desktop/GNNs/ExamplePrograms/C-Plus-Plus/math/large_number.h:
+    1|       |/**
+    2|       | * @file
+    3|       | * @brief Library to perform arithmatic operations on arbitrarily large
+    4|       | * numbers.
+    5|       | * \author [Krishna Vedala](https://github.com/kvedala)
+    6|       | */
+    7|       |
+    8|       |#ifndef MATH_LARGE_NUMBER_H_
+    9|       |#define MATH_LARGE_NUMBER_H_
+   10|       |#include <algorithm>
+   11|       |#include <cassert>
+   12|       |#include <cinttypes>
+   13|       |#include <cstring>
+   14|       |#include <iostream>
+   15|       |#include <type_traits>
+   16|       |#include <vector>
+   17|       |
+   18|       |/**
+   19|       | * Store large unsigned numbers as a C++ vector
+   20|       | * The class provides convenience functions to add a
+   21|       | * digit to the number, perform multiplication of
+   22|       | * large number with long unsigned integers.
+   23|       | **/
+   24|       |class large_number {
+   25|       | public:
+   26|       |    /**< initializer with value = 1 */
+   27|      3|    large_number() { _digits.push_back(1); }
+   28|       |
+   29|       |    // /**< initializer from an integer */
+   30|       |    // explicit large_number(uint64_t n) {
+   31|       |    //     uint64_t carry = n;
+   32|       |    //     do {
+   33|       |    //         add_digit(carry % 10);
+   34|       |    //         carry /= 10;
+   35|       |    //     } while (carry != 0);
+   36|       |    // }
+   37|       |
+   38|       |    /**< initializer from an integer */
+   39|      9|    explicit large_number(int n) {
+   40|      9|        int carry = n;
+   41|     25|        do {
+   42|     25|            add_digit(carry % 10);
+   43|     25|            carry /= 10;
+   44|     25|        } while (carry != 0);
+   45|      9|    }
+   46|       |
+   47|       |    /**< initializer from another large_number */
+   48|      2|    large_number(const large_number &a) : _digits(a._digits) {}
+   49|       |
+   50|       |    /**< initializer from a vector */
+   51|      1|    explicit large_number(std::vector<unsigned char> &vec) : _digits(vec) {}
+   52|       |
+   53|       |    /**< initializer from a string */
+   54|      2|    explicit large_number(char const *number_str) {
+   55|     64|        for (size_t i = strlen(number_str); i > 0; i--) {
+   56|     62|            char a = number_str[i - 1] - '0';
+   57|     62|            if (a >= 0 && a <= 9)
+   58|     62|                _digits.push_back(a);
+   59|     62|        }
+   60|      2|    }
+   61|       |
+   62|       |    /**
+   63|       |     * Function to check implementation
+   64|       |     **/
+   65|      1|    static bool test() {
+   66|      1|        std::cout << "------ Checking `large_number` class implementations\t"
+   67|      1|                  << std::endl;
+   68|      1|        large_number a(40);
+   69|       |        // 1. test multiplication
+   70|      1|        a *= 10;
+   71|      1|        if (a != large_number(400)) {
+   72|      0|            std::cerr << "\tFailed 1/6 (" << a << "!=400)" << std::endl;
+   73|      0|            return false;
+   74|      0|        }
+   75|      1|        std::cout << "\tPassed 1/6...";
+   76|       |        // 2. test compound addition with integer
+   77|      1|        a += 120;
+   78|      1|        if (a != large_number(520)) {
+   79|      0|            std::cerr << "\tFailed 2/6 (" << a << "!=520)" << std::endl;
+   80|      0|            return false;
+   81|      0|        }
+   82|      1|        std::cout << "\tPassed 2/6...";
+   83|       |        // 3. test compound multiplication again
+   84|      1|        a *= 10;
+   85|      1|        if (a != large_number(5200)) {
+   86|      0|            std::cerr << "\tFailed 3/6 (" << a << "!=5200)" << std::endl;
+   87|      0|            return false;
+   88|      0|        }
+   89|      1|        std::cout << "\tPassed 3/6...";
+   90|       |        // 4. test increment (prefix)
+   91|      1|        ++a;
+   92|      1|        if (a != large_number(5201)) {
+   93|      0|            std::cerr << "\tFailed 4/6 (" << a << "!=5201)" << std::endl;
+   94|      0|            return false;
+   95|      0|        }
+   96|      1|        std::cout << "\tPassed 4/6...";
+   97|       |        // 5. test increment (postfix)
+   98|      1|        a++;
+   99|      1|        if (a != large_number(5202)) {
+  100|      0|            std::cerr << "\tFailed 5/6 (" << a << "!=5202)" << std::endl;
+  101|      0|            return false;
+  102|      0|        }
+  103|      1|        std::cout << "\tPassed 5/6...";
+  104|       |        // 6. test addition with another large number
+  105|      1|        a = a + large_number("7000000000000000000000000000000");
+  106|      1|        if (a != large_number("7000000000000000000000000005202")) {
+  107|      0|            std::cerr << "\tFailed 6/6 (" << a
+  108|      0|                      << "!=7000000000000000000000000005202)" << std::endl;
+  109|      0|            return false;
+  110|      0|        }
+  111|      1|        std::cout << "\tPassed 6/6..." << std::endl;
+  112|      1|        return true;
+  113|      1|    }
+  114|       |
+  115|       |    /**
+  116|       |     * add a digit at MSB to the large number
+  117|       |     **/
+  118|    217|    void add_digit(unsigned int value) {
+  119|    217|        if (value > 9) {
+  120|      0|            std::cerr << "digit > 9!!\n";
+  121|      0|            exit(EXIT_FAILURE);
+  122|      0|        }
+  123|       |
+  124|    217|        _digits.push_back(value);
+  125|    217|    }
+  126|       |
+  127|       |    /**
+  128|       |     * Get number of digits in the number
+  129|       |     **/
+  130|  7.29k|    size_t num_digits() const { return _digits.size(); }
+  131|       |
+  132|       |    /**
+  133|       |     * operator over load to access the
+  134|       |     * i^th digit conveniently and also
+  135|       |     * assign value to it
+  136|       |     **/
+  137|  13.7k|    inline unsigned char &operator[](size_t n) { return this->_digits[n]; }
+  138|       |
+  139|     99|    inline const unsigned char &operator[](size_t n) const {
+  140|     99|        return this->_digits[n];
+  141|     99|    }
+  142|       |
+  143|       |    /**
+  144|       |     * operator overload to compare two numbers
+  145|       |     **/
+  146|      1|    friend std::ostream &operator<<(std::ostream &out, const large_number &a) {
+  147|      2|        for (size_t i = a.num_digits(); i > 0; i--)
+  148|      1|            out << static_cast<int>(a[i - 1]);
+  149|      1|        return out;
+  150|      1|    }
+  151|       |
+  152|       |    /**
+  153|       |     * operator overload to compare two numbers
+  154|       |     **/
+  155|      6|    friend bool operator==(large_number const &a, large_number const &b) {
+  156|      6|        size_t N = a.num_digits();
+  157|      6|        if (N != b.num_digits())
+  158|      0|            return false;
+  159|     55|        for (size_t i = 0; i < N; i++)
+  160|     49|            if (a[i] != b[i])
+  161|      0|                return false;
+  162|      6|        return true;
+  163|      6|    }
+  164|       |
+  165|       |    /**
+  166|       |     * operator overload to compare two numbers
+  167|       |     **/
+  168|      6|    friend bool operator!=(large_number const &a, large_number const &b) {
+  169|      6|        return !(a == b);
+  170|      6|    }
+  171|       |
+  172|       |    /**
+  173|       |     * operator overload to increment (prefix)
+  174|       |     **/
+  175|      2|    large_number &operator++() {
+  176|      2|        (*this) += 1;
+  177|      2|        return *this;
+  178|      2|    }
+  179|       |
+  180|       |    /**
+  181|       |     * operator overload to increment (postfix)
+  182|       |     **/
+  183|      1|    large_number &operator++(int) {
+  184|      1|        static large_number tmp(_digits);
+  185|      1|        ++(*this);
+  186|      1|        return tmp;
+  187|      1|    }
+  188|       |
+  189|       |    /**
+  190|       |     * operator overload to add
+  191|       |     **/
+  192|      4|    large_number &operator+=(large_number n) {
+  193|       |        // if adding with another large_number
+  194|      4|        large_number *b = reinterpret_cast<large_number *>(&n);
+  195|      4|        const size_t max_L = std::max(this->num_digits(), b->num_digits());
+  196|      4|        unsigned int carry = 0;
+  197|      4|        size_t i;
+  198|     46|        for (i = 0; i < max_L || carry != 0; i++) {
+  199|     42|            if (i < b->num_digits())
+  200|     36|                carry += (*b)[i];
+  201|     42|            if (i < this->num_digits())
+  202|     15|                carry += (*this)[i];
+  203|     42|            if (i < this->num_digits())
+  204|     15|                (*this)[i] = carry % 10;
+  205|     27|            else
+  206|     27|                this->add_digit(carry % 10);
+  207|     42|            carry /= 10;
+  208|     42|        }
+  209|      4|        return *this;
+  210|      4|    }
+  211|       |
+  212|      3|    large_number &operator+=(int n) { return (*this) += large_number(n); }
+  213|       |    // large_number &operator+=(uint64_t n) { return (*this) += large_number(n);
+  214|       |    // }
+  215|       |
+  216|       |    /**
+  217|       |     * operator overload to perform addition
+  218|       |     **/
+  219|       |    template <class T>
+  220|      1|    friend large_number &operator+(const large_number &a, const T &b) {
+  221|      1|        static large_number c = a;
+  222|      1|        c += b;
+  223|      1|        return c;
+  224|      1|    }
+  225|       |
+  226|       |    /**
+  227|       |     * assignment operator
+  228|       |     **/
+  229|      1|    large_number &operator=(const large_number &b) {
+  230|      1|        this->_digits = b._digits;
+  231|      1|        return *this;
+  232|      1|    }
+  233|       |
+  234|       |    /**
+  235|       |     * operator overload to increment
+  236|       |     **/
+  237|       |    template <class T>
+  238|    110|    large_number &operator*=(const T n) {
+  239|    110|        static_assert(std::is_integral<T>::value,
+  240|    110|                      "Must be integer addition unsigned integer types.");
+  241|    110|        this->multiply(n);
+  242|    110|        return *this;
+  243|    110|    }
+  ------------------
+  | _ZN12large_numbermLIiEERS_T_:
+  |  238|      2|    large_number &operator*=(const T n) {
+  |  239|      2|        static_assert(std::is_integral<T>::value,
+  |  240|      2|                      "Must be integer addition unsigned integer types.");
+  |  241|      2|        this->multiply(n);
+  |  242|      2|        return *this;
+  |  243|      2|    }
+  ------------------
+  | _ZN12large_numbermLIjEERS_T_:
+  |  238|    108|    large_number &operator*=(const T n) {
+  |  239|    108|        static_assert(std::is_integral<T>::value,
+  |  240|    108|                      "Must be integer addition unsigned integer types.");
+  |  241|    108|        this->multiply(n);
+  |  242|    108|        return *this;
+  |  243|    108|    }
+  ------------------
+  244|       |
+  245|       |    /**
+  246|       |     * returns i^th digit as an ASCII character
+  247|       |     **/
+  248|    165|    char digit_char(size_t i) const {
+  249|    165|        return _digits[num_digits() - i - 1] + '0';
+  250|    165|    }
+  251|       |
+  252|       | private:
+  253|       |    /**
+  254|       |     * multiply large number with another integer and
+  255|       |     * store the result in the same large number
+  256|       |     **/
+  257|       |    template <class T>
+  258|    110|    void multiply(const T n) {
+  259|    110|        static_assert(std::is_integral<T>::value,
+  260|    110|                      "Can only have integer types.");
+  261|       |        // assert(!(std::is_signed<T>::value)); //, "Implemented only for
+  262|       |        // unsigned integer types.");
+  263|       |
+  264|    110|        size_t i;
+  265|    110|        uint64_t carry = 0, temp;
+  266|  6.97k|        for (i = 0; i < this->num_digits(); i++) {
+  267|  6.86k|            temp = static_cast<uint64_t>((*this)[i]) * n;
+  268|  6.86k|            temp += carry;
+  269|  6.86k|            if (temp < 10) {
+  270|  1.20k|                carry = 0;
+  271|  5.66k|            } else {
+  272|  5.66k|                carry = temp / 10;
+  273|  5.66k|                temp = temp % 10;
+  274|  5.66k|            }
+  275|  6.86k|            (*this)[i] = temp;
+  276|  6.86k|        }
+  277|       |
+  278|    275|        while (carry != 0) {
+  279|    165|            this->add_digit(carry % 10);
+  280|    165|            carry /= 10;
+  281|    165|        }
+  282|    110|    }
+  ------------------
+  | _ZN12large_number8multiplyIiEEvT_:
+  |  258|      2|    void multiply(const T n) {
+  |  259|      2|        static_assert(std::is_integral<T>::value,
+  |  260|      2|                      "Can only have integer types.");
+  |  261|       |        // assert(!(std::is_signed<T>::value)); //, "Implemented only for
+  |  262|       |        // unsigned integer types.");
+  |  263|       |
+  |  264|      2|        size_t i;
+  |  265|      2|        uint64_t carry = 0, temp;
+  |  266|      7|        for (i = 0; i < this->num_digits(); i++) {
+  |  267|      5|            temp = static_cast<uint64_t>((*this)[i]) * n;
+  |  268|      5|            temp += carry;
+  |  269|      5|            if (temp < 10) {
+  |  270|      2|                carry = 0;
+  |  271|      3|            } else {
+  |  272|      3|                carry = temp / 10;
+  |  273|      3|                temp = temp % 10;
+  |  274|      3|            }
+  |  275|      5|            (*this)[i] = temp;
+  |  276|      5|        }
+  |  277|       |
+  |  278|      4|        while (carry != 0) {
+  |  279|      2|            this->add_digit(carry % 10);
+  |  280|      2|            carry /= 10;
+  |  281|      2|        }
+  |  282|      2|    }
+  ------------------
+  | _ZN12large_number8multiplyIjEEvT_:
+  |  258|    108|    void multiply(const T n) {
+  |  259|    108|        static_assert(std::is_integral<T>::value,
+  |  260|    108|                      "Can only have integer types.");
+  |  261|       |        // assert(!(std::is_signed<T>::value)); //, "Implemented only for
+  |  262|       |        // unsigned integer types.");
+  |  263|       |
+  |  264|    108|        size_t i;
+  |  265|    108|        uint64_t carry = 0, temp;
+  |  266|  6.96k|        for (i = 0; i < this->num_digits(); i++) {
+  |  267|  6.85k|            temp = static_cast<uint64_t>((*this)[i]) * n;
+  |  268|  6.85k|            temp += carry;
+  |  269|  6.85k|            if (temp < 10) {
+  |  270|  1.19k|                carry = 0;
+  |  271|  5.66k|            } else {
+  |  272|  5.66k|                carry = temp / 10;
+  |  273|  5.66k|                temp = temp % 10;
+  |  274|  5.66k|            }
+  |  275|  6.85k|            (*this)[i] = temp;
+  |  276|  6.85k|        }
+  |  277|       |
+  |  278|    271|        while (carry != 0) {
+  |  279|    163|            this->add_digit(carry % 10);
+  |  280|    163|            carry /= 10;
+  |  281|    163|        }
+  |  282|    108|    }
+  ------------------
+  283|       |
+  284|       |    std::vector<unsigned char>
+  285|       |        _digits; /**< where individual digits are stored */
+  286|       |};
+  287|       |
+  288|       |#endif  // MATH_LARGE_NUMBER_H_
+

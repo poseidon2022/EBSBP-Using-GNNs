@@ -1,0 +1,99 @@
+    1|       |/**
+    2|       | * @file
+    3|       | * @brief Implementation of [Floyd's Cycle
+    4|       | * Detection](https://en.wikipedia.org/wiki/Cycle_detection) algorithm
+    5|       | * @details
+    6|       | * Given an array of integers containing 'n + 1' integers, where each
+    7|       | * integer is in the range [1, n] inclusive. If there is only one duplicate
+    8|       | * number in the input array, this algorithm returns the duplicate number in
+    9|       | * O(1) space and the time complexity is less than O(n^2) without modifying the
+   10|       | * original array, otherwise, it returns -1.
+   11|       | * @author [Swastika Gupta](https://github.com/Swastyy)
+   12|       | */
+   13|       |
+   14|       |#include <cassert>   /// for assert
+   15|       |#include <cstdint>
+   16|       |#include <iostream>  /// for IO operations
+   17|       |#include <vector>    /// for std::vector
+   18|       |/**
+   19|       | * @namespace search
+   20|       | * @brief Search algorithms
+   21|       | */
+   22|       |namespace search {
+   23|       |/**
+   24|       | * @namespace cycle_detection
+   25|       | * @brief Functions for the [Floyd's Cycle
+   26|       | * Detection](https://en.wikipedia.org/wiki/Cycle_detection) algorithm
+   27|       | */
+   28|       |namespace cycle_detection {
+   29|       |/**
+   30|       | * @brief The main function implements search algorithm
+   31|       | * @tparam T type of array
+   32|       | * @param in_arr the input array
+   33|       | * @param n size of array
+   34|       | * @returns the duplicate number
+   35|       | */
+   36|       |template <typename T>
+   37|      3|int32_t duplicateNumber(const std::vector<T> &in_arr, const uint32_t &n) {
+   38|      3|    if (n == 0 ||
+   39|      3|        n == 1) {  // to find duplicate in an array its size should be atleast 2
+   40|      1|        return -1;
+   41|      1|    }
+   42|      2|    uint32_t tortoise = in_arr[0];  // variable tortoise is used for the longer
+   43|       |                                    // jumps in the array
+   44|      2|    uint32_t hare =
+   45|      2|        in_arr[0];  // variable hare is used for shorter jumps in the array
+   46|      7|    do {
+   47|      7|        tortoise = in_arr[tortoise];
+   48|      7|        hare = in_arr[in_arr[hare]];
+   49|      7|    } while (tortoise != hare);
+   50|      2|    tortoise = in_arr[0];
+   51|      6|    while (tortoise != hare) {
+   52|      4|        tortoise = in_arr[tortoise];
+   53|      4|        hare = in_arr[hare];
+   54|      4|    }
+   55|      2|    return tortoise;
+   56|      3|}
+   57|       |}  // namespace cycle_detection
+   58|       |}  // namespace search
+   59|       |
+   60|       |/**
+   61|       | * @brief Self-test implementations
+   62|       | * @returns void
+   63|       | */
+   64|      1|static void test() {
+   65|       |    // 1st test
+   66|       |    // [3, 4, 8, 5, 9, 1, 2, 6, 7, 4] return 4
+   67|      1|    std::vector<uint32_t> array1 = {3, 4, 8, 5, 9, 1, 2, 6, 7, 4};
+   68|      1|    std::cout << "Test 1... ";
+   69|      1|    assert(search::cycle_detection::duplicateNumber(array1, array1.size()) ==
+   70|      1|           4);  // here the duplicate number is 4
+   71|      0|    std::cout << "passed" << std::endl;
+   72|       |
+   73|       |    // 2nd test
+   74|       |    // [1, 2, 3, 4, 2] return 2
+   75|      1|    std::vector<uint32_t> array2 = {1, 2, 3, 4, 2};
+   76|      1|    std::cout << "Test 2... ";
+   77|      1|    assert(search::cycle_detection::duplicateNumber(array2, array2.size()) ==
+   78|      1|           2);  // here the duplicate number is 2
+   79|      0|    std::cout << "passed" << std::endl;
+   80|       |
+   81|       |    // 3rd test
+   82|       |    // [] return -1
+   83|      1|    std::vector<uint32_t> array3 = {};
+   84|      1|    std::cout << "Test 3... ";
+   85|      1|    assert(search::cycle_detection::duplicateNumber(array3, array3.size()) ==
+   86|      1|           -1);  // since the input array is empty no duplicate number exists in
+   87|       |                 // this case
+   88|      0|    std::cout << "passed" << std::endl;
+   89|      1|}
+   90|       |
+   91|       |/**
+   92|       | * @brief Main function
+   93|       | * @returns 0 on exit
+   94|       | */
+   95|      1|int main() {
+   96|      1|    test();  // run self-test implementations
+   97|      1|    return 0;
+   98|      1|}
+

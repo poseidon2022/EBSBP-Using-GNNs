@@ -1,0 +1,151 @@
+    1|       |/******************************************************************************
+    2|       | * @file
+    3|       | * @brief [Binary search
+    4|       | * algorithm](https://en.wikipedia.org/wiki/Binary_search_algorithm)
+    5|       | * @details
+    6|       | * Binary search is a search algorithm that finds the position of a target value
+    7|       | * within a sorted array.Just like looking for a word in a dictionary, in binary search we compare the target value to the middle
+    8|       | * element of the array. If they are not equal, then the half in which the target
+    9|       | * cannot lie is eliminated and the search continues on the remaining half,
+   10|       | * again taking the middle element to compare to the target value, and repeating
+   11|       | * this until the target value is found. If the search ends with the remaining
+   12|       | * half being empty, the target is not in the array.
+   13|       | *
+   14|       | * ### Implementation
+   15|       | *
+   16|       | * Binary search works on sorted arrays. It begins by comparing an
+   17|       | * element in the middle of the array with the target value. If the target value
+   18|       | * matches the element, its position in the array is returned. If the target
+   19|       | * value is less than the element, the search continues in the lower half of
+   20|       | * the array. If the target value is greater than the element, the search
+   21|       | * continues in the upper half of the array. By doing this, the algorithm
+   22|       | * eliminates the half in which the target value cannot lie in each iteration.
+   23|       | *
+   24|       | * ### Complexities
+   25|       | *
+   26|       | * //n is the number of element in the array.
+   27|       | *
+   28|       | * Worst-case time complexity	O(log n)
+   29|       | * Best-case time complexity	O(1)
+   30|       | * Average time complexity	    O(log n)
+   31|       | * space complexity  0(1)
+   32|       | * Worst-case space complexity  0(1)
+   33|       | *
+   34|       | * @author [Lajat Manekar](https://github.com/Lazeeez)
+   35|       | * @author Unknown author
+   36|       | *******************************************************************************/
+   37|       |
+   38|       |#include <algorithm>  /// for std::sort function
+   39|       |#include <cassert>    /// for std::assert
+   40|       |#include <cstdint>
+   41|       |#include <iostream>   /// for IO operations
+   42|       |#include <vector>     /// for std::vector
+   43|       |/******************************************************************************
+   44|       | * @namespace search
+   45|       | * @brief Searching algorithms
+   46|       | *******************************************************************************/
+   47|       |namespace search {
+   48|       |
+   49|       |/******************************************************************************
+   50|       | * @namespace binary_search
+   51|       | * @brief Binary search searching algorihm
+   52|       | *******************************************************************************/
+   53|       |namespace binary_search {
+   54|       |
+   55|       |/******************************************************************************
+   56|       | * @brief The main function which implements binary search
+   57|       | * @param arr vector to be searched in
+   58|       | * @param val value to be searched
+   59|       | * @returns @param int index of val in vector arr
+   60|       | *******************************************************************************/
+   61|      3|uint64_t binarySearch(std::vector<uint64_t> arr, uint64_t val) {
+   62|      3|    uint64_t low = 0;                // set the lowest point of the vector.
+   63|      3|    uint64_t high = arr.size() - 1;  // set the highest point of the vector.
+   64|       |
+   65|      9|    while (low <= high) {
+   66|      9|        uint64_t m = low + (high - low) / 2;  // set the pivot point
+   67|       |
+   68|      9|        if (val == arr[m]) {
+   69|      3|            return m;
+   70|      3|        } /****************************************************
+   71|       |           * if pivot point is the val, return it,
+   72|       |           * else check if val is greater or smaller than pivot value
+   73|       |           * and set the next pivot point accordingly.
+   74|       |           ****************************************************/
+   75|      6|        else if (val < arr[m]) {
+   76|      1|            high = m - 1;
+   77|      5|        } else {
+   78|      5|            low = m + 1;
+   79|      5|        }
+   80|      9|    }
+   81|      0|    return -1;  // if val is not in the array, return -1.
+   82|      3|}
+   83|       |
+   84|       |}  // namespace binary_search
+   85|       |
+   86|       |}  // namespace search
+   87|       |
+   88|       |/*******************************************************************************
+   89|       | * @brief Self-test implementation #1
+   90|       | * @returns void
+   91|       | *******************************************************************************/
+   92|      1|static void test1() {
+   93|       |    // testcase #1
+   94|       |    // array = [1,3,5,7,9,8,6,4,2] , Value = 4
+   95|       |    // should return 3
+   96|       |
+   97|      1|    std::vector<uint64_t> arr = {{1, 3, 5, 7, 9, 8, 6, 4, 2}};
+   98|      1|    std::sort(arr.begin(), arr.end());
+   99|      1|    uint64_t expected_ans = 3;
+  100|      1|    uint64_t derived_ans = search::binary_search::binarySearch(arr, 4);
+  101|      1|    std::cout << "Test #1: ";
+  102|      1|    assert(derived_ans == expected_ans);
+  103|      0|    std::cout << "Passed!" << std::endl;
+  104|      1|}
+  105|       |
+  106|       |/*******************************************************************************
+  107|       | * @brief Self-test implementation #2
+  108|       | * @returns void
+  109|       | *******************************************************************************/
+  110|      1|void test2() {
+  111|       |    // testcase #2
+  112|       |    // array = [1,23,25,4,2] , Value = 25
+  113|       |    // should return 4
+  114|      1|    std::vector<uint64_t> arr = {{1, 23, 25, 4, 2}};
+  115|      1|    std::sort(arr.begin(), arr.end());
+  116|      1|    uint64_t expected_ans = 4;
+  117|      1|    uint64_t derived_ans = search::binary_search::binarySearch(arr, 25);
+  118|      1|    std::cout << "Test #2: ";
+  119|      1|    assert(derived_ans == expected_ans);
+  120|      0|    std::cout << "Passed!" << std::endl;
+  121|      1|}
+  122|       |
+  123|       |/*******************************************************************************
+  124|       | * @brief Self-test implementation #3
+  125|       | * @returns void
+  126|       | *******************************************************************************/
+  127|      1|void test3() {
+  128|       |    // testcase #3
+  129|       |    // array = [1,31,231,12,12,2,5,51,21,23,12,3] , Value = 5
+  130|       |    // should return 8
+  131|      1|    std::vector<uint64_t> arr = {{1, 31, 231, 12, 2, 5, 51, 21, 23, 12, 3}};
+  132|      1|    std::sort(arr.begin(), arr.end());
+  133|      1|    uint64_t expected_ans = 8;
+  134|      1|    uint64_t derived_ans = search::binary_search::binarySearch(arr, 31);
+  135|      1|    std::cout << "Test #3: ";
+  136|      1|    assert(derived_ans == expected_ans);
+  137|      0|    std::cout << "Passed!" << std::endl;
+  138|      1|}
+  139|       |
+  140|       |/*******************************************************************************
+  141|       | * @brief Main function
+  142|       | * @returns 0 on exit
+  143|       | *******************************************************************************/
+  144|      1|int main() {
+  145|      1|    test1();  // run self-test implementation #1
+  146|      1|    test2();  // run self-test implementation #2
+  147|      1|    test3();  // run self-test implementation #3
+  148|       |
+  149|      1|    return 0;
+  150|      1|}
+

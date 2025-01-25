@@ -1,0 +1,123 @@
+    1|       |/**
+    2|       | * @file
+    3|       | * @brief Horspool's algorithm that finds if a string contains a substring (https://en.wikipedia.org/wiki/Boyer%E2%80%93Moore%E2%80%93Horspool_algorithm)
+    4|       | * @author [Harry Kontakis](https://github.com/ckontakis)
+    5|       | */
+    6|       |
+    7|       |#include <iostream>
+    8|       |#include <unordered_map>
+    9|       |#include <cassert>
+   10|       |
+   11|       |/**
+   12|       | * @namespace strings
+   13|       | * @brief Algorithms with strings
+   14|       | */
+   15|       |namespace strings {
+   16|       |/**
+   17|       | * @namespace horspool
+   18|       | * @brief Functions for [Horspool's](https://en.wikipedia.org/wiki/Boyer%E2%80%93Moore%E2%80%93Horspool_algorithm) algorithm
+   19|       | */
+   20|       |namespace horspool {
+   21|       |/**
+   22|       | * A function that finds the shift table of the given prototype string that we need in Horpool's algorithm.
+   23|       | * @param prototype is the substring that we use to find shift table
+   24|       | * @return Shift Table of Horspool's algorithm
+   25|       | */
+   26|     12|std::unordered_map<char, int> findShiftTable(const std::string &prototype) {
+   27|     12|    std::unordered_map<char, int>
+   28|     12|        shiftTable;  // A HashMap for shift table that has characters for keys and integers for values
+   29|       |
+   30|     71|    for (int i = 0; i < prototype.size();
+   31|     59|         i++) {  // Checking all characters of prototype string
+   32|     59|        if (shiftTable.find(prototype[i]) ==
+   33|     59|            shiftTable.end()) {  // If character does not exist in HashMap
+   34|     53|            if (i != prototype.size() - 1) {
+   35|     42|                shiftTable.insert(std::make_pair(
+   36|     42|                    prototype[i], prototype.size() - i -
+   37|     42|                                      1));  // Insert the character as key and the size of prototype string - index of character - 1 as value
+   38|     42|            } else {
+   39|     11|                shiftTable.insert(std::make_pair(
+   40|     11|                    prototype[i],
+   41|     11|                    prototype.size()));  // Insert the character as key and the size of prototype string as value
+   42|     11|            }
+   43|     53|        } else {
+   44|      6|            if (i != prototype.size() - 1) {
+   45|      6|                shiftTable[prototype[i]] = prototype.size() - i - 1;
+   46|      6|            }
+   47|      6|        }
+   48|     59|    }
+   49|     12|    return shiftTable;
+   50|     12|}
+   51|       |
+   52|       |/**
+   53|       | * A function that implements Horspool's algorithm.
+   54|       | * @param text is the string that we are searching if there is a substring
+   55|       | * @param prototype is the substring that we are searching in text
+   56|       | * @returns true if text string contains prototype string
+   57|       | * @returns false if text string does not contain prototype string
+   58|       | */
+   59|     12|bool horspool(const std::string &text, const std::string &prototype) {
+   60|     12|    std::unordered_map<char, int> shiftTable = findShiftTable(
+   61|     12|        prototype);  // Initialise shift table calling findShiftTable function
+   62|       |
+   63|     12|    int i = static_cast<int>(
+   64|     12|        prototype.size() -
+   65|     12|        1);  // Index that we shift in text to find the substring
+   66|     27|    while (i < text.size()) {
+   67|     23|        int j = i, k = 0;
+   68|     23|        bool flag = true;
+   69|       |
+   70|     82|        for (int z = static_cast<int>(prototype.size() - 1); z >= 0 && flag;
+   71|     59|             z--) {  // Checking if all characters of substring are equal with all characters of string
+   72|     59|            if (text[j] == prototype[z]) {
+   73|     44|                k++;
+   74|     44|                j--;
+   75|     44|            } else {
+   76|     15|                flag = false;  // If two characters are not equal set flag to false and break from loop
+   77|     15|            }
+   78|     59|        }
+   79|       |
+   80|     23|        if (k ==
+   81|     23|            prototype.size()) {  // If all characters match then return true
+   82|      8|            return true;
+   83|     15|        } else {
+   84|     15|            if (shiftTable.find(text[i]) != shiftTable.end()) {
+   85|     10|                i += shiftTable[text[i]];  // If shift table contains the character then shift index as many steps as value
+   86|     10|            } else {
+   87|      5|                i += prototype.size();  // If character does not exist in shift table then shift index as many steps as size of prototype string
+   88|      5|            }
+   89|     15|        }
+   90|     23|    }
+   91|      4|    return false;
+   92|     12|}
+   93|       |} // namespace horspool
+   94|       |} // namespace strings
+   95|       |
+   96|       |/**
+   97|       | * @brief Function with test cases for Horspool's algorithm
+   98|       | * @returns void
+   99|       | */
+  100|      1|static void test(){
+  101|      1|    assert(strings::horspool::horspool("Hello World","World") == true);
+  102|      0|    assert(strings::horspool::horspool("Hello World"," World") == true);
+  103|      0|    assert(strings::horspool::horspool("Hello World","ello") == true);
+  104|      0|    assert(strings::horspool::horspool("Hello World","rld") == true);
+  105|      0|    assert(strings::horspool::horspool("Hello","Helo") == false);
+  106|      0|    assert(strings::horspool::horspool("c++_algorithms","c++_algorithms") == true);
+  107|      0|    assert(strings::horspool::horspool("c++_algorithms","c++_") == true);
+  108|      0|    assert(strings::horspool::horspool("Hello","Hello World") == false);
+  109|      0|    assert(strings::horspool::horspool("c++_algorithms","") == false);
+  110|      0|    assert(strings::horspool::horspool("c++","c") == true);
+  111|      0|    assert(strings::horspool::horspool("3458934793","4793") == true);
+  112|      0|    assert(strings::horspool::horspool("3458934793","123") == false);
+  113|      1|}
+  114|       |
+  115|       |/**
+  116|       | * @brief Main Function that calls test function
+  117|       | * @returns 0 on exit
+  118|       | */
+  119|      1|int main(){
+  120|      1|    test();
+  121|      1|    return 0;
+  122|      1|}
+

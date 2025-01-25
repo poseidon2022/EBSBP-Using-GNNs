@@ -1,0 +1,231 @@
+    1|       |/**
+    2|       | * @file
+    3|       | * @brief Bubble sort algorithm
+    4|       | *
+    5|       | * @details
+    6|       | * Bubble sort algorithm is the bubble sorting algorithm. The most important reason
+    7|       | * for calling the bubble is that the largest number is thrown at the end of this
+    8|       | * algorithm. This is all about the logic. In each iteration, the largest number is
+    9|       | * expired and when iterations are completed, the sorting takes place.
+   10|       | * 
+   11|       | * What is Swap?
+   12|       | * 
+   13|       | * Swap in the software means that two variables are displaced.
+   14|       | * An additional variable is required for this operation. x = 5, y = 10.
+   15|       | * We want x = 10, y = 5. Here we create the most variable to do it.
+   16|       | * 
+   17|       | * ```cpp
+   18|       | * int z;
+   19|       | * z = x;
+   20|       | * x = y;
+   21|       | * y = z;
+   22|       | * ```
+   23|       | * 
+   24|       | * The above process is a typical displacement process.
+   25|       | * When x assigns the value to x, the old value of x is lost.
+   26|       | * That's why we created a variable z to create the first value of the value of x,
+   27|       | * and finally, we have assigned to y.
+   28|       | * 
+   29|       | * ## Bubble Sort Algorithm Analysis (Best Case - Worst Case - Average Case)
+   30|       | * 
+   31|       | * ### Best Case
+   32|       | * Bubble Sort Best Case Performance. \f$O(n)\f$. However, you
+   33|       | * can't get the best status in the code we shared above. This happens on the
+   34|       | * optimized bubble sort algorithm. It's right down there.
+   35|       | * 
+   36|       | * ### Worst Case
+   37|       | * Bubble Sort Worst Case Performance is \f$O(n^{2})\f$. Why is that? Because if you
+   38|       | * remember Big O Notation, we were calculating the complexity of the algorithms in
+   39|       | * the nested loops. The \f$n * (n - 1)\f$ product gives us \f$O(n^{2})\f$ performance. In the
+   40|       | * worst case all the steps of the cycle will occur.
+   41|       | * 
+   42|       | * ### Average Case
+   43|       | * Bubble Sort is not an optimal algorithm. In average, \f$O(n^{2})\f$ performance is taken. 
+   44|       | * 
+   45|       | * @author [Deepak](https://github.com/Deepak-j-p)
+   46|       | * @author [Nguyen Phuc Chuong](https://github.com/hollowcrust)
+   47|       | */
+   48|       |
+   49|       |#include <algorithm> /// for std::is_sorted
+   50|       |#include <cassert>   /// for assert
+   51|       |#include <iostream>  /// for IO implementations
+   52|       |#include <string>    /// for std::string
+   53|       |#include <utility>   /// for std::pair, std::swap
+   54|       |#include <vector>    /// for std::vector, std::vector::push_back, std::vector::size
+   55|       |
+   56|       |/**
+   57|       | * @namespace sorting
+   58|       | * @brief Sorting algorithms
+   59|       | */
+   60|       |namespace sorting {
+   61|       |/**
+   62|       | * @namespace bubble_sort
+   63|       | * @brief Bubble sort algorithm
+   64|       | */
+   65|       |namespace bubble_sort {
+   66|       |/**
+   67|       | * @brief Bubble sort algorithm
+   68|       | * @param array An array to be sorted
+   69|       | * @return The array sorted in ascending order
+   70|       | */
+   71|       |template <typename T> 
+   72|      7|std::vector<T> bubble_sort(std::vector<T>& array) {
+   73|       |  // swap_check flag to terminate the function early
+   74|       |  // if there is no swap occurs in one iteration.
+   75|      7|  bool swap_check = true;
+   76|      7|  int size = array.size();
+   77|     31|  for (int i = 0; (i < size) && (swap_check); i++) {
+   78|     24|    swap_check = false;
+   79|     92|    for (int j = 0; j < size - 1 - i; j++) {
+   80|     68|      if (array[j] > array[j + 1]) {
+   81|     38|        swap_check = true;
+   82|     38|        std::swap(array[j], array[j + 1]);
+   83|     38|      }
+   84|     68|    }
+   85|     24|  }
+   86|       |
+   87|      7|  return array;
+   88|      7|}
+  ------------------
+  | _ZN7sorting11bubble_sort11bubble_sortIiEESt6vectorIT_SaIS3_EERS5_:
+  |   72|      3|std::vector<T> bubble_sort(std::vector<T>& array) {
+  |   73|       |  // swap_check flag to terminate the function early
+  |   74|       |  // if there is no swap occurs in one iteration.
+  |   75|      3|  bool swap_check = true;
+  |   76|      3|  int size = array.size();
+  |   77|      8|  for (int i = 0; (i < size) && (swap_check); i++) {
+  |   78|      5|    swap_check = false;
+  |   79|     15|    for (int j = 0; j < size - 1 - i; j++) {
+  |   80|     10|      if (array[j] > array[j + 1]) {
+  |   81|      5|        swap_check = true;
+  |   82|      5|        std::swap(array[j], array[j + 1]);
+  |   83|      5|      }
+  |   84|     10|    }
+  |   85|      5|  }
+  |   86|       |
+  |   87|      3|  return array;
+  |   88|      3|}
+  ------------------
+  | _ZN7sorting11bubble_sort11bubble_sortIfEESt6vectorIT_SaIS3_EERS5_:
+  |   72|      1|std::vector<T> bubble_sort(std::vector<T>& array) {
+  |   73|       |  // swap_check flag to terminate the function early
+  |   74|       |  // if there is no swap occurs in one iteration.
+  |   75|      1|  bool swap_check = true;
+  |   76|      1|  int size = array.size();
+  |   77|      8|  for (int i = 0; (i < size) && (swap_check); i++) {
+  |   78|      7|    swap_check = false;
+  |   79|     28|    for (int j = 0; j < size - 1 - i; j++) {
+  |   80|     21|      if (array[j] > array[j + 1]) {
+  |   81|      9|        swap_check = true;
+  |   82|      9|        std::swap(array[j], array[j + 1]);
+  |   83|      9|      }
+  |   84|     21|    }
+  |   85|      7|  }
+  |   86|       |
+  |   87|      1|  return array;
+  |   88|      1|}
+  ------------------
+  | _ZN7sorting11bubble_sort11bubble_sortIcEESt6vectorIT_SaIS3_EERS5_:
+  |   72|      1|std::vector<T> bubble_sort(std::vector<T>& array) {
+  |   73|       |  // swap_check flag to terminate the function early
+  |   74|       |  // if there is no swap occurs in one iteration.
+  |   75|      1|  bool swap_check = true;
+  |   76|      1|  int size = array.size();
+  |   77|      6|  for (int i = 0; (i < size) && (swap_check); i++) {
+  |   78|      5|    swap_check = false;
+  |   79|     25|    for (int j = 0; j < size - 1 - i; j++) {
+  |   80|     20|      if (array[j] > array[j + 1]) {
+  |   81|     12|        swap_check = true;
+  |   82|     12|        std::swap(array[j], array[j + 1]);
+  |   83|     12|      }
+  |   84|     20|    }
+  |   85|      5|  }
+  |   86|       |
+  |   87|      1|  return array;
+  |   88|      1|}
+  ------------------
+  | _ZN7sorting11bubble_sort11bubble_sortINSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEEESt6vectorIT_SaIS9_EERSB_:
+  |   72|      1|std::vector<T> bubble_sort(std::vector<T>& array) {
+  |   73|       |  // swap_check flag to terminate the function early
+  |   74|       |  // if there is no swap occurs in one iteration.
+  |   75|      1|  bool swap_check = true;
+  |   76|      1|  int size = array.size();
+  |   77|      3|  for (int i = 0; (i < size) && (swap_check); i++) {
+  |   78|      2|    swap_check = false;
+  |   79|      9|    for (int j = 0; j < size - 1 - i; j++) {
+  |   80|      7|      if (array[j] > array[j + 1]) {
+  |   81|      3|        swap_check = true;
+  |   82|      3|        std::swap(array[j], array[j + 1]);
+  |   83|      3|      }
+  |   84|      7|    }
+  |   85|      2|  }
+  |   86|       |
+  |   87|      1|  return array;
+  |   88|      1|}
+  ------------------
+  | _ZN7sorting11bubble_sort11bubble_sortISt4pairIicEEESt6vectorIT_SaIS5_EERS7_:
+  |   72|      1|std::vector<T> bubble_sort(std::vector<T>& array) {
+  |   73|       |  // swap_check flag to terminate the function early
+  |   74|       |  // if there is no swap occurs in one iteration.
+  |   75|      1|  bool swap_check = true;
+  |   76|      1|  int size = array.size();
+  |   77|      6|  for (int i = 0; (i < size) && (swap_check); i++) {
+  |   78|      5|    swap_check = false;
+  |   79|     15|    for (int j = 0; j < size - 1 - i; j++) {
+  |   80|     10|      if (array[j] > array[j + 1]) {
+  |   81|      9|        swap_check = true;
+  |   82|      9|        std::swap(array[j], array[j + 1]);
+  |   83|      9|      }
+  |   84|     10|    }
+  |   85|      5|  }
+  |   86|       |
+  |   87|      1|  return array;
+  |   88|      1|}
+  ------------------
+   89|       |} // namespace bubble_sort
+   90|       |} // namespace sorting
+   91|       |
+   92|       |/**
+   93|       | * @brief Self-test implementation
+   94|       | * @return void
+   95|       | */
+   96|      1|static void test() {
+   97|      1|  std::vector<int> vec_1 = {3, 1, -9, 0};
+   98|      1|  std::vector<int> sorted_1 = sorting::bubble_sort::bubble_sort(vec_1);
+   99|       |
+  100|      1|  std::vector<int> vec_2 = {3};
+  101|      1|  std::vector<int> sorted_2 = sorting::bubble_sort::bubble_sort(vec_2);
+  102|       |
+  103|      1|  std::vector<int> vec_3 = {10, 10, 10, 10, 10};
+  104|      1|  std::vector<int> sorted_3 = sorting::bubble_sort::bubble_sort(vec_3);
+  105|       |
+  106|      1|  std::vector<float> vec_4 = {1234, -273.1, 23, 150, 1234, 1555.55, -2000};
+  107|      1|  std::vector<float> sorted_4 = sorting::bubble_sort::bubble_sort(vec_4);
+  108|       |
+  109|      1|  std::vector<char> vec_5 = {'z', 'Z', 'a', 'B', ' ', 'c', 'a'};
+  110|      1|  std::vector<char> sorted_5 = sorting::bubble_sort::bubble_sort(vec_5);
+  111|       |
+  112|      1|  std::vector<std::string> vec_6 = {"Hello", "hello", "Helo", "Hi", "hehe"};
+  113|      1|  std::vector<std::string> sorted_6 = sorting::bubble_sort::bubble_sort(vec_6);
+  114|       |
+  115|      1|  std::vector<std::pair<int, char>> vec_7 = {{10, 'c'}, {2, 'z'}, {10, 'a'}, {0, 'b'}, {-1, 'z'}};
+  116|      1|  std::vector<std::pair<int, char>> sorted_7 = sorting::bubble_sort::bubble_sort(vec_7);
+  117|       |
+  118|      1|  assert(std::is_sorted(sorted_1.begin(), sorted_1.end()));
+  119|      0|  assert(std::is_sorted(sorted_2.begin(), sorted_2.end()));
+  120|      0|  assert(std::is_sorted(sorted_3.begin(), sorted_3.end()));
+  121|      0|  assert(std::is_sorted(sorted_4.begin(), sorted_4.end()));
+  122|      0|  assert(std::is_sorted(sorted_5.begin(), sorted_5.end()));
+  123|      0|  assert(std::is_sorted(sorted_6.begin(), sorted_6.end()));
+  124|      0|  assert(std::is_sorted(sorted_7.begin(), sorted_7.end()));
+  125|      1|}
+  126|       |
+  127|       |/**
+  128|       | * @brief Main function
+  129|       | * @return 0 on exit
+  130|       | */
+  131|      1|int main() {
+  132|      1|  test();
+  133|      1|  return 0;
+  134|      1|}
+

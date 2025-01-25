@@ -1,0 +1,113 @@
+    1|       |/**
+    2|       | * @file
+    3|       | * @brief Implementation of the [DNF
+    4|       | * sort](https://www.geeksforgeeks.org/sort-an-array-of-0s-1s-and-2s/)
+    5|       | * implementation
+    6|       | * @details
+    7|       | * C++ program to sort an array with 0, 1 and 2 in a single pass(DNF sort).
+    8|       | * Since one traversal of the array is there hence it works in O(n) time
+    9|       | * complexity.
+   10|       | * @author [Sujal Gupta](https://github.com/heysujal)
+   11|       | */
+   12|       |
+   13|       |#include <algorithm>  /// for std::is_sorted
+   14|       |#include <cassert>    /// for assert
+   15|       |#include <cstdint>
+   16|       |#include <iostream>   /// for std::swap and io operations
+   17|       |#include <vector>     /// for std::vector
+   18|       |
+   19|       |/**
+   20|       | * @namespace sorting
+   21|       | * @breif Sorting algorithms
+   22|       | */
+   23|       |namespace sorting {
+   24|       |/**
+   25|       | * @namespace dnf_sort
+   26|       | * @brief Functions for the [DNF
+   27|       | * sort](https://en.wikipedia.org/wiki/Dutch_national_flag_problem)
+   28|       | * implementation
+   29|       | */
+   30|       |namespace dnf_sort {
+   31|       |/**
+   32|       | * @brief The main function implements DNF sort
+   33|       | * @tparam T type of array
+   34|       | * @param a array to be sorted,
+   35|       | * @param arr_size size of array
+   36|       | * @returns void
+   37|       | */
+   38|       |template <typename T>
+   39|      4|std::vector<T> dnfSort(const std::vector<T> &in_arr) {
+   40|      4|    std::vector<T> arr(in_arr);
+   41|      4|    uint64_t lo = 0;
+   42|      4|    uint64_t hi = arr.size() - 1;
+   43|      4|    uint64_t mid = 0;
+   44|       |
+   45|       |    // Iterate till all the elements
+   46|       |    // are sorted
+   47|     33|    while (mid <= hi) {
+   48|     29|        switch (arr[mid]) {
+   49|       |            // If the element is 0
+   50|      9|            case 0:
+   51|      9|                std::swap(arr[lo++], arr[mid++]);
+   52|      9|                break;
+   53|       |
+   54|       |            // If the element is 1 .
+   55|     12|            case 1:
+   56|     12|                mid++;
+   57|     12|                break;
+   58|       |
+   59|       |            // If the element is 2
+   60|      8|            case 2:
+   61|      8|                std::swap(arr[mid], arr[hi--]);
+   62|      8|                break;
+   63|     29|        }
+   64|     29|    }
+   65|      4|    return arr;
+   66|      4|}
+   67|       |}  // namespace dnf_sort
+   68|       |}  // namespace sorting
+   69|       |
+   70|       |/**
+   71|       | * @brief Self-test implementations
+   72|       | * @returns void
+   73|       | */
+   74|      1|static void test() {
+   75|       |    // 1st test
+   76|       |    // [1, 0, 2, 1] return [0, 1, 1, 2]
+   77|      1|    std::vector<uint64_t> array1 = {0, 1, 1, 2};
+   78|      1|    std::cout << "Test 1... ";
+   79|      1|    std::vector<uint64_t> arr1 = sorting::dnf_sort::dnfSort(array1);
+   80|      1|    assert(std::is_sorted(std::begin(arr1), std::end(arr1)));
+   81|      0|    std::cout << "passed" << std::endl;
+   82|       |    // 2nd test
+   83|       |    // [1, 0, 0, 1, 1, 0, 2, 1] return [0, 0, 0, 1, 1, 1, 1, 2]
+   84|      1|    std::vector<uint64_t> array2 = {1, 0, 0, 1, 1, 0, 2, 1};
+   85|      1|    std::cout << "Test 2... ";
+   86|      1|    std::vector<uint64_t> arr2 = sorting::dnf_sort::dnfSort(array2);
+   87|      1|    assert(std::is_sorted(std::begin(arr2), std::end(arr2)));
+   88|      0|    std::cout << "passed" << std::endl;
+   89|       |    // 3rd test
+   90|       |    // [1, 1, 0, 0, 1, 2, 2, 0, 2, 1] return [0, 0, 0, 1, 1, 1, 1, 2, 2, 2]
+   91|      1|    std::vector<uint64_t> array3 = {1, 1, 0, 0, 1, 2, 2, 0, 2, 1};
+   92|      1|    std::cout << "Test 3... ";
+   93|      1|    std::vector<uint64_t> arr3 = sorting::dnf_sort::dnfSort(array3);
+   94|      1|    assert(std::is_sorted(std::begin(arr3), std::end(arr3)));
+   95|      0|    std::cout << "passed" << std::endl;
+   96|       |    // 4th test
+   97|       |    // [2, 2, 2, 0, 0, 1, 1] return [0, 0, 1, 1, 2, 2, 2]
+   98|      1|    std::vector<uint64_t> array4 = {2, 2, 2, 0, 0, 1, 1};
+   99|      1|    std::cout << "Test 4... ";
+  100|      1|    std::vector<uint64_t> arr4 = sorting::dnf_sort::dnfSort(array4);
+  101|      1|    assert(std::is_sorted(std::begin(arr4), std::end(arr4)));
+  102|      0|    std::cout << "passed" << std::endl;
+  103|      1|}
+  104|       |
+  105|       |/**
+  106|       | * @brief Main function
+  107|       | * @returns 0 on exit
+  108|       | */
+  109|      1|int main() {
+  110|      1|    test();  // execute the test
+  111|      1|    return 0;
+  112|      1|}
+

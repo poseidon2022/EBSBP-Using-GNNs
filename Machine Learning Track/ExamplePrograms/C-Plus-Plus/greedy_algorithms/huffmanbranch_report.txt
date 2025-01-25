@@ -1,0 +1,109 @@
+    1|       |// C++ program for Huffman Coding
+    2|       |#include <iostream>
+    3|       |#include <queue>
+    4|       |using namespace std;
+    5|       |
+    6|       |// A Huffman tree node
+    7|       |struct MinHeapNode {
+    8|       |    // One of the input characters
+    9|       |    char data;
+   10|       |
+   11|       |    // Frequency of the character
+   12|       |    unsigned freq;
+   13|       |
+   14|       |    // Left and right child
+   15|       |    MinHeapNode *left, *right;
+   16|       |
+   17|       |    MinHeapNode(char data, unsigned freq)
+   18|       |
+   19|     11|    {
+   20|     11|        left = right = NULL;
+   21|     11|        this->data = data;
+   22|     11|        this->freq = freq;
+   23|     11|    }
+   24|       |};
+   25|       |
+   26|     23|void deleteAll(const MinHeapNode* const root) {
+   27|     23|    if (root) {
+   28|     11|        deleteAll(root->left);
+   29|     11|        deleteAll(root->right);
+   30|     11|        delete root;
+   31|     11|    }
+   32|     23|}
+   33|       |
+   34|       |// For comparison of
+   35|       |// two heap nodes (needed in min heap)
+   36|       |struct compare {
+   37|       |    bool operator()(const MinHeapNode* const l,
+   38|     24|                    const MinHeapNode* const r) const {
+   39|     24|        return l->freq > r->freq;
+   40|     24|    }
+   41|       |};
+   42|       |
+   43|       |// Prints huffman codes from
+   44|       |// the root of Huffman Tree.
+   45|     23|void printCodes(struct MinHeapNode* root, const string& str) {
+   46|     23|    if (!root)
+   47|     12|        return;
+   48|       |
+   49|     11|    if (root->data != '$')
+   50|      6|        cout << root->data << ": " << str << "\n";
+   51|       |
+   52|     11|    printCodes(root->left, str + "0");
+   53|     11|    printCodes(root->right, str + "1");
+   54|     11|}
+   55|       |
+   56|       |// The main function that builds a Huffman Tree and
+   57|       |// print codes by traversing the built Huffman Tree
+   58|      1|void HuffmanCodes(const char data[], const int freq[], int size) {
+   59|      1|    struct MinHeapNode *left, *right;
+   60|       |
+   61|       |    // Create a min heap & inserts all characters of data[]
+   62|      1|    priority_queue<MinHeapNode*, vector<MinHeapNode*>, compare> minHeap;
+   63|       |
+   64|      7|    for (int i = 0; i < size; ++i)
+   65|      6|        minHeap.push(new MinHeapNode(data[i], freq[i]));
+   66|       |
+   67|       |    // Iterate while size of heap doesn't become 1
+   68|      6|    while (minHeap.size() != 1) {
+   69|       |        // Extract the two minimum
+   70|       |        // freq items from min heap
+   71|      5|        left = minHeap.top();
+   72|      5|        minHeap.pop();
+   73|       |
+   74|      5|        right = minHeap.top();
+   75|      5|        minHeap.pop();
+   76|       |
+   77|       |        // Create a new internal node with
+   78|       |        // frequency equal to the sum of the
+   79|       |        // two nodes frequencies. Make the
+   80|       |        // two extracted node as left and right children
+   81|       |        // of this new node. Add this node
+   82|       |        // to the min heap '$' is a special value
+   83|       |        // for internal nodes, not used
+   84|      5|        auto* const top = new MinHeapNode('$', left->freq + right->freq);
+   85|       |
+   86|      5|        top->left = left;
+   87|      5|        top->right = right;
+   88|       |
+   89|      5|        minHeap.push(top);
+   90|      5|    }
+   91|       |
+   92|       |    // Print Huffman codes using
+   93|       |    // the Huffman tree built above
+   94|      1|    printCodes(minHeap.top(), "");
+   95|      1|    deleteAll(minHeap.top());
+   96|      1|}
+   97|       |
+   98|       |// Driver program to test above functions
+   99|      1|int main() {
+  100|      1|    char arr[] = {'a', 'b', 'c', 'd', 'e', 'f'};
+  101|      1|    int freq[] = {5, 9, 12, 13, 16, 45};
+  102|       |
+  103|      1|    int size = sizeof(arr) / sizeof(arr[0]);
+  104|       |
+  105|      1|    HuffmanCodes(arr, freq, size);
+  106|       |
+  107|      1|    return 0;
+  108|      1|}
+

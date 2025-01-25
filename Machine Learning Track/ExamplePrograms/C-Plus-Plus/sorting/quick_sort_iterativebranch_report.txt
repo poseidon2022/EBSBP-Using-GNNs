@@ -1,0 +1,133 @@
+    1|       |/**
+    2|       | * @file
+    3|       | * @brief Quick Sort without recursion. This method uses the stack instead.
+    4|       | * Both recursive and iterative implementations have O(n log n) best case
+    5|       | * and O(n^2) worst case.
+    6|       | * @details
+    7|       | * https://stackoverflow.com/questions/12553238/quicksort-iterative-or-recursive
+    8|       | * https://en.wikipedia.org/wiki/Quicksort
+    9|       | * https://www.geeksforgeeks.org/iterative-quick-sort/
+   10|       | * @author [Sebe324](https://github.com/sebe324)
+   11|       | */
+   12|       |
+   13|       |#include <iostream> /// for std::cout
+   14|       |#include <vector> /// for std::vector
+   15|       |#include <stack> /// for std::stack
+   16|       |#include <algorithm> /// for std::is_sorted
+   17|       |#include <cassert> /// for assert
+   18|       |
+   19|       |
+   20|       |/**
+   21|       | * @namespace sorting
+   22|       | * @brief Sorting algorithms
+   23|       | */
+   24|       |namespace sorting {
+   25|       |/**
+   26|       | * @brief The partition function sorts the array from
+   27|       | * start to end and uses the last element as the pivot.
+   28|       | * @param arr the array to be sorted
+   29|       | * @param start starting index
+   30|       | * @param end ending index
+   31|       | * @return int next index of the pivot
+   32|       | */
+   33|       |int partition(std::vector<int> &arr, int start, int end)
+   34|     15|{
+   35|     15|    int pivot = arr[end];
+   36|     15|    int index = start - 1;
+   37|       |
+   38|     71|    for (int j = start; j < end; j++) {
+   39|     56|        if (arr[j] <= pivot) {
+   40|     20|            std::swap(arr[++index], arr[j]);
+   41|     20|        }
+   42|     56|    }
+   43|       |
+   44|     15|    std::swap(arr[index + 1], arr[end]);
+   45|     15|    return index + 1;
+   46|     15|}
+   47|       |
+   48|       |/**
+   49|       | * @brief The main sorting function
+   50|       | * @details The iterative quick sort uses
+   51|       | * the stack instead of recursion for saving
+   52|       | * and restoring the environment between calls.
+   53|       | * It does not need the end and start params, because
+   54|       | * it is not recursive.
+   55|       | * @param arr array to be sorted
+   56|       | * @return void
+   57|       | */
+   58|       |void iterativeQuickSort(std::vector<int> &arr)
+   59|      2|{
+   60|      2|    std::stack<int> stack;
+   61|      2|    int start = 0;
+   62|      2|    int end = arr.size()-1;
+   63|      2|    stack.push(start);
+   64|      2|    stack.push(end);
+   65|       |
+   66|     17|    while(!stack.empty())
+   67|     15|    {
+   68|     15|        end = stack.top();
+   69|     15|        stack.pop();
+   70|     15|        start = stack.top();
+   71|     15|        stack.pop();
+   72|       |
+   73|     15|        int pivotIndex = partition(arr,start,end);
+   74|       |
+   75|     15|        if(pivotIndex -1 > start)
+   76|      5|        {
+   77|      5|            stack.push(start);
+   78|      5|            stack.push(pivotIndex-1);
+   79|      5|        }
+   80|       |
+   81|     15|        if(pivotIndex+1<end)
+   82|      8|        {
+   83|      8|            stack.push(pivotIndex+1);
+   84|      8|            stack.push(end);
+   85|      8|        }
+   86|     15|    }
+   87|      2|}
+   88|       |
+   89|       |} // namespace sorting
+   90|       |/**
+   91|       | * @brief Self-test implementations
+   92|       | * @returns void
+   93|       | */
+   94|       |void tests()
+   95|      1|{
+   96|       |    //TEST 1 - Positive numbers
+   97|      1|    std::vector<int> case1={100,534,1000000,553,10,61,2000,238,2756,9,12,56,30};
+   98|      1|    std::cout<<"TEST 1\n";
+   99|      1|    std::cout<<"Before: \n";
+  100|     13|    for(auto x : case1) std::cout<<x<<",";
+  101|      1|    std::cout<<"\n";
+  102|      1|    sorting::iterativeQuickSort(case1);
+  103|      1|    assert(std::is_sorted(std::begin(case1),std::end(case1)));
+  104|      0|    std::cout<<"Test 1 succesful!\n";
+  105|      1|    std::cout<<"After: \n";
+  106|     13|    for(auto x : case1) std::cout<<x<<",";
+  107|      1|    std::cout<<"\n";
+  108|       |
+  109|       |    //TEST 2 - Negative numbers
+  110|      1|    std::vector<int> case2={-10,-2,-5,-2,-3746,-785,-123, -452, -32456};
+  111|      1|    std::cout<<"TEST 2\n";
+  112|      1|    std::cout<<"Before: \n";
+  113|      9|    for(auto x : case2) std::cout<<x<<",";
+  114|      1|    std::cout<<"\n";
+  115|      1|    sorting::iterativeQuickSort(case2);
+  116|      1|    assert(std::is_sorted(std::begin(case2),std::end(case2)));
+  117|      0|    std::cout<<"Test 2 succesful!\n";
+  118|      1|    std::cout<<"After: \n";
+  119|      9|    for(auto x : case2) std::cout<<x<<",";
+  120|      1|    std::cout<<"\n";
+  121|      1|}
+  122|       |
+  123|       |
+  124|       |/**
+  125|       | * @brief Main function
+  126|       | * @returns 0 on exit
+  127|       | */
+  128|       |int main()
+  129|      1|{
+  130|      1|    tests(); // run self test implementation
+  131|      1|    return 0;
+  132|      1|}
+

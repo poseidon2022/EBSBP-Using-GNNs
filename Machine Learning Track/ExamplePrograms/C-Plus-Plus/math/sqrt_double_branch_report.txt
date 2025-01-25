@@ -1,0 +1,50 @@
+    1|       |/**
+    2|       | * @file
+    3|       | * @brief Calculate the square root of any positive real number in \f$O(\log
+    4|       | * N)\f$ time, with precision fixed using [bisection
+    5|       | * method](https://en.wikipedia.org/wiki/Bisection_method) of root-finding.
+    6|       | *
+    7|       | * @see Can be implemented using faster and better algorithms like
+    8|       | * newton_raphson_method.cpp and false_position.cpp
+    9|       | */
+   10|       |#include <cassert>
+   11|       |#include <iostream>
+   12|       |
+   13|       |/** Bisection method implemented for the function \f$x^2-a=0\f$
+   14|       | * whose roots are \f$\pm\sqrt{a}\f$ and only the positive root is returned.
+   15|       | */
+   16|      1|double Sqrt(double a) {
+   17|      1|    if (a > 0 && a < 1) {
+   18|      0|        return 1 / Sqrt(1 / a);
+   19|      0|    }
+   20|      1|    double l = 0, r = a;
+   21|       |    /* Epsilon is the precision.
+   22|       |    A great precision is
+   23|       |    between 1e-7 and 1e-12.
+   24|       |    double epsilon = 1e-12;
+   25|       |    */
+   26|      1|    double epsilon = 1e-12;
+   27|      1|    while (l <= r) {
+   28|      1|        double mid = (l + r) / 2;
+   29|      1|        if (mid * mid > a) {
+   30|      0|            r = mid;
+   31|      1|        } else {
+   32|      1|            if (a - mid * mid < epsilon) {
+   33|      1|                return mid;
+   34|      1|            }
+   35|      0|            l = mid;
+   36|      0|        }
+   37|      1|    }
+   38|      0|    return -1;
+   39|      1|}
+   40|       |
+   41|       |/** main function */
+   42|      1|int main() {
+   43|      1|    double n{};
+   44|      1|    std::cin >> n;
+   45|      1|    assert(n >= 0);
+   46|       |    // Change this line for a better precision
+   47|      0|    std::cout.precision(12);
+   48|      1|    std::cout << std::fixed << Sqrt(n);
+   49|      1|}
+

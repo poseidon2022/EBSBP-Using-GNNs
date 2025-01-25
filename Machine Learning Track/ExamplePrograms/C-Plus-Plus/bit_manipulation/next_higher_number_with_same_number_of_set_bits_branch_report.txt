@@ -1,0 +1,102 @@
+    1|       |/**
+    2|       | * @file
+    3|       | * @brief [Next higher number with same number of set bits]
+    4|       | * (https://www.geeksforgeeks.org/next-higher-number-with-same-number-of-set-bits/)
+    5|       | * implementation
+    6|       | *
+    7|       | * @details
+    8|       | * Given a number x, find next number with same number of 1 bits in it’s binary
+    9|       | * representation. For example, consider x = 12, whose binary representation is
+   10|       | * 1100 (excluding leading zeros on 32 bit machine). It contains two logic 1
+   11|       | * bits. The next higher number with two logic 1 bits is 17 (100012).
+   12|       | *
+   13|       | * A binary number consists of two digits. They are 0 & 1. Digit 1 is known as
+   14|       | * set bit in computer terms.
+   15|       | * @author [Kunal Nayak](https://github.com/Kunal766)
+   16|       | */
+   17|       |
+   18|       |#include <cassert>   /// for assert
+   19|       |#include <cstdint>
+   20|       |#include <iostream>  /// for IO operations
+   21|       |
+   22|       |/**
+   23|       | * @namespace bit_manipulation
+   24|       | * @brief Bit manipulation algorithms
+   25|       | */
+   26|       |namespace bit_manipulation {
+   27|       |
+   28|       |/**
+   29|       | * @brief The main function implements checking the next number
+   30|       | * @param x the number that will be calculated
+   31|       | * @returns a number
+   32|       | */
+   33|      8|uint64_t next_higher_number(uint64_t x) {
+   34|      8|    uint64_t rightOne = 0;
+   35|      8|    uint64_t nextHigherOneBit = 0;
+   36|      8|    uint64_t rightOnesPattern = 0;
+   37|       |
+   38|      8|    uint64_t next = 0;
+   39|       |
+   40|      8|    if (x) {
+   41|       |        // right most set bit
+   42|      8|        rightOne = x & -static_cast<signed>(x);
+   43|       |
+   44|       |        // reset the pattern and set next higher bit
+   45|       |        // left part of x will be here
+   46|      8|        nextHigherOneBit = x + rightOne;
+   47|       |
+   48|       |        // nextHigherOneBit is now part [D] of the above explanation.
+   49|       |
+   50|       |        // isolate the pattern
+   51|      8|        rightOnesPattern = x ^ nextHigherOneBit;
+   52|       |
+   53|       |        // right adjust pattern
+   54|      8|        rightOnesPattern = (rightOnesPattern) / rightOne;
+   55|       |
+   56|       |        // correction factor
+   57|      8|        rightOnesPattern >>= 2;
+   58|       |
+   59|       |        // rightOnesPattern is now part [A] of the above explanation.
+   60|       |
+   61|       |        // integrate new pattern (Add [D] and [A])
+   62|      8|        next = nextHigherOneBit | rightOnesPattern;
+   63|      8|    }
+   64|       |
+   65|      8|    return next;
+   66|      8|}
+   67|       |
+   68|       |}  // namespace bit_manipulation
+   69|       |
+   70|       |/**
+   71|       | * @brief Self-test implementations
+   72|       | * @returns void
+   73|       | */
+   74|      1|static void test() {
+   75|       |    // x = 4 return 8
+   76|      1|    assert(bit_manipulation::next_higher_number(4) == 8);
+   77|       |    // x = 6 return 9
+   78|      0|    assert(bit_manipulation::next_higher_number(6) == 9);
+   79|       |    // x = 13 return 14
+   80|      0|    assert(bit_manipulation::next_higher_number(13) == 14);
+   81|       |    // x = 64 return 128
+   82|      0|    assert(bit_manipulation::next_higher_number(64) == 128);
+   83|       |    // x = 15 return 23
+   84|      0|    assert(bit_manipulation::next_higher_number(15) == 23);
+   85|       |    // x= 32 return 64
+   86|      0|    assert(bit_manipulation::next_higher_number(32) == 64);
+   87|       |    // x = 97 return 98
+   88|      0|    assert(bit_manipulation::next_higher_number(97) == 98);
+   89|       |    // x = 1024 return 2048
+   90|      0|    assert(bit_manipulation::next_higher_number(1024) == 2048);
+   91|       |
+   92|      0|    std::cout << "All test cases have successfully passed!" << std::endl;
+   93|      1|}
+   94|       |/**
+   95|       | * @brief Main function
+   96|       | * @returns 0 on exit
+   97|       | */
+   98|      1|int main() {
+   99|      1|    test();  // run self-test implementations
+  100|      1|    return 0;
+  101|      1|}
+

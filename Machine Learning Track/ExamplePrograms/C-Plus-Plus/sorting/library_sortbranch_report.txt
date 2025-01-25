@@ -1,0 +1,94 @@
+    1|       |#include <algorithm>
+    2|       |#include <iostream>
+    3|       |
+    4|      1|void librarySort(int *index, int n) {
+    5|      1|    int lib_size, index_pos,
+    6|      1|        *gaps,        // gaps
+    7|      1|        *library[2];  // libraries
+    8|       |
+    9|      1|    bool target_lib, *numbered;
+   10|       |
+   11|      3|    for (int i = 0; i < 2; i++) library[i] = new int[n];
+   12|       |
+   13|      1|    gaps = new int[n + 1];
+   14|      1|    numbered = new bool[n + 1];
+   15|       |
+   16|      1|    lib_size = 1;
+   17|      1|    index_pos = 1;
+   18|      1|    target_lib = 0;
+   19|      1|    library[target_lib][0] = index[0];
+   20|       |
+   21|     16|    while (index_pos < n) {
+   22|       |        // binary search
+   23|     15|        int insert = std::distance(
+   24|     15|            library[target_lib],
+   25|     15|            std::lower_bound(library[target_lib],
+   26|     15|                             library[target_lib] + lib_size, index[index_pos]));
+   27|       |
+   28|       |        // if there is no gap to insert a new index ...
+   29|       |
+   30|     15|        if (numbered[insert] == true) {
+   31|      5|            int prov_size = 0, next_target_lib = !target_lib;
+   32|       |
+   33|       |            // update library and clear gaps
+   34|       |
+   35|     65|            for (int i = 0; i <= n; i++) {
+   36|     60|                if (numbered[i] == true) {
+   37|      9|                    library[next_target_lib][prov_size] = gaps[i];
+   38|      9|                    prov_size++;
+   39|      9|                    numbered[i] = false;
+   40|      9|                }
+   41|       |
+   42|     60|                if (i <= lib_size) {
+   43|     25|                    library[next_target_lib][prov_size] =
+   44|     25|                        library[target_lib][i];
+   45|     25|                    prov_size++;
+   46|     25|                }
+   47|     60|            }
+   48|       |
+   49|      5|            target_lib = next_target_lib;
+   50|      5|            lib_size = prov_size - 1;
+   51|     10|        } else {
+   52|     10|            numbered[insert] = true;
+   53|     10|            gaps[insert] = index[index_pos];
+   54|     10|            index_pos++;
+   55|     10|        }
+   56|     15|    }
+   57|       |
+   58|      1|    int index_pos_for_output = 0;
+   59|     11|    for (int i = 0; index_pos_for_output < n; i++) {
+   60|     10|        if (numbered[i] == true) {
+   61|       |            // std::cout << gaps[i] << std::endl;
+   62|      1|            index[index_pos_for_output] = gaps[i];
+   63|      1|            index_pos_for_output++;
+   64|      1|        }
+   65|       |
+   66|     10|        if (i < lib_size) {
+   67|       |            // std::cout << library[target_lib][i] << std::endl;
+   68|     10|            index[index_pos_for_output] = library[target_lib][i];
+   69|     10|            index_pos_for_output++;
+   70|     10|        }
+   71|     10|    }
+   72|      1|    delete[] numbered;
+   73|      1|    delete[] gaps;
+   74|      3|    for (int i = 0; i < 2; ++i) {
+   75|      2|        delete[] library[i];
+   76|      2|    }
+   77|      1|}
+   78|       |
+   79|      1|int main() {
+   80|       |    // ---example--
+   81|      1|    int index_ex[] = {-6, 5, 9, 1, 9, 1, 0, 1, -8, 4, -12};
+   82|      1|    int n_ex = sizeof(index_ex) / sizeof(index_ex[0]);
+   83|       |
+   84|      1|    librarySort(index_ex, n_ex);
+   85|      1|    std::cout << "sorted array :" << std::endl;
+   86|     12|    for (int i = 0; i < n_ex; i++) std::cout << index_ex[i] << " ";
+   87|      1|    std::cout << std::endl;
+   88|       |
+   89|       |    /* --output--
+   90|       |    sorted array :
+   91|       |    -12 -8 -6 0 1 1 1 4 5 9 9
+   92|       |    */
+   93|      1|}
+

@@ -1,0 +1,125 @@
+    1|       |/**
+    2|       | * @file caesar_cipher.cpp
+    3|       | * @brief Implementation of [Caesar cipher](https://en.wikipedia.org/wiki/Caesar_cipher) algorithm.
+    4|       | *
+    5|       | * @details
+    6|       | * In cryptography, a Caesar cipher, also known as Caesar's cipher, the shift cipher, 
+    7|       | * Caesar's code or Caesar shift, is one of the simplest and most widely known encryption 
+    8|       | * techniques. It is a type of substitution cipher in which each letter in the plaintext 
+    9|       | * is replaced by a letter some fixed number of positions down the alphabet. For example, 
+   10|       | * with a left shift of 3, D would be replaced by A, E would become B, and so on. 
+   11|       | * The method is named after Julius Caesar, who used it in his private correspondence.
+   12|       | *
+   13|       | * ### Algorithm
+   14|       | * The encryption can also be represented using modular arithmetic by first transforming 
+   15|       | * the letters into numbers, according to the scheme, A → 0, B → 1, ..., Z → 25.
+   16|       | * Encryption of a letter x by a shift n can be described mathematically as,
+   17|       | * \f[ E(x) = (x + n)\;\mbox{mod}\; 26\f]
+   18|       | * while decryption can be described as,
+   19|       | * \f[ D(x) = (x - n) \;\mbox{mod}\; 26\f]
+   20|       | * 
+   21|       | * \note This program implements caesar cipher for only uppercase English alphabet characters (i.e. A-Z). 
+   22|       | * 
+   23|       | * @author [Deep Raval](https://github.com/imdeep2905)
+   24|       | */
+   25|       |#include <iostream>
+   26|       |#include <string>
+   27|       |#include <cassert>
+   28|       |
+   29|       |/** \namespace ciphers
+   30|       | * \brief Algorithms for encryption and decryption
+   31|       | */
+   32|       |namespace ciphers {
+   33|       |    /** \namespace caesar
+   34|       |     * \brief Functions for [Caesar cipher](https://en.wikipedia.org/wiki/Caesar_cipher) algorithm.
+   35|       |     */
+   36|       |    namespace caesar {   
+   37|       |        namespace {
+   38|       |            /**
+   39|       |             * This function finds character for given value (i.e.A-Z)
+   40|       |             * @param x value for which we want character 
+   41|       |             * @returns  corresponding character for perticular value
+   42|       |             */        
+   43|     40|            inline char get_char(const int x) {
+   44|       |                // By adding 65 we are scaling 0-25 to 65-90. 
+   45|       |                // Which are in fact ASCII values of A-Z. 
+   46|     40|                return char(x + 65); 
+   47|     40|            }
+   48|       |            /**
+   49|       |             * This function finds value for given character (i.e.0-25)
+   50|       |             * @param c character for which we want value
+   51|       |             * @returns returns corresponding value for perticular character
+   52|       |             */  
+   53|     40|            inline int get_value(const char c) {
+   54|       |                // A-Z have ASCII values in range 65-90.
+   55|       |                // Hence subtracting 65 will scale them to 0-25.
+   56|     40|                return int(c - 65);
+   57|     40|            }
+   58|       |        } // Unnamed namespace
+   59|       |        /**
+   60|       |         * Encrypt given text using caesar cipher.
+   61|       |         * @param text text to be encrypted
+   62|       |         * @param shift number of shifts to be applied
+   63|       |         * @returns new encrypted text
+   64|       |         */
+   65|      2|        std::string encrypt (const std::string &text, const int &shift) {
+   66|      2|            std::string encrypted_text = ""; // Empty string to store encrypted text
+   67|     20|            for (char c : text) { // Going through each character
+   68|     20|                int place_value = get_value(c); // Getting value of character (i.e. 0-25)
+   69|     20|                place_value = (place_value + shift) % 26; // Applying encryption formula
+   70|     20|                char new_char = get_char(place_value); // Getting new character from new value (i.e. A-Z)
+   71|     20|                encrypted_text += new_char; // Appending encrypted character
+   72|     20|            }
+   73|      2|            return encrypted_text; // Returning encrypted text
+   74|      2|        }
+   75|       |        /**
+   76|       |         * Decrypt given text using caesar cipher.
+   77|       |         * @param text text to be decrypted
+   78|       |         * @param shift number of shifts to be applied
+   79|       |         * @returns new decrypted text
+   80|       |         */        
+   81|      2|        std::string decrypt (const std::string &text, const int &shift) {
+   82|      2|            std::string decrypted_text = ""; // Empty string to store decrypted text
+   83|     20|            for (char c : text) { // Going through each character
+   84|     20|                int place_value = get_value(c); // Getting value of character (i.e. 0-25)
+   85|     20|                place_value = (place_value - shift) % 26;// Applying decryption formula
+   86|     20|                if(place_value < 0) { // Handling case where remainder is negative 
+   87|     16|                    place_value = place_value + 26;
+   88|     16|                }
+   89|     20|                char new_char = get_char(place_value); // Getting original character from decrypted value (i.e. A-Z)
+   90|     20|                decrypted_text += new_char; // Appending decrypted character
+   91|     20|            }
+   92|      2|            return decrypted_text; // Returning decrypted text
+   93|      2|        }
+   94|       |    } // namespace caesar
+   95|       |} // namespace ciphers
+   96|       |
+   97|       |/**
+   98|       | * Function to test above algorithm
+   99|       | */
+  100|      1|void test() {
+  101|       |    // Test 1
+  102|      1|    std::string text1 = "ALANTURING";
+  103|      1|    std::string encrypted1 = ciphers::caesar::encrypt(text1, 17);
+  104|      1|    std::string decrypted1 = ciphers::caesar::decrypt(encrypted1, 17);
+  105|      1|    assert(text1 == decrypted1);
+  106|      0|    std::cout << "Original text : " << text1;
+  107|      1|    std::cout << " , Encrypted text (with shift = 21) : " << encrypted1;
+  108|      1|    std::cout << " , Decrypted text : "<< decrypted1 << std::endl;
+  109|       |    // Test 2
+  110|      1|    std::string text2 = "HELLOWORLD";
+  111|      1|    std::string encrypted2 = ciphers::caesar::encrypt(text2, 1729);
+  112|      1|    std::string decrypted2 = ciphers::caesar::decrypt(encrypted2, 1729);
+  113|      1|    assert(text2 == decrypted2);
+  114|      0|    std::cout << "Original text : " << text2;
+  115|      1|    std::cout << " , Encrypted text (with shift = 1729) : " << encrypted2;
+  116|      1|    std::cout << " , Decrypted text : "<< decrypted2 << std::endl;
+  117|      1|}
+  118|       |
+  119|       |/** Driver Code */
+  120|      1|int main() {
+  121|       |    // Testing
+  122|      1|    test();
+  123|      1|    return 0;
+  124|      1|}
+

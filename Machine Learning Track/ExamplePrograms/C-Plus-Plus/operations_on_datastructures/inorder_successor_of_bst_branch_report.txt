@@ -1,0 +1,430 @@
+    1|       |/**
+    2|       | * @file
+    3|       | * @brief An implementation for finding the [Inorder successor of a binary
+    4|       | * search tree](https://www.youtube.com/watch?v=5cPbNCrdotA) Inorder
+    5|       | * successor of a node is the next node in Inorder traversal of the Binary Tree.
+    6|       | * Inorder Successor is NULL for the last node in Inorder traversal.
+    7|       | * @details
+    8|       | * ### Case 1: The given node has the right node/subtree
+    9|       | *
+   10|       | *      * In this case, the left-most deepest node in the right subtree will
+   11|       | * come just after the given node as we go to left deep in inorder.
+   12|       | *      - Go deep to left most node in right subtree.
+   13|       | *        OR, we can also say in case if BST, find the minimum of the subtree
+   14|       | * for a given node.
+   15|       | *
+   16|       | * ### Case 2: The given node does not have a right node/subtree
+   17|       | *
+   18|       | * #### Method 1: Use parent pointer (store the address of parent nodes)
+   19|       | *      * If a node does not have the right subtree, and we already visited the
+   20|       | * node itself, then the next node will be its parent node according to inorder
+   21|       | * traversal, and if we are going to parent from left, then the parent would be
+   22|       | * unvisited.
+   23|       | *      * In other words, go to the nearest ancestor for which given node would
+   24|       | * be in left subtree.
+   25|       | *
+   26|       | * #### Method 2: Search from the root node
+   27|       | *      * In case if there is no link from a child node to the parent node, we
+   28|       | * need to walk down the tree starting from the root node to the given node, by
+   29|       | * doing so, we are visiting every ancestor of the given node.
+   30|       | *      * In order successor would be the deepest node in this path for which
+   31|       | * given node is in left subtree.
+   32|       | *
+   33|       | * @author [Nitin Sharma](https://github.com/foo290)
+   34|       | * */
+   35|       |
+   36|       |#include <cassert>   ///  for assert
+   37|       |#include <iostream>  ///  for IO Operations
+   38|       |#include <vector>    ///  for std::vector
+   39|       |
+   40|       |/**
+   41|       | * @namespace operations_on_datastructures
+   42|       | * @brief Operations on data structures
+   43|       | */
+   44|       |namespace operations_on_datastructures {
+   45|       |
+   46|       |/**
+   47|       | * @namespace inorder_successor_of_bst
+   48|       | * @brief Functions for the [Inorder successor of a binary search
+   49|       | * tree](https://www.youtube.com/watch?v=5cPbNCrdotA) implementation
+   50|       | */
+   51|       |namespace inorder_traversal_of_bst {
+   52|       |
+   53|       |/**
+   54|       | * @brief A Node structure representing a single node in BST
+   55|       | */
+   56|       |class Node {
+   57|       | public:
+   58|       |    int64_t data;  ///< The key/value of the node
+   59|       |    Node *left;    ///< Pointer to Left child
+   60|       |    Node *right;   ///< Pointer to right child
+   61|       |};
+   62|       |
+   63|       |/**
+   64|       | * @brief Allocates a new node in heap for given data and returns it's pointer.
+   65|       | * @param data Data for the node.
+   66|       | * @returns A pointer to the newly allocated Node.
+   67|       | * */
+   68|     37|Node *makeNode(int64_t data) {
+   69|     37|    Node *node = new Node();
+   70|     37|    node->data = data;      ///< setting data for node
+   71|     37|    node->left = nullptr;   ///< setting left child as null
+   72|     37|    node->right = nullptr;  ///< setting right child as null
+   73|     37|    return node;
+   74|     37|}
+   75|       |
+   76|       |/**
+   77|       | * @brief Inserts the given data in BST while maintaining the properties of BST.
+   78|       | * @param root Pointer to the root node of the BST
+   79|       | * @param data Data to be inserted.
+   80|       | * @returns Node* Pointer to the root node.
+   81|       | * */
+   82|    113|Node *Insert(Node *root, int64_t data) {
+   83|    113|    if (root == nullptr) {
+   84|     37|        root = makeNode(data);
+   85|     76|    } else if (data <= root->data) {
+   86|     34|        root->left = Insert(root->left, data);
+   87|     42|    } else {
+   88|     42|        root->right = Insert(root->right, data);
+   89|     42|    }
+   90|    113|    return root;
+   91|    113|}
+   92|       |
+   93|       |/**
+   94|       | * @brief Searches the given data in BST and returns the pointer to the node
+   95|       | * containing that data.
+   96|       | * @param root Pointer to the root node of the BST
+   97|       | * @param data Data to be Searched.
+   98|       | * @returns Node* pointer to the found node
+   99|       | * */
+  100|      9|Node *getNode(Node *root, int64_t data) {
+  101|      9|    if (root == nullptr) {
+  102|      0|        return nullptr;
+  103|      9|    } else if (root->data == data) {
+  104|      4|        return root;  /// Node found!
+  105|      5|    } else if (data > root->data) {
+  106|       |        /// Traverse right subtree recursively as the given data is greater than
+  107|       |        /// the data in root node, data must be present in right subtree.
+  108|      5|        return getNode(root->right, data);
+  109|      5|    } else {
+  110|       |        /// Traverse left subtree recursively as the given data is less than the
+  111|       |        /// data in root node, data must be present in left subtree.
+  112|      0|        return getNode(root->left, data);
+  113|      0|    }
+  114|      9|}
+  115|       |
+  116|       |/**
+  117|       | * @brief Finds and return the minimum node in BST.
+  118|       | * @param root A pointer to root node.
+  119|       | * @returns Node* Pointer to the found node
+  120|       | * */
+  121|      3|Node *findMinNode(Node *root) {
+  122|      3|    if (root == nullptr) {
+  123|      0|        return root;
+  124|      0|    }
+  125|      6|    while (root->left != nullptr) {
+  126|      3|        root = root->left;
+  127|      3|    }
+  128|      3|    return root;
+  129|      3|}
+  130|       |
+  131|       |/**
+  132|       | * @brief Prints the BST in inorder traversal using recursion.
+  133|       | * @param root A pointer to the root node of the BST.
+  134|       | * @returns void
+  135|       | * */
+  136|     78|void printInorder(Node *root) {
+  137|     78|    if (root == nullptr) {
+  138|     41|        return;
+  139|     41|    }
+  140|       |
+  141|     37|    printInorder(root->left);  /// recursive call to left subtree
+  142|     37|    std::cout << root->data << " ";
+  143|     37|    printInorder(root->right);  /// recursive call to right subtree
+  144|     37|}
+  145|       |
+  146|       |/**
+  147|       | * @brief This function is used in test cases to quickly create BST containing
+  148|       | * large data instead of hard coding it in code. For a given root, this will add
+  149|       | * all the nodes containing data passes in data vector.
+  150|       | * @param root Pointer to the root node.
+  151|       | * @param data A vector containing integer values which are suppose to be
+  152|       | * inserted as nodes in BST.
+  153|       | * @returns Node pointer to the root node.
+  154|       | * */
+  155|      4|Node *makeBST(Node *root, const std::vector<int64_t> &data) {
+  156|     37|    for (int64_t values : data) {
+  157|     37|        root = Insert(root, values);
+  158|     37|    }
+  159|      4|    return root;
+  160|      4|}
+  161|       |
+  162|       |/**
+  163|       | * @brief Inorder successor of a node is the next node in inorder traversal of
+  164|       | * the Binary Tree. This function takes the root node and the data of the node
+  165|       | * for which we have to find the inorder successor, and returns the inorder
+  166|       | * successor node.
+  167|       | * @details Search from the root node as we need to walk the tree starting from
+  168|       | * the root node to the given node, by doing so, we are visiting every ancestor
+  169|       | * of the given node. In order successor would be the deepest node in this path
+  170|       | * for which given node is in left subtree. Time complexity O(h)
+  171|       | * @param root A pointer to the root node of the BST
+  172|       | * @param data The data (or the data of node) for which we have to find inorder
+  173|       | * successor.
+  174|       | * @returns Node pointer to the inorder successor node.
+  175|       | * */
+  176|      4|Node *getInorderSuccessor(Node *root, int64_t data) {
+  177|      4|    Node *current = getNode(root, data);
+  178|      4|    if (current == nullptr) {
+  179|      0|        return nullptr;
+  180|      0|    }
+  181|       |
+  182|       |    // Case - 1
+  183|      4|    if (current->right != nullptr) {
+  184|      3|        return findMinNode(current->right);
+  185|      3|    }
+  186|       |    // case - 2
+  187|      1|    else {
+  188|      1|        Node *successor = nullptr;
+  189|      1|        Node *ancestor = root;
+  190|       |
+  191|      4|        while (ancestor != current && ancestor != nullptr) {
+  192|       |            // This means my current node is in left of the root node
+  193|      3|            if (current->data < ancestor->data) {
+  194|      0|                successor = ancestor;
+  195|      0|                ancestor = ancestor->left;  // keep going left
+  196|      3|            } else {
+  197|      3|                ancestor = ancestor->right;
+  198|      3|            }
+  199|      3|        }
+  200|      1|        return successor;  // Nodes with maximum vales will not have a successor
+  201|      1|    }
+  202|      4|}
+  203|       |
+  204|       |/**
+  205|       | * @brief This function clears the memory allocated to entire tree recursively.
+  206|       | * Its just for clean up the memory and not relevant to the actual topic.
+  207|       | * @param root Root node of the tree.
+  208|       | * @returns void
+  209|       | * */
+  210|     78|void deallocate(Node *rootNode) {
+  211|     78|    if (rootNode == nullptr) {
+  212|     41|        return;
+  213|     41|    }
+  214|     37|    deallocate(rootNode->left);
+  215|     37|    deallocate(rootNode->right);
+  216|     37|    delete (rootNode);
+  217|     37|}
+  218|       |
+  219|       |}  // namespace inorder_traversal_of_bst
+  220|       |}  // namespace operations_on_datastructures
+  221|       |
+  222|       |/**
+  223|       | * @brief class encapsulating the necessary test cases
+  224|       | */
+  225|       |class TestCases {
+  226|       | private:
+  227|       |    /**
+  228|       |     * @brief A function to print given message on console.
+  229|       |     * @tparam T Type of the given message.
+  230|       |     * @returns void
+  231|       |     * */
+  232|       |    template <typename T>
+  233|     22|    void log(T msg) {
+  234|       |        // It's just to avoid writing cout and endl
+  235|     22|        std::cout << "[TESTS] : ---> " << msg << std::endl;
+  236|     22|    }
+  237|       |
+  238|       | public:
+  239|       |    /**
+  240|       |     * @brief Executes test cases
+  241|       |     * @returns void
+  242|       |     * */
+  243|      1|    void runTests() {
+  244|      1|        log("Running Tests...");
+  245|       |
+  246|      1|        testCase_1();
+  247|      1|        testCase_2();
+  248|      1|        testCase_3();
+  249|       |
+  250|      1|        log("Test Cases over!");
+  251|      1|        std::cout << std::endl;
+  252|      1|    }
+  253|       |
+  254|       |    /**
+  255|       |     * @brief A test case contains edge case, printing inorder successor of last
+  256|       |     * node.
+  257|       |     * @returns void
+  258|       |     * */
+  259|      1|    void testCase_1() {
+  260|      1|        const operations_on_datastructures::inorder_traversal_of_bst::Node
+  261|      1|            *expectedOutput = nullptr;  ///< Expected output of this test
+  262|       |
+  263|      1|        log("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+  264|      1|        log("This is test case 1 : ");
+  265|      1|        log("Description:");
+  266|      1|        log("   EDGE CASE : Printing inorder successor for last node in the "
+  267|      1|            "BST, Output will be nullptr.");
+  268|       |
+  269|      1|        operations_on_datastructures::inorder_traversal_of_bst::Node *root =
+  270|      1|            nullptr;
+  271|      1|        std::vector<int64_t> node_data{
+  272|      1|            20, 3, 5, 6, 2, 23, 45, 78, 21};  ///< Data to make nodes in BST
+  273|       |
+  274|      1|        root = operations_on_datastructures::inorder_traversal_of_bst::makeBST(
+  275|      1|            root,
+  276|      1|            node_data);  ///< Adding nodes to BST
+  277|       |
+  278|      1|        std::cout << "Inorder sequence is : ";
+  279|      1|        operations_on_datastructures::inorder_traversal_of_bst::printInorder(
+  280|      1|            root);  ///< Printing inorder to cross-verify.
+  281|      1|        std::cout << std::endl;
+  282|       |
+  283|      1|        operations_on_datastructures::inorder_traversal_of_bst::Node
+  284|      1|            *inorderSuccessor = operations_on_datastructures::
+  285|      1|                inorder_traversal_of_bst::getInorderSuccessor(
+  286|      1|                    root, 78);  ///< The inorder successor node for given data
+  287|       |
+  288|      1|        log("Checking assert expression...");
+  289|      1|        assert(inorderSuccessor == expectedOutput);
+  290|      0|        log("Assertion check passed!");
+  291|       |
+  292|      1|        operations_on_datastructures::inorder_traversal_of_bst::deallocate(
+  293|      1|            root);  /// memory cleanup!
+  294|       |
+  295|      1|        log("[PASS] : TEST CASE 1 PASS!");
+  296|      1|        log("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+  297|      1|    }
+  298|       |
+  299|       |    /**
+  300|       |     * @brief A test case which contains main list of 100 elements and sublist
+  301|       |     * of 20.
+  302|       |     * @returns void
+  303|       |     * */
+  304|      1|    void testCase_2() {
+  305|      1|        const int expectedOutput = 21;  ///< Expected output of this test
+  306|       |
+  307|      1|        log("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+  308|      1|        log("This is test case 2 : ");
+  309|       |
+  310|      1|        operations_on_datastructures::inorder_traversal_of_bst::Node *root =
+  311|      1|            nullptr;
+  312|      1|        std::vector<int64_t> node_data{
+  313|      1|            20, 3, 5, 6, 2, 23, 45, 78, 21};  ///< Data to make nodes in BST
+  314|       |
+  315|      1|        root = operations_on_datastructures::inorder_traversal_of_bst::makeBST(
+  316|      1|            root,
+  317|      1|            node_data);  ///< Adding nodes to BST
+  318|       |
+  319|      1|        std::cout << "Inorder sequence is : ";
+  320|      1|        operations_on_datastructures::inorder_traversal_of_bst::printInorder(
+  321|      1|            root);  ///< Printing inorder to cross-verify.
+  322|      1|        std::cout << std::endl;
+  323|       |
+  324|      1|        operations_on_datastructures::inorder_traversal_of_bst::Node
+  325|      1|            *inorderSuccessor = operations_on_datastructures::
+  326|      1|                inorder_traversal_of_bst::getInorderSuccessor(
+  327|      1|                    root, 20);  ///< The inorder successor node for given data
+  328|       |
+  329|      1|        log("Checking assert expression...");
+  330|      1|        assert(inorderSuccessor->data == expectedOutput);
+  331|      0|        log("Assertion check passed!");
+  332|       |
+  333|      1|        operations_on_datastructures::inorder_traversal_of_bst::deallocate(
+  334|      1|            root);  /// memory cleanup!
+  335|       |
+  336|      1|        log("[PASS] : TEST CASE 2 PASS!");
+  337|      1|        log("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+  338|      1|    }
+  339|       |
+  340|       |    /**
+  341|       |     * @brief A test case which contains main list of 50 elements and sublist
+  342|       |     * of 20.
+  343|       |     * @returns void
+  344|       |     * */
+  345|      1|    void testCase_3() {
+  346|      1|        const int expectedOutput = 110;  ///< Expected output of this test
+  347|       |
+  348|      1|        log("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+  349|      1|        log("This is test case 3 : ");
+  350|       |
+  351|      1|        operations_on_datastructures::inorder_traversal_of_bst::Node *root =
+  352|      1|            nullptr;
+  353|      1|        std::vector<int64_t> node_data{
+  354|      1|            89,  67,  32, 56, 90, 123, 120,
+  355|      1|            110, 115, 6,  78, 7,  10};  ///< Data to make nodes in BST
+  356|       |
+  357|      1|        root = operations_on_datastructures::inorder_traversal_of_bst::makeBST(
+  358|      1|            root,
+  359|      1|            node_data);  ///< Adding nodes to BST
+  360|       |
+  361|      1|        std::cout << "Inorder sequence is : ";
+  362|      1|        operations_on_datastructures::inorder_traversal_of_bst::printInorder(
+  363|      1|            root);  ///< Printing inorder to cross-verify.
+  364|      1|        std::cout << std::endl;
+  365|       |
+  366|      1|        operations_on_datastructures::inorder_traversal_of_bst::Node
+  367|      1|            *inorderSuccessor = operations_on_datastructures::
+  368|      1|                inorder_traversal_of_bst::getInorderSuccessor(
+  369|      1|                    root, 90);  ///< The inorder successor node for given data
+  370|       |
+  371|      1|        log("Checking assert expression...");
+  372|      1|        assert(inorderSuccessor->data == expectedOutput);
+  373|      0|        log("Assertion check passed!");
+  374|       |
+  375|      1|        operations_on_datastructures::inorder_traversal_of_bst::deallocate(
+  376|      1|            root);  /// memory cleanup!
+  377|       |
+  378|      1|        log("[PASS] : TEST CASE 3 PASS!");
+  379|      1|        log("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+  380|      1|    }
+  381|       |};
+  382|       |
+  383|       |/**
+  384|       | * @brief Self-test implementations
+  385|       | * @returns void
+  386|       | */
+  387|      1|static void test() {
+  388|      1|    TestCases tc;
+  389|      1|    tc.runTests();
+  390|      1|}
+  391|       |
+  392|       |/**
+  393|       | * @brief Main function
+  394|       | * @param argc commandline argument count (ignored)
+  395|       | * @param argv commandline array of arguments (ignored)
+  396|       | * @returns 0 on exit
+  397|       | */
+  398|      1|int main(int argc, char *argv[]) {
+  399|      1|    test();  // run self-test implementations
+  400|       |
+  401|      1|    operations_on_datastructures::inorder_traversal_of_bst::Node *root =
+  402|      1|        nullptr;  ///< root node of the bst
+  403|      1|    std::vector<int64_t> node_data{3,  4, 5,
+  404|      1|                                   89, 1, 2};  ///< Data to add nodes in BST
+  405|       |
+  406|      1|    int64_t targetElement = 4;  ///< An element to find inorder successor for.
+  407|      1|    root = operations_on_datastructures::inorder_traversal_of_bst::makeBST(
+  408|      1|        root, node_data);  ///< Making BST
+  409|       |
+  410|      1|    operations_on_datastructures::inorder_traversal_of_bst::Node
+  411|      1|        *inorderSuccessor = operations_on_datastructures::
+  412|      1|            inorder_traversal_of_bst::getInorderSuccessor(root, targetElement);
+  413|       |
+  414|      1|    std::cout << "In-order sequence is : ";
+  415|      1|    operations_on_datastructures::inorder_traversal_of_bst::printInorder(root);
+  416|      1|    std::cout << std::endl;
+  417|       |
+  418|      1|    if (inorderSuccessor == nullptr) {
+  419|      0|        std::cout << "Inorder successor for last node is NULL" << std::endl;
+  420|      1|    } else {
+  421|      1|        std::cout << "Target element is : " << targetElement << std::endl;
+  422|      1|        std::cout << "Inorder successor for target element is : "
+  423|      1|                  << inorderSuccessor->data << std::endl;
+  424|      1|    }
+  425|       |
+  426|      1|    deallocate(root);  /// memory cleanup!
+  427|       |
+  428|      1|    return 0;
+  429|      1|}
+

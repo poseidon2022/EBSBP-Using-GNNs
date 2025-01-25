@@ -1,0 +1,131 @@
+    1|       |/**
+    2|       | * @file
+    3|       | * @brief prints the assigned colors
+    4|       | * using [Graph Coloring](https://en.wikipedia.org/wiki/Graph_coloring)
+    5|       | * algorithm
+    6|       | *
+    7|       | * @details
+    8|       | * In graph theory, graph coloring is a special case of graph labeling;
+    9|       | * it is an assignment of labels traditionally called "colors" to elements of a
+   10|       | * graph subject to certain constraints. In its simplest form, it is a way of
+   11|       | * coloring the vertices of a graph such that no two adjacent vertices are of
+   12|       | * the same color; this is called a vertex coloring. Similarly, an edge coloring
+   13|       | * assigns a color to each edge so that no two adjacent edges are of the same
+   14|       | * color, and a face coloring of a planar graph assigns a color to each face or
+   15|       | * region so that no two faces that share a boundary have the same color.
+   16|       | *
+   17|       | * @author [Anup Kumar Panwar](https://github.com/AnupKumarPanwar)
+   18|       | * @author [David Leal](https://github.com/Panquesito7)
+   19|       | */
+   20|       |
+   21|       |#include <array>     /// for std::array
+   22|       |#include <iostream>  /// for IO operations
+   23|       |#include <vector>    /// for std::vector
+   24|       |
+   25|       |/**
+   26|       | * @namespace backtracking
+   27|       | * @brief Backtracking algorithms
+   28|       | */
+   29|       |namespace backtracking {
+   30|       |/**
+   31|       | * @namespace graph_coloring
+   32|       | * @brief Functions for the [Graph
+   33|       | * Coloring](https://en.wikipedia.org/wiki/Graph_coloring) algorithm,
+   34|       | */
+   35|       |namespace graph_coloring {
+   36|       |/**
+   37|       | * @brief A utility function to print the solution
+   38|       | * @tparam V number of vertices in the graph
+   39|       | * @param color array of colors assigned to the nodes
+   40|       | */
+   41|       |template <size_t V>
+   42|      6|void printSolution(const std::array<int, V>& color) {
+   43|      6|    std::cout << "Following are the assigned colors\n";
+   44|     24|    for (auto& col : color) {
+   45|     24|        std::cout << col;
+   46|     24|    }
+   47|      6|    std::cout << "\n";
+   48|      6|}
+   49|       |
+   50|       |/**
+   51|       | * @brief Utility function to check if the current color assignment is safe for
+   52|       | * vertex v
+   53|       | * @tparam V number of vertices in the graph
+   54|       | * @param v index of graph vertex to check
+   55|       | * @param graph matrix of graph nonnectivity
+   56|       | * @param color vector of colors assigned to the graph nodes/vertices
+   57|       | * @param c color value to check for the node `v`
+   58|       | * @returns `true` if the color is safe to be assigned to the node
+   59|       | * @returns `false` if the color is not safe to be assigned to the node
+   60|       | */
+   61|       |template <size_t V>
+   62|       |bool isSafe(int v, const std::array<std::array<int, V>, V>& graph,
+   63|     48|            const std::array<int, V>& color, int c) {
+   64|    150|    for (int i = 0; i < V; i++) {
+   65|    129|        if (graph[v][i] && c == color[i]) {
+   66|     27|            return false;
+   67|     27|        }
+   68|    129|    }
+   69|     21|    return true;
+   70|     48|}
+   71|       |
+   72|       |/**
+   73|       | * @brief Recursive utility function to solve m coloring problem
+   74|       | * @tparam V number of vertices in the graph
+   75|       | * @param graph matrix of graph nonnectivity
+   76|       | * @param m number of colors
+   77|       | * @param [in,out] color description // used in,out to notify in documentation
+   78|       | * that this parameter gets modified by the function
+   79|       | * @param v index of graph vertex to check
+   80|       | */
+   81|       |template <size_t V>
+   82|       |void graphColoring(const std::array<std::array<int, V>, V>& graph, int m,
+   83|     22|                   std::array<int, V> color, int v) {
+   84|       |    // base case:
+   85|       |    // If all vertices are assigned a color then return true
+   86|     22|    if (v == V) {
+   87|      6|        printSolution<V>(color);
+   88|      6|        return;
+   89|      6|    }
+   90|       |
+   91|       |    // Consider this vertex v and try different colors
+   92|     64|    for (int c = 1; c <= m; c++) {
+   93|       |        // Check if assignment of color c to v is fine
+   94|     48|        if (isSafe<V>(v, graph, color, c)) {
+   95|     21|            color[v] = c;
+   96|       |
+   97|       |            // recur to assign colors to rest of the vertices
+   98|     21|            graphColoring<V>(graph, m, color, v + 1);
+   99|       |
+  100|       |            // If assigning color c doesn't lead to a solution then remove it
+  101|     21|            color[v] = 0;
+  102|     21|        }
+  103|     48|    }
+  104|     16|}
+  105|       |}  // namespace graph_coloring
+  106|       |}  // namespace backtracking
+  107|       |
+  108|       |/**
+  109|       | * @brief Main function
+  110|       | * @returns 0 on exit
+  111|       | */
+  112|      1|int main() {
+  113|       |    // Create following graph and test whether it is 3 colorable
+  114|       |    // (3)---(2)
+  115|       |    // |   / |
+  116|       |    // |  /  |
+  117|       |    // | /   |
+  118|       |    // (0)---(1)
+  119|       |
+  120|      1|    const int V = 4;  // number of vertices in the graph
+  121|      1|    std::array<std::array<int, V>, V> graph = {
+  122|      1|        std::array<int, V>({0, 1, 1, 1}), std::array<int, V>({1, 0, 1, 0}),
+  123|      1|        std::array<int, V>({1, 1, 0, 1}), std::array<int, V>({1, 0, 1, 0})};
+  124|       |
+  125|      1|    int m = 3;  // Number of colors
+  126|      1|    std::array<int, V> color{};
+  127|       |
+  128|      1|    backtracking::graph_coloring::graphColoring<V>(graph, m, color, 0);
+  129|      1|    return 0;
+  130|      1|}
+

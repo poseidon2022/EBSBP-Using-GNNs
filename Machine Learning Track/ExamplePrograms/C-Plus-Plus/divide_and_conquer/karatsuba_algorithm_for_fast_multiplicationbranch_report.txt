@@ -1,0 +1,185 @@
+    1|       |/**
+    2|       | * @file
+    3|       | * @brief Implementation of the [Karatsuba algorithm for fast
+    4|       | * multiplication](https://en.wikipedia.org/wiki/Karatsuba_algorithm)
+    5|       | * @details
+    6|       | * Given two strings in binary notation we want to multiply them and return the
+    7|       | * value. Simple approach is to multiply bits one by one which will give the time
+    8|       | * complexity of around O(n^2). To make it more efficient we will be using
+    9|       | * Karatsuba algorithm to find the product which will solve the problem
+   10|       | * O(nlogn) of time.
+   11|       | * @author [Swastika Gupta](https://github.com/Swastyy)
+   12|       | * @author [Ameer Carlo Lubang](https://github.com/poypoyan)
+   13|       | */
+   14|       |
+   15|       |#include <cassert>   /// for assert
+   16|       |#include <cstring>   /// for string
+   17|       |#include <iostream>  /// for IO operations
+   18|       |#include <vector>    /// for std::vector
+   19|       |
+   20|       |/**
+   21|       | * @namespace divide_and_conquer
+   22|       | * @brief Divide and Conquer algorithms
+   23|       | */
+   24|       |namespace divide_and_conquer {
+   25|       |/**
+   26|       | * @namespace karatsuba_algorithm
+   27|       | * @brief Functions for the [Karatsuba algorithm for fast
+   28|       | * multiplication](https://en.wikipedia.org/wiki/Karatsuba_algorithm) implementation
+   29|       | */
+   30|       |namespace karatsuba_algorithm {
+   31|       |/**
+   32|       | * @brief Binary addition
+   33|       | * @param first, the input string 1
+   34|       | * @param second, the input string 2
+   35|       | * @returns the sum binary string
+   36|       | */
+   37|     46|std::string add_strings(std::string first, std::string second) {
+   38|     46|    std::string result;  // to store the resulting sum bits
+   39|       |
+   40|       |    // make the string lengths equal
+   41|     46|    int64_t len1 = first.size();
+   42|     46|    int64_t len2 = second.size();
+   43|     46|    std::string zero = "0";
+   44|     46|    if (len1 < len2) {
+   45|     14|        for (int64_t i = 0; i < len2 - len1; i++) {
+   46|      7|            zero += first;
+   47|      7|            first = zero;
+   48|      7|            zero = "0"; // Prevents CI from failing
+   49|      7|        }
+   50|     39|    } else if (len1 > len2) {
+   51|      0|        for (int64_t i = 0; i < len1 - len2; i++) {
+   52|      0|            zero += second;
+   53|      0|            second = zero;
+   54|      0|            zero = "0"; // Prevents CI from failing
+   55|      0|        }
+   56|      0|    }
+   57|       |
+   58|     46|    int64_t length = std::max(len1, len2);
+   59|     46|    int64_t carry = 0;
+   60|    102|    for (int64_t i = length - 1; i >= 0; i--) {
+   61|     56|        int64_t firstBit = first.at(i) - '0';
+   62|     56|        int64_t secondBit = second.at(i) - '0';
+   63|       |
+   64|     56|        int64_t sum = (char(firstBit ^ secondBit ^ carry)) + '0';  // sum of 3 bits
+   65|     56|        result.insert(result.begin(), sum);
+   66|       |
+   67|     56|        carry = char((firstBit & secondBit) | (secondBit & carry) |
+   68|     56|                (firstBit & carry));  // sum of 3 bits
+   69|     56|    }
+   70|       |
+   71|     46|    if (carry) {
+   72|      8|        result.insert(result.begin(), '1');  // adding 1 incase of overflow
+   73|      8|    }
+   74|     46|    return result;
+   75|     46|}
+   76|       |
+   77|       |/**
+   78|       | * @brief Wrapper function for substr that considers leading zeros.
+   79|       | * @param str, the binary input string.
+   80|       | * @param x1, the substr parameter integer 1
+   81|       | * @param x2, the substr parameter integer 2
+   82|       | * @param n, is the length of the "whole" string: leading zeros + str
+   83|       | * @returns the "safe" substring for the algorithm *without* leading zeros
+   84|       | * @returns "0" if substring spans to leading zeros only
+   85|       | */
+   86|     92|std::string safe_substr(const std::string &str, int64_t x1, int64_t x2, int64_t n) {
+   87|     92|    int64_t len = str.size();
+   88|       |
+   89|     92|    if (len >= n) {
+   90|     58|        return str.substr(x1, x2);
+   91|     58|    }
+   92|       |
+   93|     34|    int64_t y1 = x1 - (n - len);  // index in str of first char of substring of "whole" string
+   94|     34|    int64_t y2 = (x1 + x2 - 1) - (n - len);  // index in str of last char of substring of "whole" string
+   95|       |
+   96|     34|    if (y2 < 0) {
+   97|     16|        return "0";
+   98|     18|    } else if (y1 < 0) {
+   99|      3|        return str.substr(0, y2 + 1);
+  100|     15|    } else {
+  101|     15|        return str.substr(y1, x2);
+  102|     15|    }
+  103|     34|}
+  104|       |
+  105|       |/**
+  106|       | * @brief The main function implements Karatsuba's algorithm for fast
+  107|       | * multiplication
+  108|       | * @param str1 the input string 1
+  109|       | * @param str2 the input string 2
+  110|       | * @returns the product number value
+  111|       | */
+  112|     72|int64_t karatsuba_algorithm(std::string str1, std::string str2) {
+  113|     72|    int64_t len1 = str1.size();
+  114|     72|    int64_t len2 = str2.size();
+  115|     72|    int64_t n = std::max(len1, len2);
+  116|       |
+  117|     72|    if (n == 0) {
+  118|      0|        return 0;
+  119|      0|    }
+  120|     72|    if (n == 1) {
+  121|     49|        return (str1[0] - '0') * (str2[0] - '0');
+  122|     49|    }
+  123|       |
+  124|     23|    int64_t fh = n / 2;     // first half of string
+  125|     23|    int64_t sh = n - fh;  // second half of string
+  126|       |
+  127|     23|    std::string Xl = divide_and_conquer::karatsuba_algorithm::safe_substr(str1, 0, fh, n);   // first half of first string
+  128|     23|    std::string Xr = divide_and_conquer::karatsuba_algorithm::safe_substr(str1, fh, sh, n);  // second half of first string
+  129|       |
+  130|     23|    std::string Yl = divide_and_conquer::karatsuba_algorithm::safe_substr(str2, 0, fh, n);   // first half of second string
+  131|     23|    std::string Yr = divide_and_conquer::karatsuba_algorithm::safe_substr(str2, fh, sh, n);  // second half of second string
+  132|       |
+  133|       |    // calculating the three products of inputs of size n/2 recursively
+  134|     23|    int64_t product1 = karatsuba_algorithm(Xl, Yl);
+  135|     23|    int64_t product2 = karatsuba_algorithm(Xr, Yr);
+  136|     23|    int64_t product3 = karatsuba_algorithm(
+  137|     23|        divide_and_conquer::karatsuba_algorithm::add_strings(Xl, Xr),
+  138|     23|        divide_and_conquer::karatsuba_algorithm::add_strings(Yl, Yr));
+  139|       |
+  140|     23|    return product1 * (1 << (2 * sh)) +
+  141|     23|           (product3 - product1 - product2) * (1 << sh) +
+  142|     23|           product2;  // combining the three products to get the final result.
+  143|     72|}
+  144|       |}  // namespace karatsuba_algorithm
+  145|       |}  // namespace divide_and_conquer
+  146|       |
+  147|       |/**
+  148|       | * @brief Self-test implementations
+  149|       | * @returns void
+  150|       | */
+  151|      1|static void test() {
+  152|       |    // 1st test
+  153|      1|    std::string s11 = "1";     // 1
+  154|      1|    std::string s12 = "1010";  // 10
+  155|      1|    std::cout << "1st test... ";
+  156|      1|    assert(divide_and_conquer::karatsuba_algorithm::karatsuba_algorithm(
+  157|      1|               s11, s12) == 10);
+  158|      0|    std::cout << "passed" << std::endl;
+  159|       |
+  160|       |    // 2nd test
+  161|      1|    std::string s21 = "11";    // 3
+  162|      1|    std::string s22 = "1010";  // 10
+  163|      1|    std::cout << "2nd test... ";
+  164|      1|    assert(divide_and_conquer::karatsuba_algorithm::karatsuba_algorithm(
+  165|      1|               s21, s22) == 30);
+  166|      0|    std::cout << "passed" << std::endl;
+  167|       |
+  168|       |    // 3rd test
+  169|      1|    std::string s31 = "110";   // 6
+  170|      1|    std::string s32 = "1010";  // 10
+  171|      1|    std::cout << "3rd test... ";
+  172|      1|    assert(divide_and_conquer::karatsuba_algorithm::karatsuba_algorithm(
+  173|      1|               s31, s32) == 60);
+  174|      0|    std::cout << "passed" << std::endl;
+  175|      1|}
+  176|       |
+  177|       |/**
+  178|       | * @brief Main function
+  179|       | * @returns 0 on exit
+  180|       | */
+  181|      1|int main() {
+  182|      1|    test();  // run self-test implementations
+  183|      1|    return 0;
+  184|      1|}
+

@@ -1,0 +1,57 @@
+    1|       |// C++ program to implement gravity/bead sort
+    2|       |#include <cstdio>
+    3|       |#include <cstring>
+    4|       |
+    5|    453|#define BEAD(i, j) beads[i * max + j]
+    6|       |
+    7|       |// function to perform the above algorithm
+    8|      1|void beadSort(int *a, int len) {
+    9|       |    // Find the maximum element
+   10|      1|    int max = a[0];
+   11|      8|    for (int i = 1; i < len; i++)
+   12|      7|        if (a[i] > max)
+   13|      2|            max = a[i];
+   14|       |
+   15|       |    // allocating memory
+   16|      1|    unsigned char *beads = new unsigned char[max * len];
+   17|      1|    memset(beads, 0, static_cast<size_t>(max) * len);
+   18|       |
+   19|       |    // mark the beads
+   20|      9|    for (int i = 0; i < len; i++)
+   21|     50|        for (int j = 0; j < a[i]; j++) BEAD(i, j) = 1;
+   22|       |
+   23|     21|    for (int j = 0; j < max; j++) {
+   24|       |        // count how many beads are on each post
+   25|     20|        int sum = 0;
+   26|    180|        for (int i = 0; i < len; i++) {
+   27|    160|            sum += BEAD(i, j);
+   28|    160|            BEAD(i, j) = 0;
+   29|    160|        }
+   30|       |
+   31|       |        // Move beads down
+   32|     62|        for (int i = len - sum; i < len; i++) BEAD(i, j) = 1;
+   33|     20|    }
+   34|       |
+   35|       |    // Put sorted values in array using beads
+   36|      9|    for (int i = 0; i < len; i++) {
+   37|      8|        int j;
+   38|     50|        for (j = 0; j < max && BEAD(i, j); j++) {
+   39|     42|        }
+   40|       |
+   41|      8|        a[i] = j;
+   42|      8|    }
+   43|      1|    delete[] beads;
+   44|      1|}
+   45|       |
+   46|       |// driver function to test the algorithm
+   47|      1|int main() {
+   48|      1|    int a[] = {5, 3, 1, 7, 4, 1, 1, 20};
+   49|      1|    int len = sizeof(a) / sizeof(a[0]);
+   50|       |
+   51|      1|    beadSort(a, len);
+   52|       |
+   53|      9|    for (int i = 0; i < len; i++) printf("%d ", a[i]);
+   54|       |
+   55|      1|    return 0;
+   56|      1|}
+

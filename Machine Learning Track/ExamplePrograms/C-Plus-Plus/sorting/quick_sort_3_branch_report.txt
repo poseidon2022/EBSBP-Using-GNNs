@@ -1,0 +1,333 @@
+    1|       |/**
+    2|       | * @file
+    3|       | * @brief Implementation Details
+    4|       | * @details Quick sort 3 works on Dutch National Flag Algorithm
+    5|       | * The major difference between simple quicksort and quick sort 3 comes in the
+    6|       | * function partition3 In quick_sort_partition3 we divide the vector/array into
+    7|       | * 3 parts. quick sort 3 works faster in some cases as compared to simple
+    8|       | * quicksort.
+    9|       | * @author immortal-j
+   10|       | * @author [Krishna Vedala](https://github/kvedala)
+   11|       | */
+   12|       |#include <algorithm>
+   13|       |#include <cassert>
+   14|       |#include <ctime>
+   15|       |#include <iostream>
+   16|       |#include <vector>
+   17|       |
+   18|       |namespace {
+   19|       |/**
+   20|       | * Operator to print the array.
+   21|       | * @param out std::ostream object to write to
+   22|       | * @param arr array to write
+   23|       | */
+   24|       |template <typename T>
+   25|      1|std::ostream &operator<<(std::ostream &out, const std::vector<T> &arr) {
+   26|      9|    for (size_t i = 0; i < arr.size(); ++i) {
+   27|      8|        out << arr[i];
+   28|      8|        if (i < arr.size() - 1) {
+   29|      7|            out << ", ";
+   30|      7|        }
+   31|      8|    }
+   32|      1|    return out;
+   33|      1|}
+  ------------------
+  | quick_sort_3.cpp:_ZN12_GLOBAL__N_1lsIiEERSoS1_RKSt6vectorIT_SaIS3_EE:
+  |   25|      1|std::ostream &operator<<(std::ostream &out, const std::vector<T> &arr) {
+  |   26|      9|    for (size_t i = 0; i < arr.size(); ++i) {
+  |   27|      8|        out << arr[i];
+  |   28|      8|        if (i < arr.size() - 1) {
+  |   29|      7|            out << ", ";
+  |   30|      7|        }
+  |   31|      8|    }
+  |   32|      1|    return out;
+  |   33|      1|}
+  ------------------
+  | Unexecuted instantiation: quick_sort_3.cpp:_ZN12_GLOBAL__N_1lsIdEERSoS1_RKSt6vectorIT_SaIS3_EE
+  ------------------
+   34|       |
+   35|       |}  // namespace
+   36|       |
+   37|       |/**
+   38|       | * @namespace sorting
+   39|       | * @brief Sorting Algorithms
+   40|       | */
+   41|       |namespace sorting {
+   42|       |namespace {  // using un-named namespace here to prevent partition function
+   43|       |             // being visible to end-users
+   44|       |/** This function partitions `arr[]` in three parts
+   45|       | * 1. \f$arr[l\ldots i]\f$ contains all elements smaller than pivot
+   46|       | * 2. \f$arr[(i+1)\ldots (j-1)]\f$ contains all occurrences of pivot
+   47|       | * 3. \f$arr[j\ldots r]\f$ contains all elements greater than pivot
+   48|       | * @tparam T type of data in the vector array
+   49|       | * @param [in,out] arr vector array being partitioned
+   50|       | * @param [in] low lower limit of window to partition
+   51|       | * @param [in] high upper limit of window to partition
+   52|       | * @param [out] i updated lower limit of partition
+   53|       | * @param [out] j updated upper limit of partition
+   54|       | */
+   55|       |template <typename T>
+   56|       |void partition3(std::vector<T> *arr, int32_t low, int32_t high, int32_t *i,
+   57|  5.72k|                int32_t *j) {
+   58|       |    // To handle 2 elements
+   59|  5.72k|    if (high - low <= 1) {
+   60|  1.24k|        if ((*arr)[high] < (*arr)[low]) {
+   61|    433|            std::swap((*arr)[high], (*arr)[low]);
+   62|    433|        }
+   63|  1.24k|        *i = low;
+   64|  1.24k|        *j = high;
+   65|  1.24k|        return;
+   66|  1.24k|    }
+   67|       |
+   68|  4.48k|    int32_t mid = low;
+   69|  4.48k|    T pivot = (*arr)[high];
+   70|  96.2k|    while (mid <= high) {
+   71|  91.7k|        if ((*arr)[mid] < pivot) {
+   72|  41.9k|            std::swap((*arr)[low++], (*arr)[mid++]);
+   73|  49.7k|        } else if ((*arr)[mid] == pivot) {
+   74|  7.01k|            mid++;
+   75|  42.7k|        } else if ((*arr)[mid] > pivot) {
+   76|  42.7k|            std::swap((*arr)[mid], (*arr)[high--]);
+   77|  42.7k|        }
+   78|  91.7k|    }
+   79|       |
+   80|       |    // update i and j
+   81|  4.48k|    *i = low - 1;
+   82|  4.48k|    *j = mid;  // or high-1
+   83|  4.48k|}
+  ------------------
+  | quick_sort_3.cpp:_ZN7sorting12_GLOBAL__N_110partition3IiEEvPSt6vectorIT_SaIS3_EEiiPiS7_:
+  |   57|  2.76k|                int32_t *j) {
+  |   58|       |    // To handle 2 elements
+  |   59|  2.76k|    if (high - low <= 1) {
+  |   60|    612|        if ((*arr)[high] < (*arr)[low]) {
+  |   61|    224|            std::swap((*arr)[high], (*arr)[low]);
+  |   62|    224|        }
+  |   63|    612|        *i = low;
+  |   64|    612|        *j = high;
+  |   65|    612|        return;
+  |   66|    612|    }
+  |   67|       |
+  |   68|  2.15k|    int32_t mid = low;
+  |   69|  2.15k|    T pivot = (*arr)[high];
+  |   70|  44.8k|    while (mid <= high) {
+  |   71|  42.6k|        if ((*arr)[mid] < pivot) {
+  |   72|  18.8k|            std::swap((*arr)[low++], (*arr)[mid++]);
+  |   73|  23.8k|        } else if ((*arr)[mid] == pivot) {
+  |   74|  3.26k|            mid++;
+  |   75|  20.6k|        } else if ((*arr)[mid] > pivot) {
+  |   76|  20.6k|            std::swap((*arr)[mid], (*arr)[high--]);
+  |   77|  20.6k|        }
+  |   78|  42.6k|    }
+  |   79|       |
+  |   80|       |    // update i and j
+  |   81|  2.15k|    *i = low - 1;
+  |   82|  2.15k|    *j = mid;  // or high-1
+  |   83|  2.15k|}
+  ------------------
+  | quick_sort_3.cpp:_ZN7sorting12_GLOBAL__N_110partition3IdEEvPSt6vectorIT_SaIS3_EEiiPiS7_:
+  |   57|  2.96k|                int32_t *j) {
+  |   58|       |    // To handle 2 elements
+  |   59|  2.96k|    if (high - low <= 1) {
+  |   60|    633|        if ((*arr)[high] < (*arr)[low]) {
+  |   61|    209|            std::swap((*arr)[high], (*arr)[low]);
+  |   62|    209|        }
+  |   63|    633|        *i = low;
+  |   64|    633|        *j = high;
+  |   65|    633|        return;
+  |   66|    633|    }
+  |   67|       |
+  |   68|  2.33k|    int32_t mid = low;
+  |   69|  2.33k|    T pivot = (*arr)[high];
+  |   70|  51.3k|    while (mid <= high) {
+  |   71|  49.0k|        if ((*arr)[mid] < pivot) {
+  |   72|  23.1k|            std::swap((*arr)[low++], (*arr)[mid++]);
+  |   73|  25.8k|        } else if ((*arr)[mid] == pivot) {
+  |   74|  3.74k|            mid++;
+  |   75|  22.1k|        } else if ((*arr)[mid] > pivot) {
+  |   76|  22.1k|            std::swap((*arr)[mid], (*arr)[high--]);
+  |   77|  22.1k|        }
+  |   78|  49.0k|    }
+  |   79|       |
+  |   80|       |    // update i and j
+  |   81|  2.33k|    *i = low - 1;
+  |   82|  2.33k|    *j = mid;  // or high-1
+  |   83|  2.33k|}
+  ------------------
+   84|       |}  // namespace
+   85|       |
+   86|       |/** 3-way partition based quick sort. This function accepts array pointer and
+   87|       | * modified the input array.
+   88|       | * @tparam T type of data in the vector array
+   89|       | * @param [in,out] arr vector array to sort
+   90|       | * @param [in] low lower limit of window to partition
+   91|       | * @param [in] high upper limit of window to partition
+   92|       | */
+   93|       |template <typename T>
+   94|  11.4k|void quicksort(std::vector<T> *arr, int32_t low, int32_t high) {
+   95|  11.4k|    if (low >= high) {  // 1 or 0 elements
+   96|  5.76k|        return;
+   97|  5.76k|    }
+   98|       |
+   99|  5.68k|    int32_t i = 0, j = 0;
+  100|       |
+  101|       |    // i and j are passed as reference
+  102|  5.68k|    partition3(arr, low, high, &i, &j);
+  103|       |
+  104|       |    // Recur two halves
+  105|  5.68k|    quicksort(arr, low, i);
+  106|  5.68k|    quicksort(arr, j, high);
+  107|  5.68k|}
+  ------------------
+  | _ZN7sorting9quicksortIiEEvPSt6vectorIT_SaIS2_EEii:
+  |   94|  5.53k|void quicksort(std::vector<T> *arr, int32_t low, int32_t high) {
+  |   95|  5.53k|    if (low >= high) {  // 1 or 0 elements
+  |   96|  2.78k|        return;
+  |   97|  2.78k|    }
+  |   98|       |
+  |   99|  2.74k|    int32_t i = 0, j = 0;
+  |  100|       |
+  |  101|       |    // i and j are passed as reference
+  |  102|  2.74k|    partition3(arr, low, high, &i, &j);
+  |  103|       |
+  |  104|       |    // Recur two halves
+  |  105|  2.74k|    quicksort(arr, low, i);
+  |  106|  2.74k|    quicksort(arr, j, high);
+  |  107|  2.74k|}
+  ------------------
+  | _ZN7sorting9quicksortIdEEvPSt6vectorIT_SaIS2_EEii:
+  |   94|  5.92k|void quicksort(std::vector<T> *arr, int32_t low, int32_t high) {
+  |   95|  5.92k|    if (low >= high) {  // 1 or 0 elements
+  |   96|  2.98k|        return;
+  |   97|  2.98k|    }
+  |   98|       |
+  |   99|  2.94k|    int32_t i = 0, j = 0;
+  |  100|       |
+  |  101|       |    // i and j are passed as reference
+  |  102|  2.94k|    partition3(arr, low, high, &i, &j);
+  |  103|       |
+  |  104|       |    // Recur two halves
+  |  105|  2.94k|    quicksort(arr, low, i);
+  |  106|  2.94k|    quicksort(arr, j, high);
+  |  107|  2.94k|}
+  ------------------
+  108|       |
+  109|       |/** 3-way partition based quick sort. This function accepts array by value and
+  110|       | * creates a copy of it. The array copy gets sorted and returned by the
+  111|       | * function.
+  112|       | * @tparam T type of data in the vector array
+  113|       | * @param [in] arr vector array to sort
+  114|       | * @param [in] low lower limit of window to partition
+  115|       | * @param [in] high upper limit of window to partition
+  116|       | * @returns sorted array vector
+  117|       | */
+  118|       |template <typename T>
+  119|     40|std::vector<T> quicksort(std::vector<T> arr, int32_t low, int32_t high) {
+  120|     40|    if (low >= high) {  // 1 or 0 elements
+  121|      0|        return arr;
+  122|      0|    }
+  123|       |
+  124|     40|    int32_t i = 0, j = 0;
+  125|       |
+  126|       |    // i and j are passed as reference
+  127|     40|    partition3(&arr, low, high, &i, &j);
+  128|       |
+  129|       |    // Recur two halves
+  130|     40|    quicksort(&arr, low, i);
+  131|     40|    quicksort(&arr, j, high);
+  132|       |
+  133|     40|    return arr;
+  134|     40|}
+  ------------------
+  | _ZN7sorting9quicksortIiEESt6vectorIT_SaIS2_EES4_ii:
+  |  119|     20|std::vector<T> quicksort(std::vector<T> arr, int32_t low, int32_t high) {
+  |  120|     20|    if (low >= high) {  // 1 or 0 elements
+  |  121|      0|        return arr;
+  |  122|      0|    }
+  |  123|       |
+  |  124|     20|    int32_t i = 0, j = 0;
+  |  125|       |
+  |  126|       |    // i and j are passed as reference
+  |  127|     20|    partition3(&arr, low, high, &i, &j);
+  |  128|       |
+  |  129|       |    // Recur two halves
+  |  130|     20|    quicksort(&arr, low, i);
+  |  131|     20|    quicksort(&arr, j, high);
+  |  132|       |
+  |  133|     20|    return arr;
+  |  134|     20|}
+  ------------------
+  | _ZN7sorting9quicksortIdEESt6vectorIT_SaIS2_EES4_ii:
+  |  119|     20|std::vector<T> quicksort(std::vector<T> arr, int32_t low, int32_t high) {
+  |  120|     20|    if (low >= high) {  // 1 or 0 elements
+  |  121|      0|        return arr;
+  |  122|      0|    }
+  |  123|       |
+  |  124|     20|    int32_t i = 0, j = 0;
+  |  125|       |
+  |  126|       |    // i and j are passed as reference
+  |  127|     20|    partition3(&arr, low, high, &i, &j);
+  |  128|       |
+  |  129|       |    // Recur two halves
+  |  130|     20|    quicksort(&arr, low, i);
+  |  131|     20|    quicksort(&arr, j, high);
+  |  132|       |
+  |  133|     20|    return arr;
+  |  134|     20|}
+  ------------------
+  135|       |}  // namespace sorting
+  136|       |
+  137|       |/** Test function for integer type arrays */
+  138|      1|static void test_int() {
+  139|      1|    std::cout << "\nTesting integer type arrays\n";
+  140|       |
+  141|     21|    for (int num_tests = 1; num_tests < 21; num_tests++) {
+  142|     20|        size_t size = std::rand() % 500;
+  143|     20|        std::vector<int> arr(size);
+  144|  5.13k|        for (auto &a : arr) {
+  145|  5.13k|            a = std::rand() % 500 - 250;  // random numbers between -250, 249
+  146|  5.13k|        }
+  147|       |
+  148|     20|        std::cout << "Test " << num_tests << "\t Array size:" << size << "\t ";
+  149|     20|        std::vector<int> sorted = sorting::quicksort(arr, 0, int32_t(size) - 1);
+  150|     20|        if (size < 20) {
+  151|      1|            std::cout << "\t Sorted Array is:\n\t";
+  152|      1|            std::cout << sorted << "\n";
+  153|      1|        }
+  154|     20|        assert(std::is_sorted(std::begin(sorted), std::end(sorted)));
+  155|      0|        std::cout << "\t Passed\n";
+  156|     20|    }
+  157|      1|}
+  158|       |
+  159|       |/** Test function for double type arrays */
+  160|      1|static void test_double() {
+  161|      1|    std::cout << "\nTesting Double type arrays\n";
+  162|     21|    for (int num_tests = 1; num_tests < 21; num_tests++) {
+  163|     20|        size_t size = std::rand() % 500;
+  164|     20|        std::vector<double> arr(size);
+  165|  5.70k|        for (auto &a : arr) {
+  166|  5.70k|            a = double(std::rand() % 500) -
+  167|  5.70k|                250.f;   // random numbers between -250, 249
+  168|  5.70k|            a /= 100.f;  // convert to -2.5 to 2.49
+  169|  5.70k|        }
+  170|       |
+  171|     20|        std::cout << "Test " << num_tests << "\t Array size:" << size << "\t ";
+  172|     20|        std::vector<double> sorted =
+  173|     20|            sorting::quicksort(arr, 0, int32_t(size) - 1);
+  174|     20|        if (size < 20) {
+  175|      0|            std::cout << "\t Sorted Array is:\n\t";
+  176|      0|            std::cout << sorted << "\n";
+  177|      0|        }
+  178|     20|        assert(std::is_sorted(std::begin(sorted), std::end(sorted)));
+  179|      0|        std::cout << "\t Passed\n";
+  180|     20|    }
+  181|      1|}
+  182|       |
+  183|       |/** Driver program for above functions */
+  184|      1|int main() {
+  185|      1|    std::srand(std::time(nullptr));
+  186|      1|    test_int();
+  187|      1|    test_double();
+  188|      1|    return 0;
+  189|      1|}
+

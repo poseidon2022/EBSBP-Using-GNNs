@@ -1,0 +1,43 @@
+    1|       |/**
+    2|       | * @file
+    3|       | * @brief Addition rule of probabilities
+    4|       | */
+    5|       |#include <iostream>
+    6|       |
+    7|       |/**
+    8|       | * calculates the probability of the independent events A or B for independent
+    9|       | * events
+   10|       | * \parama [in] A probability of event A
+   11|       | * \parama [in] B probability of event B
+   12|       | * \returns probability of A and B
+   13|       | */
+   14|      1|double addition_rule_independent(double A, double B) {
+   15|      1|    return (A + B) - (A * B);
+   16|      1|}
+   17|       |
+   18|       |/** Calculates the probability of the events A or B for dependent events
+   19|       | * note that if value of B_given_A is unknown, use chainrule to find it
+   20|       | * \parama [in] A probability of event A
+   21|       | * \parama [in] B probability of event B
+   22|       | * \parama [in] B_given_A probability of event B condition A
+   23|       | * \returns probability of A and B
+   24|       | */
+   25|      1|double addition_rule_dependent(double A, double B, double B_given_A) {
+   26|      1|    return (A + B) - (A * B_given_A);
+   27|      1|}
+   28|       |
+   29|       |/** Main function */
+   30|      1|int main() {
+   31|      1|    double A = 0.5;
+   32|      1|    double B = 0.25;
+   33|      1|    double B_given_A = 0.05;
+   34|       |
+   35|      1|    std::cout << "independent P(A or B) = " << addition_rule_independent(A, B)
+   36|      1|              << std::endl;
+   37|       |
+   38|      1|    std::cout << "dependent P(A or B) = "
+   39|      1|              << addition_rule_dependent(A, B, B_given_A) << std::endl;
+   40|       |
+   41|      1|    return 0;
+   42|      1|}
+

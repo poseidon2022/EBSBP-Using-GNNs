@@ -1,0 +1,273 @@
+    1|       |/**
+    2|       | * @file
+    3|       | * @brief
+    4|       | * The
+    5|       | * [Boyer–Moore](https://en.wikipedia.org/wiki/Boyer%E2%80%93Moore_string-search_algorithm)
+    6|       | * algorithm searches for occurrences of pattern P in text T by performing
+    7|       | * explicit character comparisons at different alignments. Instead of a
+    8|       | * brute-force search of all alignments (of which there are n - m + 1),
+    9|       | * Boyer–Moore uses information gained by preprocessing P to skip as many
+   10|       | * alignments as possible.
+   11|       | *
+   12|       | * @details
+   13|       | * The key insight in this algorithm is that if the end of the pattern is
+   14|       | * compared to the text, then jumps along the text can be made rather than
+   15|       | * checking every character of the text. The reason that this works is that in
+   16|       | * lining up the pattern against the text, the last character of the pattern is
+   17|       | * compared to the character in the text.
+   18|       | *
+   19|       | * If the characters do not match, there is no need to continue searching
+   20|       | * backwards along the text. This leaves us with two cases.
+   21|       | *
+   22|       | * Case 1:
+   23|       | * If the character in the text does not match any of the characters in the
+   24|       | * pattern, then the next character in the text to check is located m characters
+   25|       | * farther along the text, where m is the length of the pattern.
+   26|       | *
+   27|       | * Case 2:
+   28|       | * If the character in the text is in the pattern, then a partial shift of the
+   29|       | * pattern along the text is done to line up along the matching character and
+   30|       | * the process is repeated.
+   31|       | *
+   32|       | * There are two shift rules:
+   33|       | *
+   34|       | * [The bad character rule]
+   35|       | * (https://en.wikipedia.org/wiki/Boyer%E2%80%93Moore_string-search_algorithm#The_bad_character_rule)
+   36|       | *
+   37|       | * [The good suffix rule]
+   38|       | * (https://en.wikipedia.org/wiki/Boyer%E2%80%93Moore_string-search_algorithm#The_good_suffix_rule)
+   39|       | *
+   40|       | * The shift rules are implemented as constant-time table lookups, using tables
+   41|       | * generated during the preprocessing of P.
+   42|       | * @author [Stoycho Kyosev](https://github.com/stoychoX)
+   43|       | */
+   44|       |
+   45|       |#include <cassert>   /// for assert
+   46|       |#include <climits>   /// for CHAR_MAX macro
+   47|       |#include <cstring>   /// for strlen
+   48|       |#include <iostream>  /// for IO operations
+   49|       |#include <string>    /// for std::string
+   50|       |#include <vector>    /// for std::vector
+   51|       |
+   52|      2|#define APLHABET_SIZE CHAR_MAX  ///< number of symbols in the alphabet we use
+   53|       |
+   54|       |/**
+   55|       | * @namespace
+   56|       | * @brief String algorithms
+   57|       | */
+   58|       |namespace strings {
+   59|       |/**
+   60|       | * @namespace
+   61|       | * @brief Functions for the [Boyer
+   62|       | * Moore](https://en.wikipedia.org/wiki/Boyer%E2%80%93Moore_string-search_algorithm)
+   63|       | * algorithm implementation
+   64|       | */
+   65|       |namespace boyer_moore {
+   66|       |/**
+   67|       | * @brief A structure representing all the data we need to search the
+   68|       | * preprocessed pattern in text.
+   69|       | */
+   70|       |struct pattern {
+   71|       |    std::string pat;
+   72|       |
+   73|       |    std::vector<size_t>
+   74|       |        bad_char;  ///< bad char table used in [Bad Character
+   75|       |                   ///< Heuristic](https://www.geeksforgeeks.org/boyer-moore-algorithm-for-pattern-searching/)
+   76|       |
+   77|       |    std::vector<size_t>
+   78|       |        good_suffix;  ///< good suffix table used for [Good Suffix
+   79|       |                      ///< heuristic](https://www.geeksforgeeks.org/boyer-moore-algorithm-good-suffix-heuristic/?ref=rp)
+   80|       |};
+   81|       |
+   82|       |/**
+   83|       | * @brief A function that preprocess the good suffix thable
+   84|       | *
+   85|       | * @param str The string being preprocessed
+   86|       | * @param arg The good suffix table
+   87|       | * @returns void
+   88|       | */
+   89|      2|void init_good_suffix(const std::string& str, std::vector<size_t>& arg) {
+   90|      2|    arg.resize(str.size() + 1, 0);
+   91|       |
+   92|       |    // border_pos[i] - the index of the longest proper suffix of str[i..] which
+   93|       |    // is also a proper prefix.
+   94|      2|    std::vector<size_t> border_pos(str.size() + 1, 0);
+   95|       |
+   96|      2|    size_t current_char = str.length();
+   97|       |
+   98|      2|    size_t border_index = str.length() + 1;
+   99|       |
+  100|      2|    border_pos[current_char] = border_index;
+  101|       |
+  102|      8|    while (current_char > 0) {
+  103|     10|        while (border_index <= str.length() &&
+  104|     10|               str[current_char - 1] != str[border_index - 1]) {
+  105|      4|            if (arg[border_index] == 0) {
+  106|      2|                arg[border_index] = border_index - current_char;
+  107|      2|            }
+  108|       |
+  109|      4|            border_index = border_pos[border_index];
+  110|      4|        }
+  111|       |
+  112|      6|        current_char--;
+  113|      6|        border_index--;
+  114|      6|        border_pos[current_char] = border_index;
+  115|      6|    }
+  116|       |
+  117|      2|    size_t largest_border_index = border_pos[0];
+  118|       |
+  119|      8|    for (size_t i = 0; i < str.size(); i++) {
+  120|      6|        if (arg[i] == 0) {
+  121|      6|            arg[i] = largest_border_index;
+  122|      6|        }
+  123|       |
+  124|       |        // If we go pass the largest border we find the next one as we iterate
+  125|      6|        if (i == largest_border_index) {
+  126|      0|            largest_border_index = border_pos[largest_border_index];
+  127|      0|        }
+  128|      6|    }
+  129|      2|}
+  130|       |
+  131|       |/**
+  132|       | * @brief A function that preprocess the bad char table
+  133|       | *
+  134|       | * @param str The string being preprocessed
+  135|       | * @param arg The bad char table
+  136|       | * @returns void
+  137|       | */
+  138|      2|void init_bad_char(const std::string& str, std::vector<size_t>& arg) {
+  139|      2|    arg.resize(APLHABET_SIZE, str.length());
+  140|       |
+  141|      8|    for (size_t i = 0; i < str.length(); i++) {
+  142|      6|        arg[str[i]] = str.length() - i - 1;
+  143|      6|    }
+  144|      2|}
+  145|       |
+  146|       |/**
+  147|       | * @brief A function that initializes pattern
+  148|       | *
+  149|       | * @param str Text used for initialization
+  150|       | * @param arg Initialized structure
+  151|       | * @returns void
+  152|       | */
+  153|      2|void init_pattern(const std::string& str, pattern& arg) {
+  154|      2|    arg.pat = str;
+  155|      2|    init_bad_char(str, arg.bad_char);
+  156|      2|    init_good_suffix(str, arg.good_suffix);
+  157|      2|}
+  158|       |/**
+  159|       | * @brief A function that implements Boyer-Moore's algorithm.
+  160|       | *
+  161|       | * @param str Text we are seatching in.
+  162|       | * @param arg pattern structure containing the preprocessed pattern
+  163|       | * @return Vector of indexes of the occurrences of pattern in text
+  164|       | */
+  165|      2|std::vector<size_t> search(const std::string& str, const pattern& arg) {
+  166|      2|    size_t index_position = arg.pat.size() - 1;
+  167|      2|    std::vector<size_t> index_storage;
+  168|       |
+  169|    247|    while (index_position < str.length()) {
+  170|    245|        size_t index_string = index_position;
+  171|    245|        int index_pattern = static_cast<int>(arg.pat.size()) - 1;
+  172|       |
+  173|    278|        while (index_pattern >= 0 &&
+  174|    278|               str[index_string] == arg.pat[index_pattern]) {
+  175|     33|            --index_pattern;
+  176|     33|            --index_string;
+  177|     33|        }
+  178|       |
+  179|    245|        if (index_pattern < 0) {
+  180|      8|            index_storage.push_back(index_position - arg.pat.length() + 1);
+  181|      8|            index_position += arg.good_suffix[0];
+  182|    237|        } else {
+  183|    237|            index_position += std::max(arg.bad_char[str[index_string]],
+  184|    237|                                       arg.good_suffix[index_pattern + 1]);
+  185|    237|        }
+  186|    245|    }
+  187|       |
+  188|      2|    return index_storage;
+  189|      2|}
+  190|       |
+  191|       |/**
+  192|       | * @brief Check if pat is prefix of str.
+  193|       | *
+  194|       | * @param str pointer to some part of the input text.
+  195|       | * @param pat the searched pattern.
+  196|       | * @param len length of the searched pattern
+  197|       | * @returns `true` if pat IS prefix of str.
+  198|       | * @returns `false` if pat is NOT a prefix of str.
+  199|       | */
+  200|      8|bool is_prefix(const char* str, const char* pat, size_t len) {
+  201|      8|    if (strlen(str) < len) {
+  202|      0|        return false;
+  203|      0|    }
+  204|       |
+  205|     32|    for (size_t i = 0; i < len; i++) {
+  206|     24|        if (str[i] != pat[i]) {
+  207|      0|            return false;
+  208|      0|        }
+  209|     24|    }
+  210|       |
+  211|      8|    return true;
+  212|      8|}
+  213|       |}  // namespace boyer_moore
+  214|       |}  // namespace strings
+  215|       |/**
+  216|       | * @brief A test case in which we search for every appearance of the word 'and'
+  217|       | * @param text The text in which we search for appearance of the word 'and'
+  218|       | * @returns void
+  219|       | */
+  220|      1|void and_test(const char* text) {
+  221|      1|    strings::boyer_moore::pattern ands;
+  222|      1|    strings::boyer_moore::init_pattern("and", ands);
+  223|      1|    std::vector<size_t> indexes = strings::boyer_moore::search(text, ands);
+  224|       |
+  225|      1|    assert(indexes.size() == 2);
+  226|      0|    assert(strings::boyer_moore::is_prefix(text + indexes[0], "and", 3));
+  227|      0|    assert(strings::boyer_moore::is_prefix(text + indexes[1], "and", 3));
+  228|      1|}
+  229|       |
+  230|       |/**
+  231|       | * @brief  A test case in which we search for every appearance of the word 'pat'
+  232|       | * @param text The text in which we search for appearance of the word 'pat'
+  233|       | * @returns void
+  234|       | */
+  235|      1|void pat_test(const char* text) {
+  236|      1|    strings::boyer_moore::pattern pat;
+  237|      1|    strings::boyer_moore::init_pattern("pat", pat);
+  238|      1|    std::vector<size_t> indexes = strings::boyer_moore::search(text, pat);
+  239|       |
+  240|      1|    assert(indexes.size() == 6);
+  241|       |
+  242|      6|    for (const auto& currentIndex : indexes) {
+  243|      6|        assert(strings::boyer_moore::is_prefix(text + currentIndex, "pat", 3));
+  244|      6|    }
+  245|      1|}
+  246|       |/**
+  247|       | * @brief Self-test implementations
+  248|       | * @returns void
+  249|       | */
+  250|      1|static void tests() {
+  251|      1|    const char* text =
+  252|      1|        "When pat Mr. and Mrs. pat Dursley woke up on the dull, gray  \
+  253|      1|                            Tuesday our story starts, \
+  254|      1|                there was nothing about pat the cloudy sky outside to pat suggest that\
+  255|      1|                        strange and \
+  256|      1|                    mysterious things would pat soon be happening all pat over the \
+  257|      1|                        country.";
+  258|       |
+  259|      1|    and_test(text);
+  260|      1|    pat_test(text);
+  261|       |
+  262|      1|    std::cout << "All tests have successfully passed!\n";
+  263|      1|}
+  264|       |
+  265|       |/**
+  266|       | * @brief Main function
+  267|       | * @returns 0 on exit
+  268|       | */
+  269|      1|int main() {
+  270|      1|    tests();  // run self-test implementations
+  271|      1|    return 0;
+  272|      1|}
+

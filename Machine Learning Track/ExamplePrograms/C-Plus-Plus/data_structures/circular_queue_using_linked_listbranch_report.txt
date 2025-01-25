@@ -1,0 +1,83 @@
+    1|       |#include <iostream>
+    2|       |
+    3|       |struct node {
+    4|       |    int data;
+    5|       |    struct node* next;
+    6|       |};
+    7|       |class Queue {
+    8|       |    node* front = nullptr;
+    9|       |    node* rear = nullptr;
+   10|       |
+   11|       |    Queue(const Queue&) = delete;
+   12|       |    Queue& operator=(const Queue&) = delete;
+   13|       |
+   14|       | public:
+   15|      1|    Queue() = default;
+   16|      1|    ~Queue() {
+   17|      7|        while (front) {
+   18|      6|            dequeue();
+   19|      6|        }
+   20|      1|    }
+   21|       |
+   22|       | private:
+   23|      1|    void createNode(int val) {
+   24|      1|        auto* nn = new node;
+   25|      1|        nn->data = val;
+   26|      1|        nn->next = nullptr;
+   27|      1|        front = nn;
+   28|      1|        rear = nn;
+   29|      1|    }
+   30|       |
+   31|       | public:
+   32|      7|    void enqueue(int val) {
+   33|      7|        if (front == nullptr || rear == nullptr) {
+   34|      1|            createNode(val);
+   35|      6|        } else {
+   36|      6|            node* nn = new node;
+   37|      6|            nn->data = val;
+   38|      6|            rear->next = nn;
+   39|      6|            nn->next = front;
+   40|      6|            rear = nn;
+   41|      6|        }
+   42|      7|    }
+   43|      7|    void dequeue() {
+   44|      7|        if (front == nullptr) {
+   45|      0|            return;
+   46|      0|        }
+   47|      7|        const node* const n = front;
+   48|      7|        if (front == rear) {
+   49|      1|            front = nullptr;
+   50|      1|            rear = nullptr;
+   51|      6|        } else {
+   52|      6|            front = front->next;
+   53|      6|            rear->next = front;
+   54|      6|        }
+   55|      7|        delete n;
+   56|      7|    }
+   57|      2|    void traverse() {
+   58|      2|        if (front == nullptr) {
+   59|      0|            return;
+   60|      0|        }
+   61|      2|        const node* ptr = front;
+   62|     13|        do {
+   63|     13|            std::cout << ptr->data << ' ';
+   64|     13|            ptr = ptr->next;
+   65|     13|        } while (ptr != front);
+   66|      2|        std::cout << '\n';
+   67|      2|    }
+   68|       |};
+   69|      1|int main(void) {
+   70|      1|    Queue q;
+   71|      1|    q.enqueue(10);
+   72|      1|    q.enqueue(20);
+   73|      1|    q.enqueue(30);
+   74|      1|    q.enqueue(40);
+   75|      1|    q.enqueue(50);
+   76|      1|    q.enqueue(60);
+   77|      1|    q.enqueue(70);
+   78|      1|    q.traverse();
+   79|      1|    q.dequeue();
+   80|      1|    q.traverse();
+   81|      1|    return 0;
+   82|      1|}
+
