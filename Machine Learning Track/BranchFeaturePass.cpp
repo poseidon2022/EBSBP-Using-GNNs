@@ -30,7 +30,7 @@ namespace {
             if (!testFile.good()) {
                 outFile.open("branch_features.csv");
                 // 38 39 40 41
-                outFile << "is_fcmp,is_fcmp_eq,is_fcmp_ne,is_fcmp_nan,is_fcmp_not_nan,is_icmp,is_icmp_cnst,icmp_cnst_value,is_icmp_lt_one,is_icmp_eq_zero,is_icmp_ne_zero,is_icmp_gt_zero,is_icmp_lt_zero,is_icmp_eq_minus_one,is_icmp_ne_minus_one,is_icmp_gt_minus_one,is_icmp_lib,is_icmp_eq_lib,is_icmp_ne_lib,is_pointer_compare,is_pointer_compare_eq,is_pointer_compare_ne,is_block_in_loop,loop_back_edge,loop_entering_edge,loop_exiting_edge,succ_exits_loop,succ_loop_back_edge,succ_post_dom_by_cold_call,succ_post_dom_by_unreachable,succ_alloca,succ_call,succ_return,succ_store,succ_dominates,succ_post_dominates,succ_ends,succ_use_def,is_right_loop_exiting_branch,is_left_post_dom_by_unreachable,left_succ_ends_unreachable,branch_taken\n";
+                outFile << "is_fcmp,is_fcmp_eq,is_fcmp_ne,is_fcmp_nan,is_fcmp_not_nan,is_icmp,is_icmp_cnst,icmp_cnst_value,is_icmp_lt_one,is_icmp_eq_zero,is_icmp_ne_zero,is_icmp_gt_zero,is_icmp_lt_zero,is_icmp_eq_minus_one,is_icmp_ne_minus_one,is_icmp_gt_minus_one,is_icmp_lib,is_icmp_eq_lib,is_icmp_ne_lib,is_pointer_compare,is_pointer_compare_eq,is_pointer_compare_ne,is_block_in_loop,loop_back_edge,loop_entering_edge,loop_exiting_edge,succ_exits_loop,succ_loop_back_edge,succ_post_dom_by_cold_call,succ_post_dom_by_unreachable,succ_alloca,succ_call,succ_return,succ_store,succ_dominates,succ_post_dominates,succ_ends,succ_use_def,is_right_loop_exiting_branch,is_left_post_dom_by_unreachable,left_succ_ends_unreachable,is_back_edge,is_exit_edge,branch_taken\n";
             } else {
                 outFile.open("branch_features.csv", std::ios::app);
             }
@@ -111,7 +111,7 @@ namespace {
                     for (Instruction &I : BB) {
                         if (auto *BI = dyn_cast<BranchInst>(&I)) {
                             llvm::outs() << "Found branch instruction\n";
-                            std::vector<bool> featureVector(41, false);
+                            std::vector<bool> featureVector(43, false);
                             if (BI->isConditional()) {
                                 auto *cond = BI->getCondition();
                                 if (auto *FCmp = dyn_cast<FCmpInst>(cond)) {
@@ -168,27 +168,23 @@ namespace {
 
                                 if (LI.getLoopFor(&BB)) featureVector[22] = true;
                                 if (LI.isLoopHeader(&BB)) featureVector[24] = true;
-                            }
 
-                            for (unsigned i = 0; i < BI->getNumSuccessors(); ++i) {
-                                BasicBlock *Succ = BI->getSuccessor(i);
-                                if (Succ && PDT.dominates(Succ, &BB)) {
-                                    featureVector[34] = true;
+                                for (unsigned i = 0; i < BI->getNumSuccessors(); ++i) {
+                                    BasicBlock *Succ = BI->getSuccessor(i);
+                                    if (Succ && PDT.dominates(Succ, &BB)) {
+                                        featureVector[34] = true;
+                                    }
+                                    if (Succ && PDT.dominates(&BB, Succ)) {
+                                        featureVector[35] = true;
+                                    }
+                                    for(Instruction & succ_inst : *Succ) {
+                                        if (isa<ReturnInst>(succ_inst)) featureVector[32] = true;
+                                        if (isa<StoreInst>(succ_inst)) featureVector[33] = true;
+                                        if (isa<CallInst>(succ_inst)) featureVector[31] = true;
+                                    }
                                 }
-                                if (Succ && PDT.dominates(&BB, Succ)) {
-                                    featureVector[35] = true;
-                                }
-                                for(Instruction & succ_inst : *Succ) {
-                                    if (isa<ReturnInst>(succ_inst)) featureVector[32] = true;
-                                    if (isa<StoreInst>(succ_inst)) featureVector[33] = true;
-                                    if (isa<CallInst>(succ_inst)) featureVector[31] = true;
-                                }
-                            }
 
-                            bool branchTaken = -1;
-                        
-                            if (BI->isConditional()) {
-                                // Get branch probability
+                                bool branchTaken = -1;
                                 BranchProbability prob = BPI.getEdgeProbability(&BB, BI->getSuccessor(0));
                                 if(prob.getNumerator() == 0)
                                 {
@@ -207,24 +203,7 @@ namespace {
                                         branchTaken = 0;
                                     }
                                 } // Get branch probability
-                                BranchProbability prob = BPI.getEdgeProbability(&BB, BI->getSuccessor(0));
-                                if(prob.getNumerator() == 0)
-                                {
-                                    branchTaken = 0;
-                                }
-                                else if (prob.getNumerator() == prob.getDenominator())
-                                {
-                                    branchTaken = 1;
-                                }
-                                else {
-                                    if(prob.getNumerator() > prob.getDenominator()/2)
-                                    {
-                                        branchTaken = 1;
-                                    } else
-                                    {
-                                        branchTaken = 0;
-                                    }
-                                }
+                               
                                 llvm::BasicBlock *leftSucc = BI->getSuccessor(0);
                                 llvm::BasicBlock *rightSucc = BI->getSuccessor(1);
 
@@ -233,39 +212,84 @@ namespace {
                                     featureVector[38] = isRighLoopExiting;
                                 }
 
+                                // Create dominator trees for the left successor
                                 llvm::DominatorTree DT(*leftSucc->getParent());
                                 llvm::DominatorTree PDT(*leftSucc->getParent());
-                                bool isLeftPostDomByUnreachable = PDT.dominates(leftSucc, llvm::BasicBlock::Create(leftSucc->getContext(), "unreachable"));
-                                featureVector[39] = isLeftPostDomByUnreachable;
-                                // here we also need set other features related to the left and right successor of a branch
 
+                                // Check if left successor post-dominates an unreachable instruction
+                                // Get the terminator instruction for left successor
+                                llvm::Instruction *terminator = leftSucc->getTerminator();
+
+
+                                bool isLeftPostDomByUnreachable = false;
+                                if(leftSucc && llvm::isa<llvm::BasicBlock>(leftSucc)){
+                                    std::set<llvm::BasicBlock*> visitedBlocks; //keep track of visited blocks
+                                    std::vector<llvm::BasicBlock*> worklist;
+                                    
+                                    worklist.push_back(leftSucc);
+                                
+                                    while(!worklist.empty()){
+                                        llvm::BasicBlock* currentBlock = worklist.back();
+                                        worklist.pop_back();
+                                        
+                                        if(visitedBlocks.find(currentBlock) != visitedBlocks.end())
+                                        {
+                                            continue; // Skip already visited blocks
+                                        }
+                                        visitedBlocks.insert(currentBlock);
+
+                                        if(currentBlock->getTerminator() && llvm::isa<llvm::UnreachableInst>(currentBlock->getTerminator())){
+                                            if(PDT.dominates(currentBlock, leftSucc)){
+                                                    isLeftPostDomByUnreachable = true;
+                                                }
+                                            break;
+                                        }
+                                        for(llvm::BasicBlock* succ : successors(currentBlock))
+                                        {
+                                            worklist.push_back(succ);
+                                        }
+                                    }
+                                }
+                                featureVector[39] = isLeftPostDomByUnreachable;
+
+
+                                // Check if left successor terminates with unreachable instruction
                                 bool leftSuccEndsUnreachable = llvm::isa<llvm::UnreachableInst>(leftSucc->getTerminator());
                                 featureVector[40] = leftSuccEndsUnreachable;
 
-                            } else {
-                                branchTaken = 1;
-                            }
-
-                            // BI->getMetadata("branch_weights")
-                            // if (BI->getMetadata("branch_weights")) {
-                            //     auto *MD = BI->getMetadata("branch_weights");
-                            //     if (MD && MD->getNumOperands() > 1) {
-                            //         if (auto *MDVal = dyn_cast<ConstantAsMetadata>(MD->getOperand(0))) {
-                            //             if (auto *constInt = dyn_cast<ConstantInt>(MDVal->getValue())) {
-                            //                 branchTaken = constInt->getSExtValue() > 0 ? 1 : 0;
-                            //             }
-                            //         }
-                            //     }
-                            // }                   
-                            // llvm::outs() << "Feature Vector: ";
-                            for (size_t i = 0; i < featureVector.size(); ++i) {
-                                outFile << featureVector[i];
-                                if (i < featureVector.size() - 1) {
-                                    outFile << ",";
+                                llvm::Loop *L = LI.getLoopFor(&BB);
+                                if(L){
+                                    if (L->contains(leftSucc) || L->contains(rightSucc)) {
+                                        if (L->getHeader() == leftSucc || L->getHeader() == rightSucc) {
+                                            featureVector[41] = true;
+                                        }
+                                        if (!L->contains(leftSucc) || !L->contains(rightSucc)) {
+                                            featureVector[42] = true;
+                                        }
+                                    }
                                 }
-                            }
 
-                            outFile << "," << branchTaken << "\n";
+                                // BI->getMetadata("branch_weights")
+                                // if (BI->getMetadata("branch_weights")) {
+                                //     auto *MD = BI->getMetadata("branch_weights");
+                                //     if (MD && MD->getNumOperands() > 1) {
+                                //         if (auto *MDVal = dyn_cast<ConstantAsMetadata>(MD->getOperand(0))) {
+                                //             if (auto *constInt = dyn_cast<ConstantInt>(MDVal->getValue())) {
+                                //                 branchTaken = constInt->getSExtValue() > 0 ? 1 : 0;
+                                //             }
+                                //         }
+                                //     }
+                                // }                   
+                                // llvm::outs() << "Feature Vector: ";
+                                for (size_t i = 0; i < featureVector.size(); ++i) {
+                                    outFile << featureVector[i];
+                                    if (i < featureVector.size() - 1) {
+                                        outFile << ",";
+                                    }
+                                }
+
+                                outFile << "," << branchTaken << "\n";
+                            }
                         }
                     }
                 }

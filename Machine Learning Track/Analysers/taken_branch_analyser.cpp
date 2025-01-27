@@ -16,20 +16,21 @@
 #include "llvm/Analysis/BranchProbabilityInfo.h"
 #include "llvm/Passes/PassPlugin.h"
 #include "llvm/IR/IRBuilder.h"
-#include "llvm/IR/CFG.h" 
-#include "llvm/IR/Constant.h"
+#include "llvm/IR/CFG.h"
 #include "llvm/Passes/PassBuilder.h"
 #include <fstream>
 
 void analyzeControlFlow(llvm::Module &M) {
     // Use FunctionAnalysisManager
     llvm::FunctionAnalysisManager FAM;
+    llvm::ModuleAnalysisManager MAM;
     llvm::PassBuilder PB;
 
-    // Register the necessary analysis passes
+    // Register required analysis passes
+    PB.registerModuleAnalyses(MAM);
     PB.registerFunctionAnalyses(FAM);
-    std::ofstream file("instruction_branch_mapping.txt");
 
+    std::ofstream file("instruction_branch_mapping.txt");
     if (!file.is_open()) {
         llvm::errs() << "Error opening file for writing\n";
         return;
@@ -40,66 +41,67 @@ void analyzeControlFlow(llvm::Module &M) {
             continue; 
         }
 
-        // Retrieve Branch Probability Info using the new pass manager
+        // Retrieve prerequisite analyses
+        llvm::LoopAnalysis::Result &LoopInfo = FAM.getResult<llvm::LoopAnalysis>(F);
+        llvm::PostDominatorTree &PDT = FAM.getResult<llvm::PostDominatorTreeAnalysis>(F);
         llvm::BranchProbabilityInfo &BPI = FAM.getResult<llvm::BranchProbabilityAnalysis>(F);
 
         for (auto &BB : F) {
             for (auto &Inst : BB) {
                 if (llvm::BranchInst *BI = llvm::dyn_cast<llvm::BranchInst>(&Inst)) {
-
                     std::string instStr;
                     llvm::raw_string_ostream rso(instStr);
-                    Inst.print(rso);
+                    Inst.print(rso, false);
                     rso.flush();
 
                     if (BI->isConditional()) {
-
                         file << "Instruction: " << instStr << "\n";
-                        llvm::errs() << "Instruction:" << Inst << "\n";
+                        llvm::errs() << "Instruction: " << Inst << "\n";
+
                         llvm::BasicBlock *TrueSuccessor = BI->getSuccessor(0);
                         llvm::BasicBlock *FalseSuccessor = BI->getSuccessor(1);
-
                         llvm::BranchProbability prob = BPI.getEdgeProbability(&BB, TrueSuccessor);
-                        if ((prob.getNumerator() == 0) || (prob.getNumerator() < prob.getDenominator() / 2)) {
-                            std::string branchStr;
-                            llvm::raw_string_ostream rsoBranch(branchStr);
-                            FalseSuccessor->begin()->print(rsoBranch);
-                            rsoBranch.flush();
-                            file << "Branch:" << branchStr << "\n";
 
-                            llvm::errs() << "Branch:";
-                            llvm::errs() << *FalseSuccessor->begin() << "\n";
-                        } else {
-                            std::string branchStr;
-                            llvm::raw_string_ostream rsoBranch(branchStr);
-                            TrueSuccessor->begin()->print(rsoBranch);
-                            rsoBranch.flush();
-                            file << "Branch:" << branchStr << "\n";
+                        llvm::BasicBlock *likelyBranch = (prob.getNumerator() == 0 || prob.getNumerator() < prob.getDenominator() / 2)
+                                                              ? FalseSuccessor
+                                                              : TrueSuccessor;
 
-                            llvm::errs() << "Branch:";
-                            llvm::errs() << *TrueSuccessor->begin() << "\n";
-                        }
-                    } else {
-
-                        file << "Instruction: " << instStr << "\n";
-                        llvm::BasicBlock *Successor = BI->getSuccessor(0);
                         std::string branchStr;
                         llvm::raw_string_ostream rsoBranch(branchStr);
-                        Successor->begin()->print(rsoBranch);
+                        if (!likelyBranch->empty()) {
+                            likelyBranch->begin()->print(rsoBranch, false);
+                        }
                         rsoBranch.flush();
-                        file << "Branch:" << branchStr << "\n";
+                        file << "Branch: " << branchStr << "\n";
 
-                        llvm::errs() << "Instruction:" << Inst << "\n";
-                        llvm::errs() << "Branch:";
-                        llvm::errs() << *Successor->begin() << "\n";
-                    } 
+                        llvm::errs() << "Branch: ";
+                        if (!likelyBranch->empty()) {
+                            llvm::errs() << *likelyBranch->begin() << "\n";
+                        }
+                    } else {
+                        file << "Instruction: " << instStr << "\n";
+                        llvm::BasicBlock *Successor = BI->getSuccessor(0);
+
+                        std::string branchStr;
+                        llvm::raw_string_ostream rsoBranch(branchStr);
+                        if (!Successor->empty()) {
+                            Successor->begin()->print(rsoBranch, false);
+                        }
+                        rsoBranch.flush();
+                        file << "Branch: " << branchStr << "\n";
+
+                        llvm::errs() << "Instruction: " << Inst << "\n";
+                        llvm::errs() << "Branch: ";
+                        if (!Successor->empty()) {
+                            llvm::errs() << *Successor->begin() << "\n";
+                        }
+                    }
                 }
             }
         }
     }
 
     file.close();
-    llvm::outs();
 }
 
 int main(int argc, char **argv) {
