@@ -63,6 +63,7 @@ for root, dirs, files in os.walk(cpp_main_dir):
             # Generate edge attributes
             generate_dynamic_branching = GenerateDynamicBranching(cpp_file_path)
             edge_attr = generate_dynamic_branching.generate_edge_attr(nodes, edges)
+            edge_attr = torch.tensor(edge_attr, dtype=torch.float32)
 
             # print('edge_attr', edge_attr)
 

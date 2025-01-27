@@ -1,6 +1,18 @@
-Instruction:   br i1 %5, label %6, label %8, !prof !36
-Branch:   %7 = load i32, i32* %3, align 4
-Instruction:   br label %16
-Branch:   %17 = load i32, i32* %2, align 4
-Instruction:   br label %16
-Branch:   %17 = load i32, i32* %2, align 4
+Instruction:   br i1 %6, label %7, label %8, !prof !36
+Branch:   store i32 2, i32* %4, align 4
+Instruction:   br label %26
+Branch:   %27 = load i1, i1* %2, align 1
+Instruction:   br label %9
+Branch:   %10 = load i32, i32* %4, align 4
+Instruction:   br i1 %14, label %15, label %25, !prof !37
+Branch:   %16 = load i32, i32* %3, align 4
+Instruction:   br i1 %19, label %20, label %21, !prof !38
+Branch:   br label %22
+Instruction:   br label %26
+Branch:   %27 = load i1, i1* %2, align 1
+Instruction:   br label %22
+Branch:   %23 = load i32, i32* %4, align 4
+Instruction:   br label %9, !llvm.loop !39
+Branch:   %10 = load i32, i32* %4, align 4
+Instruction:   br label %26
+Branch:   %27 = load i1, i1* %2, align 1

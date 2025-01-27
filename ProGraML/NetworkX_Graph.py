@@ -47,7 +47,7 @@ class NetworkX_Graph:
 
         for _, attrs in self.networkx_graph.nodes(data=True):
             # node_features.append([attrs.get("type", 0), attrs.get("features").get("inst2vec_embedding")[0]])
-            node_features.append([attrs.get("features").get("inst2vec_embedding")])
+            node_features.append(attrs.get("features").get("inst2vec_embedding"))
 
         for _, _, attrs in self.networkx_graph.edges(data=True):
             # edge_features.append([attrs.get('flow'), attrs.get("branch_probability")])
