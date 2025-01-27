@@ -7,3 +7,5 @@ GNN/venv
 Inst2Vec/venv
 __pycache__/
 
+ProGraML/vocabulary/vocabulary/cutoff_stmts.csv
+ProGraML/vocabulary/vocabulary/cutoff_stmts_pickle
