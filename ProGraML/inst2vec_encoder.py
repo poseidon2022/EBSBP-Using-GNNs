@@ -13,24 +13,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 """A module for encoding LLVM-IR program graphs using inst2vec."""
 import pickle
 from typing import List, Optional
-
 import numpy as np
-
-from programl.proto import Node, ProgramGraph
 from programl.third_party.inst2vec import inst2vec_preprocess
-from programl.util.py import decorators
 from programl.util.py.runfiles_path import runfiles_path
-
-DICTIONARY = runfiles_path(
-    "programl/ir/llvm/internal/inst2vec_augmented_dictionary.pickle"
-)
-AUGMENTED_INST2VEC_EMBEDDINGS = runfiles_path(
-    "programl/ir/llvm/internal/inst2vec_augmented_embeddings.pickle"
-)
-
+from programl.proto import Node, ProgramGraph
+from programl.util.py import decorators
 
 def NodeFullText(node: Node) -> str:
     """Get the full text of a node, or an empty string if not set."""
@@ -38,16 +29,38 @@ def NodeFullText(node: Node) -> str:
         return node.features.feature["full_text"].bytes_list.value[0].decode("utf-8")
     return ""
 
+def get_embedding_map():
+    """ Get the embedding map from the pickle file """
+    with open('/home/mercury/Desktop/Final_Year_Project/Embedding/embedding_map.pickle', 'rb') as f:
+        hashmap = pickle.load(f)
+
+    return hashmap
 
 class Inst2vecEncoder(object):
     """An encoder for LLVM program graphs using inst2vec."""
 
     def __init__(self):
-        with open(str(DICTIONARY), "rb") as f:
-            self.dictionary = pickle.load(f)
+        self.dictionary = get_embedding_map() 
 
-        with open(str(AUGMENTED_INST2VEC_EMBEDDINGS), "rb") as f:
-            self.node_text_embeddings = pickle.load(f)
+        embedding_size = len(list(self.dictionary.values())[0])
+        self.type_embeddings = {
+            "i32": np.concatenate(([1.0], np.zeros(embedding_size - 1))).tolist(),
+            "i1": np.concatenate(([0.0, 1.0], np.zeros(embedding_size - 2))).tolist(),
+            "float": np.concatenate(([0.0, 0.0, 1.0], np.zeros(embedding_size - 3))).tolist(),
+            "unknown": np.zeros(embedding_size)  #### MORE TO BE ADDED HERE IF NECESSARY
+        }
+
+    def get_node_embedding(self, node):
+        # This will be used ONLY for non-instruction nodes
+        parts = node.split()
+        base_type = parts[0].replace("*", "")  # Remove pointer symbol if exists
+        identifier = parts[1] if len(parts) > 1 else "unknown"
+
+        # Get type embedding
+        type_embedding = self.type_embeddings.get(base_type, self.type_embeddings["unknown"])
+
+        # Combine all embeddings
+        return type_embedding
 
     def Encode(self, proto: ProgramGraph, ir: Optional[str] = None) -> ProgramGraph:
         """Pre-process the node text and set the text embedding index.
@@ -64,17 +77,13 @@ class Inst2vecEncoder(object):
         Returns:
           The input proto.
         """
+
         # Gather the instruction texts to pre-process.
         lines = [
             [NodeFullText(node)] for node in proto.node if node.type == Node.INSTRUCTION
         ]
 
         if ir:
-            # NOTE(github.com/ChrisCummins/ProGraML/issues/57): Extract the struct
-            # definitions from the IR and inline their definitions in place of the
-            # struct names. These is brittle string substitutions, in the future we
-            # should do this inlining in llvm2graph where we have a parsed
-            # llvm::Module.
             try:
                 structs = inst2vec_preprocess.GetStructTypes(ir)
                 for line in lines:
@@ -88,13 +97,10 @@ class Inst2vecEncoder(object):
             inst2vec_preprocess.PreprocessStatement(x[0] if len(x) else "")
             for x in preprocessed_lines
         ]
-
-        # Add the node features.
-        var_embedding = self.dictionary["!IDENTIFIER"]
-        const_embedding = self.dictionary["!IMMEDIATE"]
-        type_embedding = self.dictionary["!IMMEDIATE"]  # Types are immediates
-
+        
+        self.dictionary["!UNK"] = np.zeros(len(list(self.dictionary.values())[0])).tolist()
         text_index = 0
+
         for node in proto.node:
             if node.type == Node.INSTRUCTION:
                 text = preprocessed_texts[text_index]
@@ -103,34 +109,16 @@ class Inst2vecEncoder(object):
                 node.features.feature["inst2vec_preprocessed"].bytes_list.value.append(
                     text.encode("utf-8")
                 )
-                node.features.feature["inst2vec_embedding"].int64_list.value.append(
+                node.features.feature["inst2vec_embedding"].float_list.value.extend(
                     embedding
                 )
-            elif node.type == Node.VARIABLE:
-                node.features.feature["inst2vec_embedding"].int64_list.value.append(
-                    var_embedding
-                )
-            elif node.type == Node.CONSTANT:
-                node.features.feature["inst2vec_embedding"].int64_list.value.append(
-                    const_embedding
-                )
-            elif node.type == node_pb2.Node.TYPE:
-                node.features.feature["inst2vec_embedding"].int64_list.value.append(
-                    type_embedding
+            elif node.type == Node.VARIABLE or node.type == Node.CONSTANT or node.type == node_pb2.Node.TYPE:
+                embedding = self.get_node_embedding(node.features.feature["full_text"].bytes_list.value[0].decode("utf-8"))
+                node.features.feature["inst2vec_embedding"].float_list.value.extend(
+                    embedding
                 )
             else:
                 raise TypeError(f"Unknown node type {node}")
 
         proto.features.feature["inst2vec_annotated"].int64_list.value.append(1)
         return proto
-
-    @decorators.memoized_property
-    def embeddings_tables(self) -> List[np.array]:
-        """Return the embeddings tables."""
-        node_selector = np.vstack(
-            [
-                [1, 0],
-                [0, 1],
-            ]
-        ).astype(np.float64)
-        return [self.node_text_embeddings, node_selector]

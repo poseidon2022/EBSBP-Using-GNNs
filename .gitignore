@@ -1,6 +1,8 @@
+data/
 myenv/
-<<<<<<< HEAD
-__pycache__/
-=======
+Embedding/venv
 ProGraML/venv
->>>>>>> 8d83329 (add: edge embedding)
+GNN/venv
+Inst2Vec/venv
+__pycache__/
+

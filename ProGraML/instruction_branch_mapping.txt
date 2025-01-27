@@ -1,0 +1,6 @@
+Instruction:   br i1 %5, label %6, label %8, !prof !36
+Branch:   %7 = load i32, i32* %3, align 4
+Instruction:   br label %16
+Branch:   %17 = load i32, i32* %2, align 4
+Instruction:   br label %16
+Branch:   %17 = load i32, i32* %2, align 4
