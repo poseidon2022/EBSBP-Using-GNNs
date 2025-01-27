@@ -1,5 +1,6 @@
 from GNN import GNN
 from torch.utils.tensorboard import SummaryWriter
+import torch
 
 gnn = GNN()
 
