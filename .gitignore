@@ -2,6 +2,7 @@ data/
 myenv/
 Embedding/venv
 ProGraML/venv
+ProGraML/vocabulary
 GNN/venv
 Inst2Vec/venv
 __pycache__/
