@@ -46,13 +46,13 @@ for root, dirs, files in os.walk(cpp_main_dir):
             # print("Nodes: ", nodes)
             # print("Edges: ", edges)
 
-            hashmap = {}
-            for node in nodes:
-                hashmap[node[0]] = ''.join(node[1]['features']['full_text'])
-                print(node[0], node[1]['features']['full_text'], node[1]['features']['inst2vec_embedding'][:5])
+            # hashmap = {}
+            # for node in nodes:
+                # hashmap[node[0]] = ''.join(node[1]['features']['full_text'])
+                # print(node[0], node[1]['features']['full_text'], node[1]['features']['inst2vec_embedding'][:5])
             
-            for edge in edges:
-                print(edge[0], edge[1], edge[2]['flow'], edge[2]['branch_probability'])
+            # for edge in edges:
+            #     print(edge[0], edge[1], edge[2]['flow'], edge[2]['branch_probability'])
                 
             # Get vectorized edge list tensor
             edge_list = networkx_graph.generate_edge_list()
@@ -66,29 +66,34 @@ for root, dirs, files in os.walk(cpp_main_dir):
 
             # print('edge_attr', edge_attr)
 
-            for i, edge in enumerate(edges):
-                node_a = edge_list[0][i]
-                node_b = edge_list[1][i]
+            # for i, edge in enumerate(edges):
+            #     node_a = edge_list[0][i]
+            #     node_b = edge_list[1][i]
 
-                node_a_val = node_a.item() if isinstance(node_a, torch.Tensor) else node_a
-                node_b_val = node_b.item() if isinstance(node_b, torch.Tensor) else node_b
+            #     node_a_val = node_a.item() if isinstance(node_a, torch.Tensor) else node_a
+            #     node_b_val = node_b.item() if isinstance(node_b, torch.Tensor) else node_b
         
-                edge_flow = edge[2]['flow']
+            #     edge_flow = edge[2]['flow']
 
-                if edge_flow == 0:
-                    print("Edge attr: ", edge_attr[i]) 
-                    print(node_a_val, ' -> ', node_b_val)
-                    print(hashmap[node_a_val])
-                    print(hashmap[node_b_val])
-                    print('')
+            #     if edge_flow == 0:
+            #         print("Edge attr: ", edge_attr[i]) 
+            #         print(node_a_val, ' -> ', node_b_val)
+            #         print(hashmap[node_a_val])
+            #         print(hashmap[node_b_val])
+            #         print('')
 
-                else:
-                    if edge_attr[i] == 0:
-                        print("HOLY SHIT !!!!!")
-                        print('')
+            #     else:
+            #         if edge_attr[i] == 0:
+            #             print("HOLY SHIT !!!!!")
+            #             print('')
 
             # Create a PyTorch Geometric Data object
-            data = Data(x=node_features_tensor, edge_index=edge_list, edge_attr=edge_features_tensor)
+            print("node features tensor", node_features_tensor)
+            print("edge index", edge_list)
+            print("edge_attr", edge_features_tensor)
+            print('y', edge_attr)
+
+            data = Data(x=node_features_tensor, edge_index=edge_list, edge_attr=edge_features_tensor, y=edge_attr)
             print('data', data)
 
             # Save the data object
