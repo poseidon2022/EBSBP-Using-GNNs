@@ -4,6 +4,27 @@ import networkx as nx
 from matplotlib import pyplot as plt
 
 class NetworkX_Graph:
+    """
+    A class to represent and manipulate a program graph using NetworkX.
+    Attributes
+    ----------
+    networkx_graph : networkx.DiGraph
+        A directed graph representation of the program graph.
+    Methods
+    -------
+    __init__(program_graph)
+        Initializes the NetworkX_Graph with a given program graph.
+    get_nodes()
+        Returns the nodes of the graph with their attributes.
+    get_edges()
+        Returns the edges of the graph with their attributes.
+    embed_edges()
+        Embeds edge attributes with branch probabilities based on control flow.
+    generate_edge_list()
+        Generates a list of edges in the graph and returns it as a PyTorch tensor.
+    vectorize_graph()
+        Converts node and edge features into PyTorch tensors.
+    """
     def __init__(self, program_graph):
         self.networkx_graph = pg.to_networkx(program_graph)
     
@@ -46,11 +67,9 @@ class NetworkX_Graph:
         edge_features = []
 
         for _, attrs in self.networkx_graph.nodes(data=True):
-            # node_features.append([attrs.get("type", 0), attrs.get("features").get("inst2vec_embedding")[0]])
             node_features.append(attrs.get("features").get("inst2vec_embedding"))
 
         for _, _, attrs in self.networkx_graph.edges(data=True):
-            # edge_features.append([attrs.get('flow'), attrs.get("branch_probability")])
             edge_features.append([attrs.get("branch_probability")])
 
 
@@ -58,10 +77,3 @@ class NetworkX_Graph:
         edge_features_tensor = torch.tensor(edge_features, dtype=torch.float32)
 
         return node_features_tensor, edge_features_tensor
-
-    def save_graph_drawing(self):        
-        nx.draw(self.networkx_graph, with_labels=True, node_color="skyblue", font_weight="bold")
-        plt.savefig("graph.png")
-
-    def show_graph_drawing(self):
-        plt.show()

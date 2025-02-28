@@ -1,7 +1,27 @@
 import subprocess
+import warnings
 from collections import defaultdict
+import os
+
+# Suppress specific warnings from networkx
+warnings.filterwarnings("ignore", category=FutureWarning, module="networkx")
 
 class GenerateDynamicBranching:
+    """
+    A class to generate dynamic branching information from a given C++ file.
+    Attributes:
+    -----------
+    cpp_file_path : str
+        The path to the C++ file.
+    Methods:
+    --------
+    generate_branch_dict():
+        Generates a dictionary mapping instructions to branches by running an external script.
+    generate_node_full_text_mapping(nodes):
+        Generates a dictionary mapping node values to their full text features.
+    generate_edge_attr(nodes, edges):
+        Generates edge attributes based on the branching information and node features.
+    """
     def __init__(self, cpp_file_path):
         self.cpp_file_path = cpp_file_path    
 
@@ -11,7 +31,6 @@ class GenerateDynamicBranching:
         ]
         subprocess.run(compile_command, check=True)
         txt_file_path = "./instruction_branch_mapping.txt"
-        print(f"Generated branch txt report for {self.cpp_file_path}")
 
         instruction_branch_map = {}
         current_instruction = None
@@ -27,6 +46,7 @@ class GenerateDynamicBranching:
                         instruction_branch_map[current_instruction] = branch
                         current_instruction = None
 
+        os.remove(txt_file_path)
         return instruction_branch_map
 
     def generate_node_full_text_mapping(self, nodes):
@@ -51,10 +71,8 @@ class GenerateDynamicBranching:
         edge_attr = [1 for i in range(edge_length)]
         idx = 0
 
-        print(edge_count)
-
         for node_a, node_b, edge_properties in edges:
-            if edge_count[node_a] > 1 and edge_properties["flow"] == 0: # control flow
+            if edge_count[node_a] > 1 and edge_properties["flow"] == 0:
                 full_text_a = node_full_text_mapping[node_a]
                 full_text_b = node_full_text_mapping[node_b]
 

@@ -31,7 +31,7 @@ def NodeFullText(node: Node) -> str:
 
 def get_embedding_map():
     """ Get the embedding map from the pickle file """
-    with open('/home/mercury/Desktop/Final_Year_Project/Embedding/embedding_map.pickle', 'rb') as f:
+    with open('./embedding_map.pickle', 'rb') as f:
         hashmap = pickle.load(f)
 
     return hashmap

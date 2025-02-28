@@ -20,6 +20,19 @@
 #include "llvm/Passes/PassBuilder.h"
 #include <fstream>
 
+// TO COMPILE THIS FILE: clang-<CLANG-VERSION> -o taken_branch_analyser taken_branch_analyser.cpp $(llvm-config-<LLVM-VERSION> --cxxflags --ldflags --libs core analysis passes support) -I/usr/lib/llvm-<LLVM-VERSION>/include -lstdc++
+
+/**
+ * @brief Analyzes the control flow of the given LLVM module and writes the instruction-branch mapping to a file.
+ *
+ * This function uses the LLVM FunctionAnalysisManager and ModuleAnalysisManager to perform various analyses on the
+ * functions within the given LLVM module. It retrieves loop information, post-dominator tree, and branch probability
+ * information for each function. For each basic block and instruction, it identifies branch instructions and determines
+ * the likely branch based on branch probabilities. The results are written to a file named "instruction_branch_mapping.txt".
+ *
+ * @param M The LLVM module to analyze.
+ */
+ 
 void analyzeControlFlow(llvm::Module &M) {
     // Use FunctionAnalysisManager
     llvm::FunctionAnalysisManager FAM;
@@ -56,7 +69,6 @@ void analyzeControlFlow(llvm::Module &M) {
 
                     if (BI->isConditional()) {
                         file << "Instruction: " << instStr << "\n";
-                        llvm::errs() << "Instruction: " << Inst << "\n";
 
                         llvm::BasicBlock *TrueSuccessor = BI->getSuccessor(0);
                         llvm::BasicBlock *FalseSuccessor = BI->getSuccessor(1);
@@ -73,11 +85,6 @@ void analyzeControlFlow(llvm::Module &M) {
                         }
                         rsoBranch.flush();
                         file << "Branch: " << branchStr << "\n";
-
-                        llvm::errs() << "Branch: ";
-                        if (!likelyBranch->empty()) {
-                            llvm::errs() << *likelyBranch->begin() << "\n";
-                        }
                     } else {
                         file << "Instruction: " << instStr << "\n";
                         llvm::BasicBlock *Successor = BI->getSuccessor(0);
@@ -89,18 +96,11 @@ void analyzeControlFlow(llvm::Module &M) {
                         }
                         rsoBranch.flush();
                         file << "Branch: " << branchStr << "\n";
-
-                        llvm::errs() << "Instruction: " << Inst << "\n";
-                        llvm::errs() << "Branch: ";
-                        if (!Successor->empty()) {
-                            llvm::errs() << *Successor->begin() << "\n";
-                        }
                     }
                 }
             }
         }
     }
-
     file.close();
 }
 

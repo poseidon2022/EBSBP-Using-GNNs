@@ -11,7 +11,6 @@ import numpy as np
 from skipgram import SkipGram, SkipGramDataset
 
 from inst2vec import inst2vec_preprocess
-from runfiles_path import runfiles_path
 
 class Embedding():
     def __init__(self, cpp_path, llvm_path = None):
@@ -27,7 +26,7 @@ class Embedding():
         # Recursively search for .cpp files and compile them to .ll
         for root, dirs, files in os.walk(self.cpp_path):
             for file_name in files:
-                if file_name.endswith('.c'):  # Process only C++ files
+                if file_name.endswith('.cpp'):  # Process only C++ files
                     cpp_file_path = os.path.join(root, file_name)
                     
                     # Create the corresponding directory structure in llvm_path
@@ -62,7 +61,7 @@ class Embedding():
 
         preprocessed_texts = [full_text for full_text in preprocessed_texts if full_text]
 
-        processed_folder = os.path.join(os.getcwd(), "_test_data/processed_llvm")
+        processed_folder = os.path.join(os.getcwd(), "/home/mercury/Desktop/Final_Year_Project/_test_data/processed_llvm")
         if not os.path.exists(processed_folder):
             os.makedirs(processed_folder)
 
@@ -112,7 +111,7 @@ class Embedding():
                 curr += 1
                 if file_name.endswith('.ll'):
                     file_path = os.path.join(root, file_name)
-                    processed_file = f"_test_data/processed_llvm/processed_{file_name}"
+                    processed_file = f"/home/mercury/Desktop/Final_Year_Project/_test_data/processed_llvm/processed_{file_name}"
                     self.preprocess_llvm_ir(file_path, processed_file)
 
                     instructions = self.parse_llvm_ir(processed_file)

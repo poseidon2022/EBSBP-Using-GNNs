@@ -13,4 +13,12 @@ target_instruction = "switch i32 <%ID>, label <%ID> ["
 with open('/home/mercury/Desktop/Final_Year_Project/Embedding/embedding_map.pickle', 'rb') as f:
         hashmap = pickle.load(f)
 
-print(hashmap[target_instruction])
+with open('/home/mercury/Desktop/Final_Year_Project/_test_data/processed_llvm/processed_test.ll', 'r') as file, \
+        open('/home/mercury/Desktop/Final_Year_Project/_test_data/processed_embedding/text_embedding.txt', 'w') as output_file:
+    for line in file:
+           instruction = line.strip()
+           if instruction in hashmap:
+                  output_file.write(f"Embedding: {hashmap[instruction][:5]}\n")
+           else:
+                  output_file.write(f"Instruction: {instruction} not found in hashmap\n")
+# print(hashmap[target_instruction])
