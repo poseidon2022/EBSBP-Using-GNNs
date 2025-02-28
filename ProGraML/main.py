@@ -58,15 +58,17 @@ def main(args):
         - Optionally visualizes the graph if the plot argument is provided.
         - Optionally saves node details to a .txt file if the nodes_report argument is provided.
     """
+    DATA_DIRECTORY = os.path.relpath('../_test_data')
+
     # directory containing the C++ programs
-    cpp_main_dir = os.path.relpath('../_test_data/cpp_program_corpus')
+    cpp_main_dir = os.path.join(DATA_DIRECTORY, 'cpp_program_corpus')
 
     # directory to save the data objects
-    save_dir = os.path.relpath('../_test_data/graph')
+    save_dir = os.path.join(DATA_DIRECTORY, 'graph')
 
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
-
+        
     # count the number of .cpp files
     cpp_file_count = 0
     for root, dirs, files in os.walk(cpp_main_dir):

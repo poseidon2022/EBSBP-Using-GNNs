@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # This script generates and analyzes taken branches for a given C++ file.
 # Usage: ./taken_branch_generator.sh <path_to_cpp_file>
 #
@@ -13,7 +15,6 @@
 # 6. Compiles an optimized version of the C++ file using the profile data.
 # 7. Runs the taken_branch_analyser on the optimized LLVM file.
 # 8. Cleans up by removing the binary file, optimized LLVM file, and profile data files.
-#!/bin/bash
 
 if [ "$#" -ne 1 ]; then
     echo "Usage: $0 <path_to_cpp_file>"
@@ -30,7 +31,7 @@ if ! clang -fprofile-instr-generate -fcoverage-mapping -I ./ -o "$filename" "$fi
 fi
 
 LLVM_PROFILE_FILE="${filename}.profraw" "$filename" > /dev/null || { echo "Execution failed for $filename"; exit 1; }
-if ! llvm-profdata-14 merge -o "${filename}.profdata" "${filename}.profraw" ; then
+if ! llvm-profdata-15 merge -o "${filename}.profdata" "${filename}.profraw" ; then
     echo "Failed to merge profile data for $filename"
     exit 1
 fi
