@@ -12,10 +12,22 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 class GNN:
-    # self __init__(self):
-    #     pass
-
     def load_data(self, data_dir, batch_size=32, shuffle=True, test_split=0.1, val_split=0.1):        
+        """
+        Loads graph data from a specified directory, splits it into training, validation, and test sets,
+        and returns DataLoaders for each set.
+        Args:
+            data_dir (str): The directory containing the .pt files with graph data.
+            batch_size (int, optional): The number of samples per batch to load. Default is 32.
+            shuffle (bool, optional): Whether to shuffle the data before splitting. Default is True.
+            test_split (float, optional): The proportion of the dataset to include in the test split. Default is 0.1.
+            val_split (float, optional): The proportion of the dataset to include in the validation split. Default is 0.1.
+        Returns:
+            tuple: A tuple containing three DataLoaders:
+                - train_loader (DataLoader): DataLoader for the training set.
+                - val_loader (DataLoader): DataLoader for the validation set.
+                - test_loader (DataLoader): DataLoader for the test set.
+        """
         graph_data = []
 
         # Iterate through all .pt files in the directory
@@ -54,6 +66,38 @@ class GNN:
 
 
     def train(self, train_loader, writer, val_loader, num_epochs=100, patience=10):
+        """
+        Train the Graph Neural Network (GNN) model.
+        Args:
+            train_loader (DataLoader): DataLoader for the training dataset.
+            writer (SummaryWriter): TensorBoard SummaryWriter for logging.
+            val_loader (DataLoader): DataLoader for the validation dataset.
+            num_epochs (int, optional): Number of epochs to train the model. Default is 100.
+            patience (int, optional): Number of epochs to wait for improvement in validation accuracy before early stopping. Default is 10.
+        Returns:
+            model (GNNStack): The trained GNN model with the best validation accuracy.
+        The function performs the following steps:
+        1. Initializes the GNN model with the specified input, hidden, and output dimensions.
+        2. Sets up the optimizer (Adam) and learning rate scheduler (ReduceLROnPlateau).
+        3. Defines the loss criterion using the model's loss function.
+        4. Initializes variables to track the best validation accuracy and early stopping patience counter.
+        5. Iterates over the specified number of epochs:
+            a. Sets the model to training mode.
+            b. Iterates over batches in the training DataLoader:
+                i. Moves the batch to the GPU if available.
+                ii. Performs a forward pass to get predictions.
+                iii. Computes the loss and performs backpropagation.
+                iv. Updates the model parameters using the optimizer.
+                v. Accumulates the total loss for the epoch.
+            c. Evaluates the model on the validation DataLoader to get validation accuracy.
+            d. Logs the training loss and validation accuracy to TensorBoard.
+            e. Checks for improvement in validation accuracy:
+                i. If improved, saves the model state and resets the patience counter.
+                ii. If not improved, increments the patience counter.
+            f. If the patience counter exceeds the specified patience, stops training early.
+            g. Adjusts the learning rate based on validation accuracy using the scheduler.
+        6. Loads the best model state (with the highest validation accuracy) and returns it.
+        """
         # Initialize the model
         model = GNNStack(
             input_dim=train_loader.dataset[0].x.size(1),  # Input dimension from dataset
@@ -111,6 +155,26 @@ class GNN:
         return model
 
     def test(self, loader, model):
+        """
+        Evaluate the performance of the given model on the provided data loader.
+
+        This method sets the model to evaluation mode and iterates over the data
+        loader to make predictions. It then calculates and prints various evaluation
+        metrics including precision, recall, F1-score, and accuracy. Additionally,
+        it computes the confusion matrix for the predictions.
+
+        Args:
+            loader (torch.utils.data.DataLoader): DataLoader containing the dataset to evaluate.
+            model (torch.nn.Module): The model to be evaluated.
+
+        Returns:
+            dict: A dictionary containing the following evaluation metrics:
+                - "accuracy" (float): The accuracy of the model.
+                - "precision" (float): The precision of the model.
+                - "recall" (float): The recall of the model.
+                - "f1" (float): The F1-score of the model.
+                - "confusion_matrix" (numpy.ndarray): The confusion matrix of the predictions.
+        """
         model.eval()  # Set the model to evaluation mode
         all_preds = []
         all_labels = []

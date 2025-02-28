@@ -2,6 +2,30 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 class VisualizeResult:
+    """
+    A class used to visualize the performance metrics and confusion matrix of a model.
+
+    Attributes
+    ----------
+    accuracy : float
+        The accuracy score of the model.
+    precision : float
+        The precision score of the model.
+    recall : float
+        The recall score of the model.
+    f1 : float
+        The F1 score of the model.
+    confusion_matrix : array-like
+        The confusion matrix of the model's predictions.
+
+    Methods
+    -------
+    plot_metrics():
+        Plots a bar chart of the performance metrics (accuracy, precision, recall, F1-score).
+    
+    plot_confusion_matrix():
+        Plots a heatmap of the confusion matrix and a line plot of predicted vs actual values.
+    """
     def __init__(self, accuracy, precision, recall, f1, confusion_matrix):
         self.accuracy = accuracy
         self.precision = precision

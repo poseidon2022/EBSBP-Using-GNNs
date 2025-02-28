@@ -5,6 +5,24 @@ from torch_geometric.nn import GCNConv, GINConv
 
 class GNNStack(nn.Module):
     def __init__(self, input_dim, hidden_dim, output_dim, task='edge', num_layers=3):
+        """
+        Initializes the GNNStack model.
+
+        Args:
+            input_dim (int): Dimension of the input features.
+            hidden_dim (int): Dimension of the hidden layers.
+            output_dim (int): Dimension of the output features.
+            task (str, optional): Task type, either 'edge' for edge prediction or 'node' for node classification. Defaults to 'edge'.
+            num_layers (int, optional): Number of GNN layers. Defaults to 3.
+
+        Attributes:
+            task (str): Task type.
+            num_layers (int): Number of GNN layers.
+            convs (nn.ModuleList): List of convolutional layers.
+            lns (nn.ModuleList): List of layer normalization layers.
+            post_mp (nn.Sequential): Post-message-passing layers for task-specific output.
+            dropout (float): Dropout rate.
+        """
         super(GNNStack, self).__init__()
         self.task = task
         self.num_layers = num_layers
@@ -37,7 +55,32 @@ class GNNStack(nn.Module):
         self.dropout = 0.25
 
     def build_conv_model(self, input_dim, hidden_dim):
-        """Builds the graph convolutional layer based on the task."""
+        """
+        Builds the graph convolutional layer based on the specified task.
+
+        Parameters:
+        -----------
+        input_dim : int
+            The dimension of the input features.
+        hidden_dim : int
+            The dimension of the hidden layer.
+
+        Returns:
+        --------
+        torch_geometric.nn.conv.MessagePassing
+            A graph convolutional layer appropriate for the specified task.
+            If the task is 'node' or 'edge', a GCNConv layer is returned.
+            Otherwise, a GINConv layer is returned, which consists of a 
+            sequential neural network with two linear transformations and 
+            a ReLU activation in between.
+
+        Notes:
+        ------
+        - GCNConv (Graph Convolutional Network) is used for node and edge 
+          level tasks.
+        - GINConv (Graph Isomorphism Network) is used for other tasks and 
+          is more expressive in distinguishing graph structures.
+        """
         if self.task in ['node', 'edge']:
             return GCNConv(input_dim, hidden_dim)  # Graph Convolution
         else:
@@ -48,6 +91,32 @@ class GNNStack(nn.Module):
             ))  # Graph Isomorphism Network
 
     def forward(self, data):
+        """
+        Perform a forward pass through the GNN model.
+
+        Parameters:
+        -----------
+        data : torch_geometric.data.Data
+            The input data containing node features, edge indices, and optionally edge attributes.
+            - data.x : torch.Tensor
+                Node feature matrix with shape [num_nodes, num_node_features].
+            - data.edge_index : torch.Tensor
+                Graph connectivity in COO format with shape [2, num_edges].
+            - data.edge_attr : torch.Tensor, optional
+                Edge feature matrix with shape [num_edges, num_edge_features].
+
+        Returns:
+        --------
+        torch.Tensor
+            The probabilities of edge existence after passing through the GNN model, with shape [num_edges, 1].
+
+        Notes:
+        ------
+        - The method iterates through the GNN layers, applying convolution, ReLU activation, dropout, and layer normalization.
+        - If edge attributes are provided, the first feature is assumed to be the edge weight and is used in the convolution.
+        - Edge embeddings are computed by concatenating the source and target node embeddings.
+        - Post-message-passing layers are applied to the edge embeddings to predict edge existence probabilities.
+        """
         x, edge_index = data.x, data.edge_index
         edge_attr = data.edge_attr if 'edge_attr' in data else None
 
