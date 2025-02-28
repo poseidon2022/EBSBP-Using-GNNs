@@ -3,6 +3,24 @@ import torch.nn as nn
 from torch.utils.data import DataLoader, Dataset
 
 class SkipGram(nn.Module):
+    """
+    SkipGram model for word embeddings.
+
+    Args:
+        vocab_size (int): Size of the vocabulary.
+        embed_size (int): Dimensionality of the embeddings.
+
+    Methods:
+        forward(center, context):
+            Computes the dot product of the center and context word embeddings.
+
+            Args:
+                center (Tensor): Tensor containing the indices of the center words.
+                context (Tensor): Tensor containing the indices of the context words.
+
+            Returns:
+                Tensor: Tensor containing the dot product scores of the center and context embeddings.
+    """
     def __init__(self, vocab_size, embed_size):
         super(SkipGram, self).__init__()
         self.embedding = nn.Embedding(vocab_size, embed_size)

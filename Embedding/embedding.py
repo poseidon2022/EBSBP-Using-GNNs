@@ -9,13 +9,46 @@ from torch.utils.data import DataLoader, Dataset
 import pickle
 import numpy as np
 from skipgram import SkipGram, SkipGramDataset
-
 from inst2vec import inst2vec_preprocess
 
 class Embedding():
-    def __init__(self, cpp_path, llvm_path = None):
-        self.cpp_path = cpp_path
-        self.llvm_path = llvm_path
+    """
+    A class to handle the embedding of LLVM Intermediate Representation (IR) from C++ source files.
+    Attributes:
+    -----------
+    cpp_path : str
+        Path to the directory containing C++ source files.
+    llvm_path : str
+        Path to the directory where LLVM IR files will be stored.
+    processed_llvm_path : str
+        Path to the directory where processed LLVM IR files will be stored.
+    all_instructions : list
+        List to store all parsed LLVM instructions.
+    Methods:
+    --------
+    generate_ir():
+        Compiles C++ source files to LLVM IR files and stores them in the specified directory.
+    preprocess_llvm_ir(input_file, output_file):
+        Preprocesses an LLVM IR file and saves the preprocessed output to a specified file.
+    parse_llvm_ir(file_path):
+        Parses an LLVM IR file and extracts the instructions.
+    generate_xfg(instructions):
+        Generates an execution flow graph (XFG) from a list of LLVM instructions.
+    extract_context_pairs(graph, context_size):
+        Extracts context pairs from an execution flow graph within a specified context size.
+    get_context_pairs(context_size):
+        Retrieves all context pairs from the LLVM IR files within a specified context size.
+    train(embed_size=100, context_size=10, learning_rate=0.01, epochs=10):
+        Trains a SkipGram model to generate embeddings for LLVM instructions.
+    get_embedding_map():
+        Retrieves the embedding map from the trained model.
+    store_embedding_map():
+        Stores the embedding map to a file for later use.
+    """
+    def __init__(self, data_path):
+        self.cpp_path = os.path.join(data_path, "cpp_program_corpus")
+        self.llvm_path = os.path.join(data_path, "llvm")
+        self.processed_llvm_path = os.path.join(data_path, "processed_llvm")
         self.all_instructions = []
 
     def generate_ir(self):
@@ -23,6 +56,7 @@ class Embedding():
         if not os.path.exists(self.llvm_path):
             os.makedirs(self.llvm_path)
 
+        print("\nCOMPILING C++ SOURCE FILES TO LLVM IR...\n")
         # Recursively search for .cpp files and compile them to .ll
         for root, dirs, files in os.walk(self.cpp_path):
             for file_name in files:
@@ -61,7 +95,7 @@ class Embedding():
 
         preprocessed_texts = [full_text for full_text in preprocessed_texts if full_text]
 
-        processed_folder = os.path.join(os.getcwd(), "/home/mercury/Desktop/Final_Year_Project/_test_data/processed_llvm")
+        processed_folder = os.path.join(os.getcwd(), self.processed_llvm_path)
         if not os.path.exists(processed_folder):
             os.makedirs(processed_folder)
 
@@ -98,20 +132,16 @@ class Embedding():
                     pairs.append((node, neighbor))
         return pairs
 
-    def train(self, embed_size = 100, context_size = 10, learning_rate = 0.01, epochs = 10):
-        # Aggregate instructions from all files
+    def get_context_pairs(self, context_size):
         all_pairs = []
 
         for root, dirs, files in os.walk(self.llvm_path):
             total = len(files)
-            curr = 1
 
             for file_name in files:
-                print(curr, ' out of ', total)
-                curr += 1
                 if file_name.endswith('.ll'):
                     file_path = os.path.join(root, file_name)
-                    processed_file = f"/home/mercury/Desktop/Final_Year_Project/_test_data/processed_llvm/processed_{file_name}"
+                    processed_file = f"{self.processed_llvm_path}/processed_{file_name}"
                     self.preprocess_llvm_ir(file_path, processed_file)
 
                     instructions = self.parse_llvm_ir(processed_file)
@@ -122,6 +152,12 @@ class Embedding():
 
                     # Add the context pairs for this file to the global list
                     all_pairs.extend(pairs)
+
+        return all_pairs[:]
+
+    def train(self, embed_size = 100, context_size = 10, learning_rate = 0.01, epochs = 10):
+        # Get all context pairs
+        all_pairs = self.get_context_pairs(context_size)
 
         if len(all_pairs) == 0:
             print("No context pairs found. Please check the data processing steps.")
@@ -137,6 +173,7 @@ class Embedding():
         criterion = nn.BCEWithLogitsLoss()
         optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 
+        print("\nTRAINING SKIP-GRAM MODEL...\n")
         # Training loop
         for epoch in range(epochs):
             total_loss = 0
