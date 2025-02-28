@@ -1,6 +1,4 @@
 from sklearn.metrics import precision_score, recall_score, f1_score, confusion_matrix
-import matplotlib.pyplot as plt
-import seaborn as sns
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -111,34 +109,6 @@ class GNN:
         # Load the best model and return
         model.load_state_dict(torch.load(best_model_path))
         return model
-
-    def test(self, loader, model):
-        model.eval()  # Set the model to evaluation mode
-        all_preds = []
-        all_labels = []
-
-        for batch in loader:
-            batch = batch.to(device)  # Move batch to the same device as the model
-            with torch.no_grad():
-                pred = model(batch).squeeze()  # Forward pass
-
-                # Convert predictions to binary (0 or 1) based on threshold
-                all_preds.append((pred > 0.5).long().cpu())
-                all_labels.append(batch.y.cpu())  # Ensure labels are on CPU
-
-        # Concatenate all predictions and labels
-        all_preds = torch.cat(all_preds).numpy()
-        all_labels = torch.cat(all_labels).numpy()
-
-        # Calculate evaluation metrics
-        precision = precision_score(all_labels, all_preds, zero_division=0)
-        recall = recall_score(all_labels, all_preds, zero_division=0)
-        f1 = f1_score(all_labels, all_preds, zero_division=0)
-        accuracy = (all_preds == all_labels).mean()
-
-        # Print and return results
-        print(f"Precision: {precision:.4f}, Recall: {recall:.4f}, F1-Score: {f1:.4f}, Accuracy: {accuracy:.4f}")
-        return {"accuracy": accuracy, "precision": precision, "recall": recall, "f1": f1}
 
     def test(self, loader, model):
         model.eval()  # Set the model to evaluation mode

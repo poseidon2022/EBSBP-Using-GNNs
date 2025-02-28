@@ -17,6 +17,7 @@ class VisualizeResult:
         plt.ylabel('Scores')
         plt.title('Performance Metrics')
         plt.ylim(0, 1) 
+        plt.savefig('/home/mercury/Desktop/Final_Year_Project/GNN/performance_metrics.png')
         plt.show()
 
     def plot_confusion_matrix(self):
@@ -36,4 +37,5 @@ class VisualizeResult:
         plt.xlabel('Edge Index')
         plt.ylabel('Prediction (0 or 1)')
         plt.legend()
+        plt.savefig('/home/mercury/Desktop/Final_Year_Project/GNN/confusion_mx.png')
         plt.show()
