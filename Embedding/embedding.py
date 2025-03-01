@@ -78,7 +78,12 @@ class Embedding():
                     ]
 
                     # Run the command
-                    subprocess.run(compile_command, check=True)
+                    try:
+                        subprocess.run(compile_command, check=True)
+                    except:
+                        print(f"Compilation failed for pogram {file_name}")
+                        continue
+                
                     print(f"Compiled {cpp_file_path}")
 
     def preprocess_llvm_ir(self, input_file, output_file):
