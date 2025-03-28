@@ -178,7 +178,7 @@ class Embedding():
 
         # Model setup
         vocab_size = len(set(self.all_instructions))
-        model = SkipGram(vocab_size, embed_size)
+        model = SkipGram(vocab_size, embed_size).to(device)
         criterion = nn.BCEWithLogitsLoss()
         optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 
@@ -189,11 +189,11 @@ class Embedding():
             for center, context in data_loader:
                 optimizer.zero_grad()
 
-                center = center.clamp(0, vocab_size - 1)  
-                context = context.clamp(0, vocab_size - 1) 
+                center = center.clamp(0, vocab_size - 1).to(device)  
+                context = context.clamp(0, vocab_size - 1).to(device) 
                 
                 score = model(center, context)
-                loss = criterion(score, torch.ones_like(score))  # Binary classification
+                loss = criterion(score, torch.ones_like(score)).to(device)  # Binary classification
                 loss.backward()
                 optimizer.step()
                 total_loss += loss.item()
