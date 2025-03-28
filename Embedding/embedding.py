@@ -161,6 +161,10 @@ class Embedding():
         return all_pairs[:]
 
     def train(self, embed_size = 100, context_size = 10, learning_rate = 0.01, epochs = 10):
+        # Check if CUDA is available
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        print(f"Using device: {device}")
+
         # Get all context pairs
         all_pairs = self.get_context_pairs(context_size)
 
