@@ -23,7 +23,7 @@ class ProgramGraph:
         Converts the program graph to a NetworkX graph.
     """
     def __init__(self, program):
-        self.program_graph = pg.from_cpp(program)
+        self.program_graph = pg.from_llvm_ir(program)
 
     def save_graph(self, file_name):
         pg.save_graphs(file_name, [self.program_graph])

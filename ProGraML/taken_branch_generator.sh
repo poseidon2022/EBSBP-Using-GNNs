@@ -1,52 +1,50 @@
 #!/bin/bash
 
-# This script generates and analyzes taken branches for a given C++ file.
-# Usage: ./taken_branch_generator.sh <path_to_cpp_file>
-#
+# This script analyzes taken branches for a given LLVM IR file.
+
+# Usage:
+#   ./taken_branch_generator.sh <path_to_llvm_ir_file>
+
 # Arguments:
-#   <path_to_cpp_file> - Path to the C++ file to be processed.
-#
-# Steps:
-# 1. Checks if the correct number of arguments is provided.
-# 2. Extracts the filename without extension from the provided file path.
-# 3. Compiles the C++ file with profiling instrumentation using clang.
-# 4. Executes the compiled binary to generate profiling data.
-# 5. Merges the generated profiling data into a single profile data file.
-# 6. Compiles an optimized version of the C++ file using the profile data.
-# 7. Runs the taken_branch_analyser on the optimized LLVM file.
-# 8. Cleans up by removing the binary file, optimized LLVM file, and profile data files.
+#   <path_to_llvm_ir_file> - Path to the LLVM IR file to be processed.
+
+# Description:
+#   This script automates the process of analyzing an LLVM IR file
+#   using the `taken_branch_analyser` tool. It performs the following steps:
+
+#   1. Validates the input arguments to ensure a single file path is provided.
+#   2. Extracts the filename without its extension from the provided file path.
+#   3. Verifies that the input file has a `.ll` extension.
+#   4. Ensures the input file exists.
+#   5. Runs the `taken_branch_analyser` tool on the input LLVM IR file.
+#   6. Cleans up temporary files, if any, generated during the process.
+
+# Prerequisites:
+#   - The `taken_branch_analyser` tool must be present in the current directory and executable.
 
 if [ "$#" -ne 1 ]; then
-    echo "Usage: $0 <path_to_cpp_file>"
+    echo "Usage: $0 <path_to_llvm_ir_file>"
     exit 1
 fi
 
 file="$1"
 filename="${file%.*}"
 
-# echo "Processing $file"
-if ! clang -fprofile-instr-generate -fcoverage-mapping -I ./ -o "$filename" "$file" -lm -lstdc++ 2>/dev/null; then
-    echo "Failed to compile $file"
+# Check if the file has a .ll extension
+if [[ "$file" != *.ll ]]; then
+    echo "Error: Input file must be an LLVM IR file with .ll extension (got $file)"
     exit 1
 fi
 
-LLVM_PROFILE_FILE="${filename}.profraw" "$filename" > /dev/null || { echo "Execution failed for $filename"; exit 1; }
-if ! llvm-profdata-15 merge -o "${filename}.profdata" "${filename}.profraw" ; then
-    echo "Failed to merge profile data for $filename"
+# Verify the file exists
+if [ ! -f "$file" ]; then
+    echo "Error: File $file does not exist"
     exit 1
 fi
 
-# echo "Compiling optimized version for $filename"
-
-if ! clang -fprofile-instr-use="${filename}.profdata" -S -emit-llvm -I ./ -o "${filename}_optimized_program.ll" "$file" -lm -lstdc++ 2>/dev/null; then
-    echo "Failed to compile optimized version for $filename"
-    exit 1
-fi
-
+# Run taken_branch_analyser on the input IR
 chmod +x ./taken_branch_analyser
-./taken_branch_analyser "${filename}_optimized_program.ll"
-
-# Delete the binary file and the optimized LLVM file
-rm -f "$filename" "${filename}_optimized_program.ll"
-rm -f "${filename}.profraw" "${filename}.profdata"
-rm -f "${filename}.profraw" "${filename}.profraw"
+if ! ./taken_branch_analyser "$file"; then
+    echo "Failed to analyze $file with taken_branch_analyser"
+    exit 1
+fi

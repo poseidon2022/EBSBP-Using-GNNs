@@ -7,6 +7,7 @@ from torch_geometric.utils.convert import to_networkx
 from matplotlib import pyplot as plt
 import os
 import argparse
+import shutil
 
 def plot_and_save_graph(data, save_dir, file_name):
     # create a subdirectory for plots
@@ -34,7 +35,7 @@ def save_node_details_to_txt(nodes, save_dir, file_name):
             output_file.write(f"Instruction: {node[1]['features']['full_text']}\n")
             output_file.write(f"Embedding: {node[1]['features']['inst2vec_embedding'][:]}\n")
             output_file.write("\n")
-
+            
 def main(args):
     """
     Main function to process C++ files, generate program graphs, and save them as PyTorch Geometric Data objects.
@@ -60,40 +61,42 @@ def main(args):
     """
     DATA_DIRECTORY = os.path.relpath('../_test_data')
 
-    # directory containing the C++ programs
-    cpp_main_dir = os.path.join(DATA_DIRECTORY, 'cpp_program_corpus')
+    # directory containing the llvm programs
+    llvm_main_dir = os.path.join(DATA_DIRECTORY, 'llvm')
 
-    # directory to save the data objects
+    # base directory to save the data objects
     save_dir = os.path.join(DATA_DIRECTORY, 'graph')
 
-    if not os.path.exists(save_dir):
-        os.makedirs(save_dir)
-        
-    # count the number of .cpp files
-    cpp_file_count = 0
-    for root, dirs, files in os.walk(cpp_main_dir):
-        for file_name in files:
-            if file_name.endswith('.cpp'):
-                cpp_file_count += 1
+    # if the graph directory exists, delete it and start fresh
+    if os.path.exists(save_dir):
+        shutil.rmtree(save_dir)
+    os.makedirs(save_dir)
 
-    print(f"NUMBER OF PROCESSABLE .cpp FILES DETECTED: {cpp_file_count} \n")
+    # count the number of .ll files
+    llvm_file_count = 0
+    for root, dirs, files in os.walk(llvm_main_dir):
+        for file_name in files:
+            if file_name.endswith('.ll'):
+                llvm_file_count += 1
+
+    print(f"NUMBER OF PROCESSABLE .ll FILES DETECTED: {llvm_file_count} \n")
     COUNT = 1
 
-    # recursively search for .cpp files and process them
-    for root, dirs, files in os.walk(cpp_main_dir):
+    # recursively search for .ll files and process them
+    for root, dirs, files in os.walk(llvm_main_dir):
         for file_name in files:
-            if file_name.endswith('.cpp'):  # Process only C++ files
-                print(f"Processing {COUNT}/{cpp_file_count} files")
+            if file_name.endswith('.ll'):  # Process only .ll files
+                print(f"Processing {COUNT}/{llvm_file_count} files")
                 COUNT += 1
 
-                cpp_file_path = os.path.join(root, file_name)
+                llvm_file_path = os.path.join(root, file_name)
                 
                 # read the C++ program
-                with open(cpp_file_path, 'r') as cpp_file:
-                    cpp_program = cpp_file.read()
+                with open(llvm_file_path, 'r') as llvm_file:
+                    llvm_program = llvm_file.read()
 
                 # create a ProgramGraph object from the C++ program
-                PROGRAM_GRAPH = ProgramGraph(cpp_program)
+                PROGRAM_GRAPH = ProgramGraph(llvm_program)
 
                 # encode the program graph with Inst2vec
                 encode_graph = PROGRAM_GRAPH.encode_graph()
@@ -114,29 +117,35 @@ def main(args):
                 node_features_tensor, edge_features_tensor = networkx_graph.vectorize_graph()
 
                 # generate edge attributes
-                generate_dynamic_branching = GenerateDynamicBranching(cpp_file_path)
+                generate_dynamic_branching = GenerateDynamicBranching(llvm_file_path)
                 edge_attr = generate_dynamic_branching.generate_edge_attr(nodes, edges)
                 edge_attr = torch.tensor(edge_attr, dtype=torch.float32)
 
                 # create a PyTorch Geometric Data object
                 data = Data(x=node_features_tensor, edge_index=edge_list, edge_attr=edge_features_tensor, y=edge_attr)
 
-                # save the data object
-                relative_path = os.path.relpath(root, cpp_main_dir)
-                save_subdir = os.path.join(save_dir, relative_path)
-                if not os.path.exists(save_subdir):
-                    os.makedirs(save_subdir)
-                data_file_path = os.path.join(save_subdir, f'{os.path.splitext(file_name)[0]}.pt')
+                # preserve relative folder structure
+                relative_path = os.path.relpath(root, llvm_main_dir)
+
+                # create corresponding directory structure in the graph folder
+                graph_subdir = os.path.join(save_dir, relative_path)
+                pts_dir = os.path.join(graph_subdir, 'pts')
+                if not os.path.exists(pts_dir):
+                    os.makedirs(pts_dir)
+
+                # save the data object in the pts subdirectory
+                data_file_path = os.path.join(pts_dir, f'{os.path.splitext(file_name)[0]}.pt')
                 torch.save(data, data_file_path)
                 print(f"Generated ProGraML graph for {file_name} \n")
                 
-                # optionally, visualize the graph
+                # optionally, visualize the graph and save in the plots subdirectory
                 if args.plot:
-                    plot_and_save_graph(data, save_subdir, file_name)
+                    plot_and_save_graph(data, graph_subdir, file_name)
 
-                # optionally, save node details to a .txt file
+                # optionally, save node details to a .txt file in the text_reports subdirectory
                 if args.nodes_report:
-                    save_node_details_to_txt(nodes, save_subdir, file_name)
+                    save_node_details_to_txt(nodes, graph_subdir, file_name)
+    print("All files processed successfully!!! 😊")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Process C++ files and generate ProGraML graphs.")
