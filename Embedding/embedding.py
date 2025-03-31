@@ -53,8 +53,8 @@ class Embedding():
 
         # Mapping of file extensions to language and compiler commands
         self.language_compilers = {
-            '.c': ['clang', '-S', '-emit-llvm'],
-            '.cpp': ['clang', '-S', '-emit-llvm'],
+            '.c': ['/usr/local/llvm-10/bin/clang', '-S', '-emit-llvm'],
+            '.cpp': ['/usr/local/llvm-10/bin/clang', '-S', '-emit-llvm'],
             '.swift': ['swiftc', '-emit-ir'],
             '.rs': ['rustc', '--emit=llvm-ir'],
         }
