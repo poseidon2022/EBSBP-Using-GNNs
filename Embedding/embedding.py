@@ -16,7 +16,7 @@ class Embedding():
     A class to handle the embedding of LLVM Intermediate Representation (IR) from C++ source files.
     Attributes:
     -----------
-    cpp_path : str
+    data_path : str
         Path to the directory containing C++ source files.
     llvm_path : str
         Path to the directory where LLVM IR files will be stored.
@@ -46,52 +46,54 @@ class Embedding():
         Stores the embedding map to a file for later use.
     """
     def __init__(self, data_path):
-        self.cpp_path = os.path.join(data_path, "cpp_program_corpus")
+        self.data_path = os.path.join(data_path, "_program_corpus")
         self.llvm_path = os.path.join(data_path, "llvm")
         self.processed_llvm_path = os.path.join(data_path, "processed_llvm")
         self.all_instructions = []
 
+        # Mapping of file extensions to language and compiler commands
+        self.language_compilers = {
+            '.c': ['clang', '-S', '-emit-llvm'],
+            '.cpp': ['clang', '-S', '-emit-llvm'],
+            '.swift': ['swiftc', '-emit-ir'],
+            '.rs': ['rustc', '--emit=llvm-ir'],
+        }
+
     def generate_ir(self):
-        # Create the output folder if it doesn't exist
         if not os.path.exists(self.llvm_path):
             os.makedirs(self.llvm_path)
 
-        print("\nCOMPILING C++ SOURCE FILES TO LLVM IR...\n")
-        # Recursively search for .cpp files and compile them to .ll
-        for root, dirs, files in os.walk(self.cpp_path):
+        print("\nCOMPILING SOURCE FILES TO LLVM IR...\n")
+        for root, dirs, files in os.walk(self.data_path):
             for file_name in files:
-                if file_name.endswith('.cpp'):  # Process only C++ files
-                    cpp_file_path = os.path.join(root, file_name)
-                    
-                    # Create the corresponding directory structure in llvm_path
-                    relative_path = os.path.relpath(root, self.cpp_path)
-                    llvm_dir_path = os.path.join(self.llvm_path, relative_path)
-                    if not os.path.exists(llvm_dir_path):
-                        os.makedirs(llvm_dir_path)
-                    
-                    llvm_file_name = f"{os.path.splitext(file_name)[0]}.ll"
-                    llvm_file_path = os.path.join(llvm_dir_path, llvm_file_name)
+                file_ext = os.path.splitext(file_name)[1]
+                if file_ext not in self.language_compilers:
+                    continue
 
-                    # Command to compile C++ to LLVM IR
-                    compile_command = [
-                        "clang", "-S", "-emit-llvm", cpp_file_path, "-o", llvm_file_path
-                    ]
+                file_path = os.path.join(root, file_name)
+                relative_path = os.path.relpath(root, self.data_path)
+                llvm_dir_path = os.path.join(self.llvm_path, relative_path)
+                if not os.path.exists(llvm_dir_path):
+                    os.makedirs(llvm_dir_path)
 
-                    # Run the command
-                    try:
-                        subprocess.run(compile_command, check=True)
-                    except:
-                        print(f"Compilation failed for pogram {file_name}")
-                        continue
-                
-                    print(f"Compiled {cpp_file_path}")
+                llvm_file_name = f"{os.path.splitext(file_name)[0]}.ll"
+                llvm_file_path = os.path.join(llvm_dir_path, llvm_file_name)
+
+                compiler = self.language_compilers[file_ext]
+                compile_command = compiler + [file_path, '-o', llvm_file_path]
+                try:
+                    subprocess.run(compile_command, check=True)
+                    print(f"Compiled {file_path}")
+                except subprocess.CalledProcessError as e:
+                    print(f"Compilation failed for {file_name}: {e}")
+                    continue
 
     def preprocess_llvm_ir(self, input_file, output_file):
         with open(input_file, 'r') as f:
             lines = f.readlines()
 
         lines = [[line.strip()] for line in lines if line.strip()]
-        
+
         preprocessed_lines, _ = inst2vec_preprocess.preprocess(lines)
         preprocessed_texts = [
             inst2vec_preprocess.PreprocessStatement(x[0] if len(x) else "")
@@ -100,7 +102,8 @@ class Embedding():
 
         preprocessed_texts = [full_text for full_text in preprocessed_texts if full_text]
 
-        processed_folder = os.path.join(os.getcwd(), self.processed_llvm_path)
+        relative_path = os.path.relpath(os.path.dirname(input_file), self.llvm_path)
+        processed_folder = os.path.join(self.processed_llvm_path, relative_path)
         if not os.path.exists(processed_folder):
             os.makedirs(processed_folder)
 
@@ -146,7 +149,8 @@ class Embedding():
             for file_name in files:
                 if file_name.endswith('.ll'):
                     file_path = os.path.join(root, file_name)
-                    processed_file = f"{self.processed_llvm_path}/processed_{file_name}"
+                    relative_path = os.path.relpath(root, self.llvm_path)
+                    processed_file = os.path.join(self.processed_llvm_path, relative_path, file_name)
                     self.preprocess_llvm_ir(file_path, processed_file)
 
                     instructions = self.parse_llvm_ir(processed_file)
@@ -189,9 +193,9 @@ class Embedding():
             for center, context in data_loader:
                 optimizer.zero_grad()
 
-                center = center.clamp(0, vocab_size - 1).to(device)  
-                context = context.clamp(0, vocab_size - 1).to(device) 
-                
+                center = center.clamp(0, vocab_size - 1).to(device)
+                context = context.clamp(0, vocab_size - 1).to(device)
+
                 score = model(center, context)
                 loss = criterion(score, torch.ones_like(score)).to(device)  # Binary classification
                 loss.backward()
@@ -219,5 +223,3 @@ class Embedding():
         hashmap = self.get_embedding_map()
         with open('embedding_map.pickle', 'wb') as f:
             pickle.dump(hashmap, f)
-
-    
