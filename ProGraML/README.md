@@ -108,10 +108,10 @@ These tools are essential for analyzing control flow and enabling dynamic branch
 
 2. **Run the Main Script**:
   ```bash
-  python main.py --plot --nodes-report
+  python3 main.py --plot --text-report
   ```
   - `--plot`: Optional flag to visualize and save the graph.
-  - `--nodes-report`: Optional flag to save node details to a text file.
+  - `--text-report`: Optional flag to save node details to a text file.
 
 ## Directory Structure
 
@@ -132,7 +132,7 @@ information.
 
 To process all C++ programs in the specified directory, generate graphs, and save visualizations and node reports:
 ```bash
-python main.py --plot --nodes-report
+python main.py --plot --text-report
 ```
 
 This will:

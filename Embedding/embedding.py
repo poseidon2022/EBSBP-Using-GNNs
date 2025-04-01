@@ -164,7 +164,7 @@ class Embedding():
 
         return all_pairs[:]
 
-    def train(self, embed_size = 100, context_size = 10, learning_rate = 0.01, epochs = 10):
+    def train(self, embed_size = 10, context_size = 10, learning_rate = 0.01, epochs = 10):
         # Check if CUDA is available
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         print(f"Using device: {device}")
@@ -205,6 +205,10 @@ class Embedding():
 
         # Save the embeddings for later use
         torch.save(model.embedding.weight, "node_embeddings.pt")
+        print("\nEmbedding Training Completed Successfully!!! 🎉🎉🎉")
+        print("Epochs:", epochs)
+        print("Generated Embedding Size:", embed_size)
+        print("Context Size:", context_size)
 
     def get_embedding_map(self):
         embeddings = torch.load('node_embeddings.pt')
