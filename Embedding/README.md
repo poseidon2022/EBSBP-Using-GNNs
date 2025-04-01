@@ -39,7 +39,7 @@ The workflow of the project can be summarized as follows:
 
 1. **Generate LLVM IR**: Run the following command to compile the C++ source files into LLVM IR:
      ```bash
-     python train_embedding.py
+     python3 train_embedding.py
      ```
      This will traint the embedding as well as generate LLVM IRs in the `_test_data/llvm/` directory and preprocessed LLVM IRs in the `_test_data/preprocessed_llvm/` directory.
 

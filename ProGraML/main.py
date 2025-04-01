@@ -22,18 +22,37 @@ def plot_and_save_graph(data, save_dir, file_name):
     plt.savefig(plot_file_path)
     plt.clf()
 
-def save_node_details_to_txt(nodes, save_dir, file_name):
+def save_node_details_to_txt(nodes, edges, save_dir, file_name):
     # create a subdirectory for text report
     text_report_dir = os.path.join(save_dir, 'text_report')
     if not os.path.exists(text_report_dir):
         os.makedirs(text_report_dir)
 
-    report_file_path = os.path.join(text_report_dir, f'{os.path.splitext(file_name)[0]}.txt')
+    node_type = {0: 'Instruction', 1: 'Variable', 2: 'Constant'}
+    edge_type = {0: 'Control-Flow', 1: 'Data-Flow', 2: 'Call-Flow'}
+
+    # save node details to a text file
+    report_file_path = os.path.join(text_report_dir, f'{os.path.splitext(file_name)[0]}.nodes.txt')
     with open(report_file_path, 'w') as output_file:
         for node in nodes:
-            output_file.write(f"Node: {node[0]}\n")
-            output_file.write(f"Instruction: {node[1]['features']['full_text']}\n")
+            node_type_num = node[1]['type']
+
+            output_file.write(f"Node ID: {node[0]}\n")
+            output_file.write(f"Node Type: {node_type[node_type_num].upper()}\n")
+            output_file.write(f"{node_type[node_type_num]}: {node[1]['features']['full_text']}\n")
             output_file.write(f"Embedding: {node[1]['features']['inst2vec_embedding'][:]}\n")
+            output_file.write("\n")
+
+    # save edge details to a text file
+    report_file_path = os.path.join(text_report_dir, f'{os.path.splitext(file_name)[0]}.edges.txt')
+    with open(report_file_path, 'w') as output_file:
+        output_file.write("NOTICE: Currently, only a 'fake' branch probability embedding is used for edges.\n\n")
+        for edge in edges:
+            edge_type_num = edge[2]['flow']
+
+            output_file.write(f"{edge[0]} -> {edge[1]}\n")
+            output_file.write(f"Edge Type: {edge_type[edge_type_num].upper()}\n")
+            output_file.write(f"More Info: {edge[2]}\n")
             output_file.write("\n")
             
 def main(args):
@@ -57,7 +76,7 @@ def main(args):
         - Creates a PyTorch Geometric Data object.
         - Saves the Data object to the specified directory.
         - Optionally visualizes the graph if the plot argument is provided.
-        - Optionally saves node details to a .txt file if the nodes_report argument is provided.
+        - Optionally saves node details to a .txt file if the text_report argument is provided.
     """
     DATA_DIRECTORY = os.path.relpath('../_test_data')
 
@@ -123,10 +142,10 @@ def main(args):
 
                 # create a PyTorch Geometric Data object
                 data = Data(x=node_features_tensor, edge_index=edge_list, edge_attr=edge_features_tensor, y=edge_attr)
-
+                
                 # preserve relative folder structure
                 relative_path = os.path.relpath(root, llvm_main_dir)
-
+                
                 # create corresponding directory structure in the graph folder
                 graph_subdir = os.path.join(save_dir, relative_path)
                 pts_dir = os.path.join(graph_subdir, 'pts')
@@ -143,13 +162,13 @@ def main(args):
                     plot_and_save_graph(data, graph_subdir, file_name)
 
                 # optionally, save node details to a .txt file in the text_reports subdirectory
-                if args.nodes_report:
-                    save_node_details_to_txt(nodes, graph_subdir, file_name)
+                if args.text_report:
+                    save_node_details_to_txt(nodes, list(edges), graph_subdir, file_name)
     print("All files processed successfully!!! 😊")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Process C++ files and generate ProGraML graphs.")
     parser.add_argument("--plot", action="store_true", help="Plot and save the graph visualization.")
-    parser.add_argument("--nodes-report", action="store_true", help="Save node details to a file.")
+    parser.add_argument("--text-report", action="store_true", help="Save node details to a file.")
     args = parser.parse_args()
     main(args)
