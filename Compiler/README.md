@@ -47,7 +47,7 @@ The workflow of the project can be summarized as follows:
             tar -xJf clang+llvm-10.0.1-x86_64-linux-gnu-ubuntu-16.04.tar.xz
             ```
 
-        III. **Move to /usr/local/llvm-10:**
+        III. **Move to `/usr/local/llvm-10`:**
 
             ```bash
             echo 'export PATH="/usr/local/llvm-10/bin:$PATH"' >> ~/.bashrc
