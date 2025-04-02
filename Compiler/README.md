@@ -58,9 +58,8 @@ The workflow of the project can be summarized as follows:
 
             ```bash
             /usr/local/llvm-10/bin/clang --version
-            ```
-            
-            **Expected**: clang version 10.0.1.
+            ```      
+      **Expected**: clang version 10.0.1.
 
 
 3.  **Place Source Code Files:**
