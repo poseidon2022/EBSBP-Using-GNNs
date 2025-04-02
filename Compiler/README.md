@@ -13,7 +13,7 @@ The workflow of the project can be summarized as follows:
 
 ### Dependencies
 
-- Python 3.x
+- Python 3.7 or higher
 - Language-specific compilers (clang, swiftc, rustc...)
 - `inst2vec` preprocessing functions (ensure the `inst2vec.py` file is correctly implemented).
 
@@ -81,7 +81,7 @@ The workflow of the project can be summarized as follows:
 
 1.  **Run the Compiler:**
     ```bash
-    python main.py
+    python3 main.py
     ```
 
 2.  **Output:**
