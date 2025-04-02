@@ -6,13 +6,11 @@ This project focuses on generating embeddings for LLVM Intermediate Representati
 
 The workflow of the project can be summarized as follows:
 
-1. **Compile C++ Source Files to LLVM IR**: The C++ source files are compiled into LLVM IR files using the clang compiler.
-2. **Preprocess LLVM IR**: The LLVM IR files are preprocessed to extract relevant instructions and prepare them for further analysis.
-3. **Parse LLVM IR**: The preprocessed LLVM IR files are parsed to extract individual instructions.
-4. **Generate Execution Flow Graph (XFG)**: An execution flow graph (XFG) is generated from the parsed instructions to capture the control flow and data dependencies.
-5. **Extract Context Pairs**: Context pairs are extracted from the XFG to train the Skip-Gram model. These pairs represent the relationships between instructions within a specified context window.
-6. **Train Skip-Gram Model**: The Skip-Gram model is trained on the extracted context pairs to generate embeddings for the LLVM instructions.
-7. **Store Embeddings**: The generated embeddings are stored in a file for later use.
+1. **Parse LLVM IR**: The preprocessed LLVM IR files are parsed to extract individual instructions.
+2. **Generate Execution Flow Graph (XFG)**: An execution flow graph (XFG) is generated from the parsed instructions to capture the control flow and data dependencies.
+3. **Extract Context Pairs**: Context pairs are extracted from the XFG to train the Skip-Gram model. These pairs represent the relationships between instructions within a specified context window.
+4. **Train Skip-Gram Model**: The Skip-Gram model is trained on the extracted context pairs to generate embeddings for the LLVM instructions.
+5. **Store Embeddings**: The generated embeddings are stored in a file for later use.
 
 ## Setup Instructions
 
@@ -20,7 +18,6 @@ The workflow of the project can be summarized as follows:
 
 - **Python**: Ensure you have Python 3.7 or higher installed.
 - **PyTorch**: Install PyTorch by following the instructions on the official PyTorch website.
-- **Clang**: Install the clang compiler to generate LLVM IR
 
 ### Installation
 
@@ -33,19 +30,16 @@ The workflow of the project can be summarized as follows:
      ```bash
      pip install -r requirements.txt
      ```
-3. Place your C++ source files in the `_test_data/cpp_program_corpus/` directory.
 
 ## Running the Project
 
-1. **Generate LLVM IR**: Run the following command to compile the C++ source files into LLVM IR:
+1. **Train Embeddings**: Run the following command to compile the C++ source files into LLVM IR:
      ```bash
-     python3 train_embedding.py
+     python3 main.py
      ```
-     This will traint the embedding as well as generate LLVM IRs in the `_test_data/llvm/` directory and preprocessed LLVM IRs in the `_test_data/preprocessed_llvm/` directory.
+     The script will extract context pairs, and train the Skip-Gram model. The embeddings will be saved in `node_embeddings.pt` and the embedding map in `embedding_map.pickle`.
 
-2. **Preprocess and Train**: The script will automatically preprocess the LLVM IR files, extract context pairs, and train the Skip-Gram model. The embeddings will be saved in `node_embeddings.pt` and the embedding map in `embedding_map.pickle`.
-
-3. **Use the Embeddings**: You can load the embeddings using PyTorch or any other compatible library for further analysis or downstream tasks.
+2. **Use the Embeddings**: You can load the embeddings using PyTorch or any other compatible library for further analysis or downstream tasks.
 
 ### Example Usage
 

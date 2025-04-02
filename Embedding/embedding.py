@@ -9,107 +9,40 @@ from torch.utils.data import DataLoader, Dataset
 import pickle
 import numpy as np
 from skipgram import SkipGram, SkipGramDataset
-from inst2vec import inst2vec_preprocess
 
 class Embedding():
     """
-    A class to handle the embedding of LLVM Intermediate Representation (IR) from C++ source files.
-    Attributes:
-    -----------
-    data_path : str
-        Path to the directory containing C++ source files.
-    llvm_path : str
-        Path to the directory where LLVM IR files will be stored.
-    processed_llvm_path : str
-        Path to the directory where processed LLVM IR files will be stored.
-    all_instructions : list
-        List to store all parsed LLVM instructions.
+    Embedding class for processing LLVM IR files, generating context pairs, and training embeddings.
+
     Methods:
-    --------
-    generate_ir():
-        Compiles C++ source files to LLVM IR files and stores them in the specified directory.
-    preprocess_llvm_ir(input_file, output_file):
-        Preprocesses an LLVM IR file and saves the preprocessed output to a specified file.
-    parse_llvm_ir(file_path):
-        Parses an LLVM IR file and extracts the instructions.
-    generate_xfg(instructions):
-        Generates an execution flow graph (XFG) from a list of LLVM instructions.
-    extract_context_pairs(graph, context_size):
-        Extracts context pairs from an execution flow graph within a specified context size.
-    get_context_pairs(context_size):
-        Retrieves all context pairs from the LLVM IR files within a specified context size.
-    train(embed_size=100, context_size=10, learning_rate=0.01, epochs=10):
-        Trains a SkipGram model to generate embeddings for LLVM instructions.
-    get_embedding_map():
-        Retrieves the embedding map from the trained model.
-    store_embedding_map():
-        Stores the embedding map to a file for later use.
+        __init__(data_path):
+            Initializes the Embedding class with paths for LLVM files and processed LLVM files.
+
+        parse_llvm_ir(file_path):
+            Parses an LLVM IR file to extract instructions, ignoring comments and metadata.
+
+        generate_xfg(instructions):
+            Generates an execution flow graph (XFG) from a list of instructions.
+
+        extract_context_pairs(graph, context_size):
+            Extracts context pairs from a graph based on a given context size.
+
+        get_context_pairs(context_size):
+            Traverses processed LLVM files to generate context pairs for training.
+
+        train(embed_size=10, context_size=10, learning_rate=0.01, epochs=10):
+            Trains a Skip-Gram model to generate embeddings for LLVM instructions.
+
+        get_embedding_map():
+            Loads the trained embeddings and maps them to LLVM instructions.
+
+        store_embedding_map():
+            Stores the embedding map as a pickle file for later use.
     """
     def __init__(self, data_path):
-        self.data_path = os.path.join(data_path, "_program_corpus")
         self.llvm_path = os.path.join(data_path, "llvm")
         self.processed_llvm_path = os.path.join(data_path, "processed_llvm")
         self.all_instructions = []
-
-        # Mapping of file extensions to language and compiler commands
-        self.language_compilers = {
-            '.c': ['/usr/local/llvm-10/bin/clang', '-S', '-emit-llvm'],
-            '.cpp': ['/usr/local/llvm-10/bin/clang', '-S', '-emit-llvm'],
-            '.swift': ['swiftc', '-emit-ir'],
-            '.rs': ['rustc', '--emit=llvm-ir'],
-        }
-
-    def generate_ir(self):
-        if not os.path.exists(self.llvm_path):
-            os.makedirs(self.llvm_path)
-
-        print("\nCOMPILING SOURCE FILES TO LLVM IR...\n")
-        for root, dirs, files in os.walk(self.data_path):
-            for file_name in files:
-                file_ext = os.path.splitext(file_name)[1]
-                if file_ext not in self.language_compilers:
-                    continue
-
-                file_path = os.path.join(root, file_name)
-                relative_path = os.path.relpath(root, self.data_path)
-                llvm_dir_path = os.path.join(self.llvm_path, relative_path)
-                if not os.path.exists(llvm_dir_path):
-                    os.makedirs(llvm_dir_path)
-
-                llvm_file_name = f"{os.path.splitext(file_name)[0]}.ll"
-                llvm_file_path = os.path.join(llvm_dir_path, llvm_file_name)
-
-                compiler = self.language_compilers[file_ext]
-                compile_command = compiler + [file_path, '-o', llvm_file_path]
-                try:
-                    subprocess.run(compile_command, check=True)
-                    print(f"Compiled {file_path}")
-                except subprocess.CalledProcessError as e:
-                    print(f"Compilation failed for {file_name}: {e}")
-                    continue
-
-    def preprocess_llvm_ir(self, input_file, output_file):
-        with open(input_file, 'r') as f:
-            lines = f.readlines()
-
-        lines = [[line.strip()] for line in lines if line.strip()]
-
-        preprocessed_lines, _ = inst2vec_preprocess.preprocess(lines)
-        preprocessed_texts = [
-            inst2vec_preprocess.PreprocessStatement(x[0] if len(x) else "")
-            for x in preprocessed_lines
-        ]
-
-        preprocessed_texts = [full_text for full_text in preprocessed_texts if full_text]
-
-        relative_path = os.path.relpath(os.path.dirname(input_file), self.llvm_path)
-        processed_folder = os.path.join(self.processed_llvm_path, relative_path)
-        if not os.path.exists(processed_folder):
-            os.makedirs(processed_folder)
-
-        output_file_path = os.path.join(processed_folder, os.path.basename(output_file))
-        with open(output_file_path, 'w') as f:
-            f.write("\n".join(preprocessed_texts))
 
     def parse_llvm_ir(self, file_path):
         with open(file_path, 'r') as f:
@@ -143,23 +76,19 @@ class Embedding():
     def get_context_pairs(self, context_size):
         all_pairs = []
 
-        for root, dirs, files in os.walk(self.llvm_path):
+        for root, dirs, files in os.walk(self.processed_llvm_path ):
             total = len(files)
 
             for file_name in files:
-                if file_name.endswith('.ll'):
-                    file_path = os.path.join(root, file_name)
-                    relative_path = os.path.relpath(root, self.llvm_path)
-                    processed_file = os.path.join(self.processed_llvm_path, relative_path, file_name)
-                    self.preprocess_llvm_ir(file_path, processed_file)
+                if file_name.endswith('.processed.ll'):
+                    processed_file_path = os.path.join(root, file_name)
+                    instructions = self.parse_llvm_ir(processed_file_path)
 
-                    instructions = self.parse_llvm_ir(processed_file)
                     self.all_instructions.extend(instructions)
                     xfg = self.generate_xfg(instructions)
 
+                    # Get the pairs & Add the context pairs for this file to the global list
                     pairs = self.extract_context_pairs(xfg, context_size)
-
-                    # Add the context pairs for this file to the global list
                     all_pairs.extend(pairs)
 
         return all_pairs[:]
