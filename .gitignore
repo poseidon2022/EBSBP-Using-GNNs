@@ -7,6 +7,7 @@ ProGraML/venv
 ProGraML/vocabulary
 GNN/venv
 Inst2Vec/venv
+Embedding_EVAL/venv
 __pycache__/
 
 ProGraML/vocabulary/vocabulary/cutoff_stmts.csv
