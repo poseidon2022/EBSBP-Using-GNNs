@@ -5,7 +5,7 @@ from statement_tags import StatementTags
 
 # Assuming your embeddings are loaded as a tensor from the trained model
 # Load the embeddings and map them to CPU
-embeddings = torch.load('node_embeddings.pt', map_location=torch.device('cpu'))
+embeddings = torch.load('./node_embeddings.pt', map_location=torch.device('cpu'))
 embeddings = embeddings.detach().cpu().numpy()
 # with open('/content/drive/MyDrive/cpp/emb.p', 'rb') as f:
     # embeddings = pickle.load(f)
