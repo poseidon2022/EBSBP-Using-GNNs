@@ -1,7 +1,5 @@
 import os
-import subprocess
 import networkx as nx
-from networkx.drawing.nx_pydot import read_dot
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -9,80 +7,90 @@ from torch.utils.data import DataLoader, Dataset
 import pickle
 from skipgram import SkipGram, SkipGramDataset
 import random
+import re
 
 class Embedding:
     def __init__(self, data_path):
+        """Initialize the Embedding class with paths to LLVM IR files."""
         self.llvm_path = os.path.join(data_path, "llvm")
         self.processed_llvm_path = os.path.join(data_path, "processed_llvm")
-        self.all_instructions = []
-        self.instruction_to_id = {}
+        self.all_instructions = []  # Stores all instructions encountered
+        self.instruction_to_id = {}  # Maps instructions to unique IDs
 
     def parse_llvm_ir(self, file_path):
-        """Parse LLVM IR file into a list of instruction strings."""
+        """Parse an LLVM IR file into a list of instruction strings, excluding non-instructions."""
         with open(file_path, 'r') as f:
             lines = f.readlines()
 
         instructions = []
         for line in lines:
             line = line.strip()
-            if line and not line.startswith(";") and not line.startswith("source_filename"):
+            if (line and not line.startswith(";") and not line.startswith("source_filename") and 
+                not line.startswith("define") and not line.startswith("@") and not line.startswith("!")):
                 instructions.append(line)
         return instructions
 
-    def generate_xfg(self, instructions, dot_file):
-        """Generate an Execution Flow Graph (XFG) from instructions and DOT file."""
-        cfg = read_dot(dot_file)
+    def generate_xfg(self, instructions):
+        """Generate an Extended Flow Graph (XFG) from preprocessed LLVM IR instructions."""
         graph = nx.DiGraph()
-        label_to_start = {}
+        label_to_start = {}  # Maps labels to their starting node indices
+        id_to_node = {}  # Maps SSA identifiers to node indices
 
-        # Assign instructions to nodes and track block boundaries
+        # First Pass: Identify labels and SSA identifiers
         for i, instr in enumerate(instructions):
             graph.add_node(i, instruction=instr)
             if instr.startswith("%") and ":" in instr:
                 label = instr.split(":")[0]
                 label_to_start[label] = i
-            # Add sequential edges unless previous instruction is a terminator
-            if i > 0 and not instructions[i-1].startswith("br ") and not instructions[i-1].startswith("ret "):
-                graph.add_edge(i - 1, i)
+            match = re.match(r"(%ID)\s*=\s*\w+\s+.*", instr)
+            if match:
+                id_to_node[match.group(1)] = i
 
-        # Add control flow edges from CFG. Here below, u & v represent the nodes in the CFG
-        for u, v in cfg.edges():
-            print(u, v)
-            if ':' in u or ':' in v:  # Skip port edges
-                continue
-            u_label = cfg.nodes[u]['label'].strip('"')
-            v_label = cfg.nodes[v]['label'].strip('"')
-            print(u_label, v_label)
-            print('--------------------')
+        # Second Pass: Add data and control edges
+        for i, instr in enumerate(instructions):
+            # Data dependencies
+            operands = re.findall(r"%ID", instr)
+            result = re.match(r"(%ID)\s*=", instr)
+            if result and operands:
+                result_id = result.group(1)
+                for op in operands:
+                    if op in id_to_node and op != result_id:
+                        graph.add_edge(id_to_node[op], i, type="data")
 
-            if u_label in label_to_start and v_label in label_to_start:
-                u_start = label_to_start[u_label]
-                u_end = u_start
-                while (u_end + 1 < len(instructions) and 
-                       not instructions[u_end].startswith("%") and 
-                       not any(instructions[u_end].startswith(t) for t in ["br ", "ret "])):
-                    u_end += 1
-                v_start = label_to_start[v_label]
-                graph.add_edge(u_end, v_start)
+            # Sequential edges within basic blocks
+            if i > 0 and not instructions[i-1].startswith(("br ", "ret ")):
+                graph.add_edge(i - 1, i, type="data")
+
+            # Control flow edges for branches
+            if instr.startswith("br "):
+                targets = re.findall(r"label\s+%(\w+)", instr)
+                for target in targets:
+                    if target in label_to_start:
+                        graph.add_edge(i, label_to_start[target], type="control")
 
         return graph
 
     def random_walk(self, graph, start_node, walk_length):
-        """Perform a random walk on the graph starting from start_node."""
+        """Perform a biased random walk on the XFG to generate context sequences."""
         walk = [start_node]
         current = start_node
         for _ in range(walk_length - 1):
             neighbors = list(graph.neighbors(current))
             if not neighbors:
                 break
-            current = random.choice(neighbors)
+            data_neighbors = [n for n in neighbors if graph[current][n]['type'] == "data"]
+            control_neighbors = [n for n in neighbors if graph[current][n]['type'] == "control"]
+            if data_neighbors and random.random() < 0.7:  # 70% chance to follow data edges
+                current = random.choice(data_neighbors)
+            elif control_neighbors:
+                current = random.choice(control_neighbors)
+            else:
+                break
             walk.append(current)
         return walk
 
-    def extract_context_pairs(self, graph, context_size):
-        """Extract context pairs using random walks."""
-        num_walks = 10
-        walk_length = 20
+    def extract_context_pairs(self, graph, context_size, num_walks, walk_length):
+        """Extract context pairs from the XFG using random walks."""
         window_size = context_size
         pairs = []
         for _ in range(num_walks):
@@ -96,68 +104,48 @@ class Embedding:
                             pairs.append((instr_i, instr_j))
         return pairs
 
-    def process_file(self, ll_path, context_size):
-        """Process an LLVM IR file to generate context pairs."""
-        ll_dir = os.path.dirname(ll_path)
-        
-        # Run opt to generate DOT files
-        try:
-            subprocess.run(['opt', '-dot-cfg', ll_path], cwd=ll_dir, check=True, 
-                          stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        except subprocess.CalledProcessError as e:
-            print(f"Error running opt on {ll_path}: {e}")
-            return []
+    def process_file(self, ll_path, context_size, num_walks, walk_length):
+        # Compute the relative path from /llvm and corresponding processed path in /processed_llvm
+        relative_path = os.path.relpath(ll_path, self.llvm_path)
+        processed_path = os.path.join(self.processed_llvm_path, f"{relative_path.split('.')[0]}.processed.ll")
 
-        dot_files = [f for f in os.listdir(ll_dir) if f.endswith('.dot')]
-        all_pairs = []
-        instructions = self.parse_llvm_ir(ll_path)
+        # Read existing preprocessed instructions
+        with open(processed_path, 'r') as f:
+            preprocessed_instructions = [line.strip() for line in f.readlines()]
 
-        for dot_file in dot_files:
-            dot_file_path = os.path.join(ll_dir, dot_file)
-            # Convert DOT to PNG with error handling
-            try:
-                subprocess.run(['dot', '-Tpng', dot_file_path, '-o', f'{dot_file_path}.png'], 
-                              cwd=ll_dir, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            except subprocess.CalledProcessError as e:
-                print(f"Error running dot on {dot_file_path}: {e}")
-                continue
+        # Generate XFG and extract context pairs using preprocessed instructions
+        graph = self.generate_xfg(preprocessed_instructions)
+        self.all_instructions.extend([graph.nodes[n]['instruction'] for n in graph.nodes])
+        pairs = self.extract_context_pairs(graph, context_size, num_walks, walk_length)
+        return pairs
 
-            graph = self.generate_xfg(instructions, dot_file_path)
-            self.all_instructions.extend([graph.nodes[n]['instruction'] for n in graph.nodes])
-            pairs = self.extract_context_pairs(graph, context_size)
-            all_pairs.extend(pairs)
-
-        return all_pairs
-
-    def get_context_pairs(self, context_size):
-        """Collect context pairs from all LLVM IR files."""
+    def get_context_pairs(self, context_size, num_walks, walk_length):
+        """Collect context pairs from all LLVM IR files in the directory."""
         all_pairs = []
         for root, _, files in os.walk(self.llvm_path):
             for file_name in files:
                 if file_name.endswith('.ll'):
                     ll_path = os.path.join(root, file_name)
-                    pairs = self.process_file(ll_path, context_size)
+                    pairs = self.process_file(ll_path, context_size, num_walks, walk_length)
                     all_pairs.extend(pairs)
         return all_pairs
 
-    def train(self, embed_size=10, context_size=10, learning_rate=0.01, epochs=2, k=5):
-        """Train the SkipGram model with negative sampling."""
+    def train(self, embed_size=10, context_size=10, learning_rate=0.01, epochs=2, num_walks=10, walk_length=20, k = 5):
+        """Train the SkipGram model with negative sampling using context pairs."""
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         print(f"Using device: {device}")
 
-        all_pairs = self.get_context_pairs(context_size)
+        all_pairs = self.get_context_pairs(context_size, num_walks, walk_length)
         if not all_pairs:
             print("No context pairs found. Please check the data processing steps.")
             return
 
-        # Map instructions to unique token IDs
+        # Build vocabulary from preprocessed instructions
         unique_instructions = list(set(self.all_instructions))
         self.instruction_to_id = {instr: i for i, instr in enumerate(unique_instructions)}
 
-        all_pairs_ids = []
-        for instr, context_instr in all_pairs:
-            id_pair = (self.instruction_to_id[instr], self.instruction_to_id[context_instr])
-            all_pairs_ids.append(id_pair)
+        all_pairs_ids = [(self.instruction_to_id[instr], self.instruction_to_id[context_instr]) 
+                         for instr, context_instr in all_pairs]
 
         dataset = SkipGramDataset(all_pairs_ids)
         data_loader = DataLoader(dataset, batch_size=32, shuffle=True)
@@ -181,26 +169,27 @@ class Embedding:
                 center_repeated = center.repeat(1, k).view(-1, 1)
                 neg_score = model(center_repeated, neg_context.view(-1, 1))
 
-                # Targets
+                # Loss computation
                 pos_target = torch.ones_like(pos_score)
                 neg_target = torch.zeros_like(neg_score)
-
-                # Loss
                 loss = criterion(pos_score, pos_target) + criterion(neg_score, neg_target)
                 loss.backward()
                 optimizer.step()
                 total_loss += loss.item()
             print(f"Epoch {epoch+1}, Loss: {total_loss}")
 
-        torch.save(model.embedding.weight, "node_embeddings.pt")
+        torch.save(model.state_dict(), "skipgram_model.pt")
+        # torch.save(self.instruction_to_id, "instruction_to_id.pt")
         print("\nEmbedding Training Completed Successfully!!! 🎉🎉🎉")
         print("Epochs:", epochs)
         print("Generated Embedding Size:", embed_size)
         print("Context Size:", context_size)
 
     def get_embedding_map(self):
-        """Generate a mapping from instructions to their embeddings."""
-        embeddings = torch.load('node_embeddings.pt')
+        """Generate a mapping from instructions to their trained embeddings."""
+        model = SkipGram(len(self.instruction_to_id), embed_size=10)  # Match training embed_size
+        model.load_state_dict(torch.load('skipgram_model.pt'))
+        embeddings = model.embedding.weight
         embedding_map = {}
 
         for instruction, idx in self.instruction_to_id.items():
