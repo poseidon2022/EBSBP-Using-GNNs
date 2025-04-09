@@ -8,6 +8,8 @@ import pickle
 from skipgram import SkipGram, SkipGramDataset
 import random
 import re
+import matplotlib.pyplot as plt
+import textwrap
 
 class Embedding:
     def __init__(self, data_path):
@@ -23,15 +25,36 @@ class Embedding:
             lines = f.readlines()
 
         instructions = []
+        current_instruction = ""  # To accumulate multi-line instructions
+
         for line in lines:
             line = line.strip()
-            if (line and not line.startswith(";") and not line.startswith("source_filename") and 
-                not line.startswith("define") and not line.startswith("@") and not line.startswith("!")):
+
+            if line.endswith("}"):
+                line = line[:-1]
+            if "@main()" in line:
+                break
+
+            # Skip non-instruction lines
+            if not line or line.startswith(";") or line.startswith("source_filename") or \
+            line.startswith("!") or line.startswith("target datalayout") or \
+            line.startswith("target triple") or line.startswith("}") or line.startswith("define") or line.startswith('@'):
+                continue
+
+            # Check if the line ends with "[" or "]" or is part of a multi-line instruction
+            if "[" in line or current_instruction:
+                current_instruction += " " + line
+                if "]" in line:  # End of multi-line instruction
+                    instructions.append(current_instruction.strip())
+                    current_instruction = ""
+            else:
+                # Single-line instruction
                 instructions.append(line)
+
         return instructions
 
     def generate_xfg(self, instructions):
-        """Generate an Extended Flow Graph (XFG) from preprocessed LLVM IR instructions."""
+        """Generate an Extended Flow Graph (XFG) from raw LLVM IR instructions."""
         graph = nx.DiGraph()
         label_to_start = {}  # Maps labels to their starting node indices
         id_to_node = {}  # Maps SSA identifiers to node indices
@@ -39,34 +62,40 @@ class Embedding:
         # First Pass: Identify labels and SSA identifiers
         for i, instr in enumerate(instructions):
             graph.add_node(i, instruction=instr)
-            if instr.startswith("%") and ":" in instr:
-                label = instr.split(":")[0]
+            # Identify labels (e.g., "6:", "8:", "9:")
+            match_label = re.match(r"(\w+):", instr)
+            if match_label:
+                label = f"%{match_label.group(1)}"  # e.g., %6, %8, %9
                 label_to_start[label] = i
-            match = re.match(r"(%ID)\s*=\s*\w+\s+.*", instr)
+            # Identify SSA identifiers (e.g., %2, %3)
+            match = re.match(r"(%\w+)\s*=\s*\w+\s+.*", instr)
             if match:
-                id_to_node[match.group(1)] = i
+                id_to_node[match.group(1)] = i  # e.g., %2, %3
 
-        # Second Pass: Add data and control edges
+        # Second Pass: Add control and data edges
         for i, instr in enumerate(instructions):
-            # Data dependencies
-            operands = re.findall(r"%ID", instr)
-            result = re.match(r"(%ID)\s*=", instr)
+            # Data dependencies (based on SSA register usage)
+            operands = re.findall(r"(%\w+)", instr)
+            result = re.match(r"(%\w+)\s*=", instr)
             if result and operands:
                 result_id = result.group(1)
                 for op in operands:
                     if op in id_to_node and op != result_id:
                         graph.add_edge(id_to_node[op], i, type="data")
 
-            # Sequential edges within basic blocks
+            # Control flow: Sequential edges within basic blocks
             if i > 0 and not instructions[i-1].startswith(("br ", "ret ")):
-                graph.add_edge(i - 1, i, type="data")
+                graph.add_edge(i - 1, i, type="control")
 
-            # Control flow edges for branches
+            # Control flow: Edges for branches
             if instr.startswith("br "):
                 targets = re.findall(r"label\s+%(\w+)", instr)
                 for target in targets:
-                    if target in label_to_start:
-                        graph.add_edge(i, label_to_start[target], type="control")
+                    target_label = f"%{target}"  # Reconstruct full label, e.g., %6
+                    if target_label in label_to_start:
+                        graph.add_edge(i, label_to_start[target_label], type="control")
+                    else:
+                        print(f"Warning: Target label {target_label} not found in label_to_start: {label_to_start}")
 
         return graph
 
@@ -113,8 +142,23 @@ class Embedding:
         with open(processed_path, 'r') as f:
             preprocessed_instructions = [line.strip() for line in f.readlines()]
 
-        # Generate XFG and extract context pairs using preprocessed instructions
-        graph = self.generate_xfg(preprocessed_instructions)
+        # Generate XFG using RAW instructions (not preprocessed)
+        raw_instructions = self.parse_llvm_ir(ll_path)  # Re-read raw instructions
+        graph = self.generate_xfg(raw_instructions)
+
+        print(len(raw_instructions))
+        print(len(preprocessed_instructions))
+
+        for i in range(min(len(raw_instructions), len(preprocessed_instructions))):
+            print(raw_instructions[i])
+            print(preprocessed_instructions[i])
+            print('--------------------------')
+
+        # Update node instructions to preprocessed versions for context pair extraction
+        for node in graph.nodes:
+            graph.nodes[node]["instruction"] = preprocessed_instructions[node]
+
+        self.visualize_xfg(graph, ll_path, output_file=f"xfg_{os.path.basename(ll_path)}.png")  # Visualize the graph
         self.all_instructions.extend([graph.nodes[n]['instruction'] for n in graph.nodes])
         pairs = self.extract_context_pairs(graph, context_size, num_walks, walk_length)
         return pairs
@@ -144,8 +188,9 @@ class Embedding:
         unique_instructions = list(set(self.all_instructions))
         self.instruction_to_id = {instr: i for i, instr in enumerate(unique_instructions)}
 
-        all_pairs_ids = [(self.instruction_to_id[instr], self.instruction_to_id[context_instr]) 
-                         for instr, context_instr in all_pairs]
+        all_pairs_ids = []
+        for instr, context_instr in all_pairs:
+            all_pairs_ids.append((self.instruction_to_id[instr], self.instruction_to_id[context_instr]))
 
         dataset = SkipGramDataset(all_pairs_ids)
         data_loader = DataLoader(dataset, batch_size=32, shuffle=True)
@@ -201,6 +246,94 @@ class Embedding:
     def store_embedding_map(self):
         """Store the embedding map to a pickle file."""
         hashmap = self.get_embedding_map()
-        print(hashmap)
         with open('embedding_map.pickle', 'wb') as f:
             pickle.dump(hashmap, f)
+
+    def visualize_xfg(self, graph, ll_path, output_file="xfg_diagram.png"):
+        """Generate a diagrammatic representation of the XFG with top-to-bottom structure."""
+        # Try to use graphviz_layout for a top-to-bottom structure
+        from networkx.drawing.nx_agraph import graphviz_layout
+        pos = graphviz_layout(graph, prog="dot")  # Top-to-bottom layout
+        
+
+        # Define node colors and shapes based on type
+        node_colors = []
+        node_shapes = []
+        for node in graph.nodes:
+            instr = graph.nodes[node]["instruction"]
+            if instr.startswith("br "):
+                node_colors.append("lightcoral")  # Branch instructions
+                node_shapes.append("o")  # Circle shape
+            elif "ret" in instr:
+                node_colors.append("red")  # Return instructions
+                node_shapes.append("o")  # Circle shape
+            else:
+                node_colors.append("lightblue")  # Other instructions (e.g., labels, ret)
+                node_shapes.append("o")  # Circle shape
+
+        # Create figure with adjusted size for better space usage
+        plt.figure(figsize=(15, 10))  # Increased height for vertical space
+        ax = plt.gca()
+
+        # Draw nodes with labels as node numbers
+        labels = {node: str(node) for node in graph.nodes}
+        for shape, color in zip(["o"], ["lightblue"]):  # Adjusted to match node_shapes
+            nx.draw_networkx_nodes(
+                graph, pos,
+                nodelist=[n for n, s in enumerate(node_shapes) if s == shape],
+                node_color=[node_colors[n] for n, s in enumerate(node_shapes) if s == shape],
+                node_shape=shape, node_size=500, ax=ax
+            )
+        nx.draw_networkx_nodes(
+            graph, pos,
+            nodelist=[n for n, c in enumerate(node_colors) if c == "lightcoral"],
+            node_color="lightcoral", node_shape="o", node_size=500, ax=ax
+        )
+        nx.draw_networkx_labels(graph, pos, labels, font_size=10, ax=ax)
+
+        # Draw edges with arrows to show direction
+        data_edges = [(u, v) for u, v, d in graph.edges(data=True) if d["type"] == "data"]
+        control_edges = [(u, v) for u, v, d in graph.edges(data=True) if d["type"] == "control"]
+        
+        print(f"Data edges: {data_edges}")
+        print(f"Control edges: {control_edges}")
+        
+        nx.draw_networkx_edges(
+            graph, pos, edgelist=data_edges, edge_color="green", width=1.5,
+            arrows=True, arrowsize=20, ax=ax  # Increased arrowsize
+        )
+        nx.draw_networkx_edges(
+            graph, pos, edgelist=control_edges, edge_color="black", width=1.5,
+            arrows=True, arrowsize=20, ax=ax  # Increased arrowsize
+        )
+
+        # Create a legend mapping node numbers to instructions with wrapped text
+        legend_text = "Node to Instruction Mapping:\n\n"
+        for node in sorted(graph.nodes):
+            instr = graph.nodes[node]["instruction"]
+            wrapped_instr = "\n".join(textwrap.wrap(instr, width=50))
+            legend_text += f"{node}: {wrapped_instr}\n"
+
+        # Add the legend as a text box on the right side
+        plt.text(1.05, 0.5, legend_text, transform=ax.transAxes, fontsize=10,
+                verticalalignment='center', bbox=dict(facecolor='white', alpha=0.8))
+
+        # Add a legend for colors and edges
+        legend_elements = [
+            plt.Line2D([0], [0], marker='o', color='w', label='Branch Instruction',
+                       markerfacecolor='lightcoral', markersize=10),
+            plt.Line2D([0], [0], marker='o', color='w', label='Return Instruction',
+                       markerfacecolor='red', markersize=10),
+            plt.Line2D([0], [0], color='green', lw=2, label='Data Edge'),
+            plt.Line2D([0], [0], color='black', lw=2, label='Control Flow Edge')
+        ]
+        ax.legend(handles=legend_elements, loc='upper left', bbox_to_anchor=(1.05, 1))
+
+        # Add title and adjust layout
+        plt.title("Extended Flow Graph (XFG)")
+        plt.axis("off")
+        plt.tight_layout(rect=[0, 0, 0.7, 1])
+        output_file = ll_path.replace(".ll", ".png")
+        plt.savefig(output_file, dpi=300, bbox_inches="tight")
+        plt.close()
+        print(f"XFG diagram saved to {output_file}")
