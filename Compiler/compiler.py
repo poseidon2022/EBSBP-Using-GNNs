@@ -1,6 +1,7 @@
 import os
 import subprocess
 from inst2vec import inst2vec_preprocess
+import shutil
 
 class Compiler():
     """
@@ -26,8 +27,14 @@ class Compiler():
         self.language_compilers = language_compilers
 
     def generate_ir(self):
-        if not os.path.exists(self.llvm_path):
-            os.makedirs(self.llvm_path)
+        if os.path.exists(self.llvm_path):
+            shutil.rmtree(self.llvm_path)
+
+        if os.path.exists(self.processed_llvm_path):
+            shutil.rmtree(self.processed_llvm_path)
+
+        os.makedirs(self.llvm_path)
+        os.makedirs(self.processed_llvm_path)
 
         print("COMPILING SOURCE FILES TO LLVM IR...\n")
         for root, dirs, files in os.walk(self.data_path):
@@ -95,6 +102,7 @@ class Compiler():
         preprocessed_texts = [full_text for full_text in preprocessed_texts if full_text]
         relative_path = os.path.relpath(os.path.dirname(input_file), self.llvm_path)
         processed_folder = os.path.join(self.processed_llvm_path, relative_path)
+
         if not os.path.exists(processed_folder):
             os.makedirs(processed_folder)
 
