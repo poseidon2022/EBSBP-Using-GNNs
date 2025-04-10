@@ -35,7 +35,15 @@ class Embedding:
             if "@main()" in line:
                 break
 
-            # Skip non-instruction lines
+            # Skip type definitions (e.g., %"class.std::ios_base::Init" = type { i8 })
+            if re.match(r'%"[^"]+" = type', line) or line.startswith("%struct.") or line.startswith("%class."):
+                continue
+
+            # Skip function declarations (e.g., declare dso_local void @_ZNSt8ios_base4InitC1Ev(...))
+            if line.startswith("declare "):
+                continue
+
+            # Skip other non-instruction lines
             if not line or line.startswith(";") or line.startswith("source_filename") or \
             line.startswith("!") or line.startswith("target datalayout") or \
             line.startswith("target triple") or line.startswith("}") or line.startswith("define") or line.startswith('@'):
