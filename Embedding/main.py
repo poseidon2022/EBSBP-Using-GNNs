@@ -21,7 +21,7 @@ if __name__ == "__main__":
     EMBEDDING_SIZE = 10
     CONTEXT_SIZE = 10
     LEARNING_RATE = 0.01
-    EPOCHS = 2
+    EPOCHS = 10
     NUM_WALKS = 10
     WALK_LENGTH = 20
     

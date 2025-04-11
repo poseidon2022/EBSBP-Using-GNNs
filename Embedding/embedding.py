@@ -13,6 +13,7 @@ from GraphVisualizer import GraphVisualizer
 class Embedding:
     def __init__(self, data_path, visualize_mode="both"):
         """Initialize the Embedding class with paths to LLVM IR files and visualization mode."""
+        self.data_path = data_path
         self.llvm_path = os.path.join(data_path, "llvm")
         self.processed_llvm_path = os.path.join(data_path, "processed_llvm")
         self.all_instructions = []  # Stores all instructions encountered
@@ -41,6 +42,14 @@ class Embedding:
 
             # Skip function declarations (e.g., declare dso_local void @_ZNSt8ios_base4InitC1Ev(...))
             if line.startswith("declare "):
+                continue
+
+            # Skip global variable definitions (e.g., @llvm.global_ctors = appending global [1 x { i32, i8*, i8* }] [])
+            if line.startswith("$"):
+                continue
+
+            # Skip %union lines that are not type definitions
+            if line.startswith('%union') and re.match(r'%union\.\w+\s*=\s*type', line):
                 continue
     
             # Skip other non-instruction lines
@@ -183,6 +192,7 @@ class Embedding:
         return pairs
 
     def process_file(self, ll_path, context_size, num_walks, walk_length):
+        print(f"Processing file: {ll_path}")
         # Compute the relative path from /llvm and corresponding processed path in /processed_llvm
         relative_path = os.path.relpath(ll_path, self.llvm_path)
         processed_path = os.path.join(self.processed_llvm_path, f"{relative_path.split('.')[0]}.processed.ll")
@@ -197,6 +207,33 @@ class Embedding:
         # Generate XFG using RAW instructions (not preprocessed)
         instructions = self.parse_llvm_ir(ll_path) 
         graph = self.generate_xfg(instructions) 
+
+        # print("Length of graph.nodes", len(graph.nodes))
+        # print("Length of preprocessed instructions", len(preprocessed_instructions))
+
+        # for idx, node in enumerate(graph.nodes):
+        #     print(node, idx)
+        #     print(graph.nodes[node])
+        #     print(preprocessed_instructions[idx])
+        #     print('----------------')
+
+        if len(graph.nodes) != len(preprocessed_instructions):
+            # Log the failed file
+            log_file_path = os.path.join(self.data_path, "failed_files.txt")
+            with open(log_file_path, 'a') as log_file:
+                log_file.write('==========================================================================================\n')
+                log_file.write(f"{ll_path}\n")
+                log_file.write(f"Number of nodes in graph: {len(graph.nodes)}\n")
+                log_file.write(f"Number of preprocessed instructions: {len(preprocessed_instructions)}\n\n")
+                for idx, node in enumerate(graph.nodes):
+                    log_file.write(f"{idx}: {graph.nodes[node]}\n")
+                log_file.write('------------------------------------------------------------------------------------------\n')
+                for idx in range(len(preprocessed_instructions)):
+                    log_file.write(f"{idx}: {preprocessed_instructions[idx]}\n")
+                log_file.write('===========================================================================================\n\n\n')
+                
+            print(f"☠️ ⚠️ ☠️ ⚠️  WARNING: Number of nodes in graph ({len(graph.nodes)}) does not match number of preprocessed instructions ({len(preprocessed_instructions)}), SKIPPING FILE ⚠️ ☠️ ⚠️ ☠️")
+            return []
 
         # Update node instructions to preprocessed versions for context pair extraction
         for idx, node in enumerate(graph.nodes):

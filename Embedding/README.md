@@ -64,6 +64,9 @@ This will:
 - Generate XFG diagrams (if visualization is enabled) in `_test_data/xfg_visual/`.
 - Train the Skip-Gram model and save it as `skipgram_model.pt`.
 - Save the embedding map as `embedding_map.pickle`.
+- Error log would be saved in your data path with the name `failed_files.txt`
+
+**NB**: A fault in file processing would take that file out of considerations. Occurrence of such errors are expected to drop with further refinement of the `Embedding` class
 
 ### Use the Embeddings
 
