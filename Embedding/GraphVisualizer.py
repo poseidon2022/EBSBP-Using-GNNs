@@ -61,6 +61,9 @@ class GraphVisualizer:
             if instr.startswith("br "):
                 node_colors[node] = "lightcoral"  # Branch instructions
                 node_shapes[node] = "o"  # Circle shape
+            elif "= call" in instr:
+                node_colors[node] = "orange"
+                node_shapes[node] = "o"  # Square shape
             elif "ret" in instr:
                 node_colors[node] = "red"  # Return instructions
                 node_shapes[node] = "o"  # Circle shape
@@ -134,13 +137,15 @@ class GraphVisualizer:
                        markerfacecolor='lightcoral', markersize=12),
             plt.Line2D([0], [0], marker='o', color='w', label='Return Instruction',
                        markerfacecolor='red', markersize=12),
+            plt.Line2D([0], [0], marker='o', color='w', label='Call Instruction',
+                       markerfacecolor='orange', markersize=12),
             plt.Line2D([0], [0], marker='o', color='w', label='Other Instruction',
                        markerfacecolor='lightblue', markersize=12),
         ]
         if mode in ["data", "both"]:
             legend_elements.append(plt.Line2D([0], [0], color='green', lw=2, label='Data Edge'))
         if mode in ["control", "both"]:
-            legend_elements.append(plt.Line2D([0], [0], color='black', lw=2, linestyle='dashed', label='Control Flow Edge'))
+            legend_elements.append(plt.Line2D([0], [0], color='black', lw=2, label='Control Flow Edge'))
         ax.legend(handles=legend_elements, loc='upper left', bbox_to_anchor=(1.05, 1), fontsize=12)
 
         # Add a descriptive title

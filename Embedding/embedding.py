@@ -9,6 +9,7 @@ from skipgram import SkipGram, SkipGramDataset
 import random
 import re
 from GraphVisualizer import GraphVisualizer
+from datetime import datetime
 
 class Embedding:
     def __init__(self, data_path, visualize_mode="both"):
@@ -50,6 +51,10 @@ class Embedding:
 
             # Skip %union lines that are not type definitions
             if line.startswith('%union') and re.match(r'%union\.\w+\s*=\s*type', line):
+                continue
+                
+            # Skip attributes lines (e.g., attributes #0 = { nounwind ... })
+            if line.startswith("attributes"):
                 continue
     
             # Skip other non-instruction lines
@@ -127,7 +132,7 @@ class Embedding:
 
             # Control flow: Sequential edges within basic blocks
             # Add a sequential edge unless the previous instruction ends the block (br or ret)
-            if i > 0 and not instructions[i-1].startswith(("br ", "ret ")):
+            if i > 0 and not instructions[i-1].startswith(("br ", "ret ")) and "= call" not in instructions[i - 1]:
                 if re.match(r"\d+:\s*;.*", instructions[i - 1]) or instructions[i - 1].startswith("define"):
                     continue
                 graph.add_edge(i - 1, i, type="control")
@@ -208,29 +213,22 @@ class Embedding:
         instructions = self.parse_llvm_ir(ll_path) 
         graph = self.generate_xfg(instructions) 
 
-        # print("Length of graph.nodes", len(graph.nodes))
-        # print("Length of preprocessed instructions", len(preprocessed_instructions))
-
-        # for idx, node in enumerate(graph.nodes):
-        #     print(node, idx)
-        #     print(graph.nodes[node])
-        #     print(preprocessed_instructions[idx])
-        #     print('----------------')
-
+        ### LOGGER: this will keep a log of errors encountered
         if len(graph.nodes) != len(preprocessed_instructions):
             # Log the failed file
             log_file_path = os.path.join(self.data_path, "failed_files.txt")
             with open(log_file_path, 'a') as log_file:
+                log_file.write(f"Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
                 log_file.write('==========================================================================================\n')
                 log_file.write(f"{ll_path}\n")
                 log_file.write(f"Number of nodes in graph: {len(graph.nodes)}\n")
                 log_file.write(f"Number of preprocessed instructions: {len(preprocessed_instructions)}\n\n")
                 for idx, node in enumerate(graph.nodes):
-                    log_file.write(f"{idx}: {graph.nodes[node]}\n")
+                    log_file.write(f"{idx}: {graph.nodes[node]['instruction']}\n")
                 log_file.write('------------------------------------------------------------------------------------------\n')
                 for idx in range(len(preprocessed_instructions)):
                     log_file.write(f"{idx}: {preprocessed_instructions[idx]}\n")
-                log_file.write('===========================================================================================\n\n\n')
+                log_file.write('===========================================================================================\n\n\n\n\n')
                 
             print(f"☠️ ⚠️ ☠️ ⚠️  WARNING: Number of nodes in graph ({len(graph.nodes)}) does not match number of preprocessed instructions ({len(preprocessed_instructions)}), SKIPPING FILE ⚠️ ☠️ ⚠️ ☠️")
             return []
@@ -308,6 +306,7 @@ class Embedding:
             print(f"Epoch {epoch+1}, Loss: {total_loss}")
 
         torch.save(model.state_dict(), "skipgram_model.pt")
+        print("🎉 🎊 🍾 🕺 Embedding Training Completed. Model saved as 'skipgram_model.pt' 🕺 🍾 🎊 🎉")
 
     def get_embedding_map(self):
         """Generate a mapping from instructions to their trained embeddings."""
