@@ -66,7 +66,7 @@ class Compiler():
                 self.preprocess_llvm_ir(llvm_file_path, processed_file_path)
                 print(f"Preprocessed {llvm_file_path}\n")
 
-        print("LLVM IR generation & preprocessing completed 🕺🕺🎉🎉")
+        print("🎉🎉🕺🕺 LLVM IR generation & preprocessing completed 🕺🕺🎉🎉")
 
     def preprocess_llvm_ir(self, input_file, output_file):
         with open(input_file, 'r') as f:
