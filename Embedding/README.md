@@ -1,62 +1,86 @@
 # LLVM IR Embedding using Skip-Gram Model
 
-This project focuses on generating embeddings for LLVM Intermediate Representation (IR) instructions using a Skip-Gram model. The embeddings capture the semantic relationships between instructions, which can be useful for various downstream tasks such as code similarity detection, optimization, and more.
+This project generates embeddings for LLVM Intermediate Representation (IR) instructions using a Skip-Gram model. The embeddings capture semantic relationships between instructions by modeling their control flow and data dependencies in an Extended Flow Graph (XFG). These embeddings can be used for downstream tasks such as code similarity detection, program analysis, and optimization.
 
 ## Overview
 
 The workflow of the project can be summarized as follows:
 
-1. **Parse LLVM IR**: The preprocessed LLVM IR files are parsed to extract individual instructions.
-2. **Generate Execution Flow Graph (XFG)**: An execution flow graph (XFG) is generated from the parsed instructions to capture the control flow and data dependencies.
-3. **Extract Context Pairs**: Context pairs are extracted from the XFG to train the Skip-Gram model. These pairs represent the relationships between instructions within a specified context window.
-4. **Train Skip-Gram Model**: The Skip-Gram model is trained on the extracted context pairs to generate embeddings for the LLVM instructions.
-5. **Store Embeddings**: The generated embeddings are stored in a file for later use.
+1. **Parse LLVM IR**: Parse raw LLVM IR files (`.ll`) to extract individual instructions, filtering out non-instruction lines such as comments, type definitions, and declarations.
+2. **Generate Extended Flow Graph (XFG)**: Construct an XFG from the parsed instructions, capturing both control flow (e.g., branches, function calls) and data dependencies (e.g., SSA register usage).
+3. **Visualize XFG (Optional)**: Generate visual representations of the XFG, showing control flow, data dependencies, or both, as PNG diagrams.
+4. **Extract Context Pairs**: Perform biased random walks on the XFG to extract context pairs of instructions, which represent semantic relationships within a specified context window.
+5. **Train Skip-Gram Model**: Train a Skip-Gram model with negative sampling on the context pairs to generate embeddings for the LLVM instructions.
+6. **Store Embeddings**: Save the trained embeddings as a mapping from instructions to their vector representations in a pickle file.
 
 ## Setup Instructions
 
 ### Prerequisites
 
-- **Python**: Ensure you have Python 3.7 or higher installed.
-- **PyTorch**: Install PyTorch by following the instructions on the official PyTorch website.
+- **Python**: Python 3.7 or higher.
+- **PyTorch**: Install PyTorch by following the instructions on the [official PyTorch website](https://pytorch.org/get-started/locally/).
+- **Graphviz (Optional)**: For the best XFG visualization, install Graphviz and `pygraphviz`:
+  - On Ubuntu: `sudo apt-get install graphviz graphviz-dev`
+  - Then: `pip install pygraphviz`
+- **Other Dependencies**: Install the required Python packages listed in `requirements.txt`.
 
 ### Installation
 
 1. Clone the repository:
-     ```bash
-     git clone https://github.com/poseidon2022/EBSBP-Using-GNNs.git
-     cd Embedding
-     ```
-2. Install the required Python packages:
-     ```bash
-     pip install -r requirements.txt
-     ```
+```bash
+git clone https://github.com/poseidon2022/EBSBP-Using-GNNs.git
+cd Embedding
+```
 
+2. Install the required Python packages:
+```bash
+pip install -r requirements.txt
+```
 ## Running the Project
 
-1. **Train Embeddings**: Run the following command to compile the C++ source files into LLVM IR:
-     ```bash
-     python3 main.py
-     ```
-     The script will extract context pairs, and train the Skip-Gram model. The embeddings will be saved in `node_embeddings.pt` and the embedding map in `embedding_map.pickle`.
+### Train Embeddings
 
-2. **Use the Embeddings**: You can load the embeddings using PyTorch or any other compatible library for further analysis or downstream tasks.
+Run the following command to process the LLVM IR files, generate XFGs, extract context pairs, train the Skip-Gram model, and save the embeddings:
 
-### Example Usage
+```bash
+python3 main.py --visualize [mode]
+```
 
-After running the training script, you can load the embeddings and use them as follows:
+The `--visualize` argument controls the XFG visualization mode:
+
+- `control`: Generate diagrams showing only control flow edges.
+- `data`: Generate diagrams showing only data dependency edges.
+- `both` (default): Generate three diagrams: control flow only, data dependencies only, and both.
+- `none`: Skip visualization.
+
+#### Example:
+
+```bash
+python3 main.py --visualize both
+```
+
+This will:
+
+- Generate XFG diagrams (if visualization is enabled) in `_test_data/xfg_visual/`.
+- Train the Skip-Gram model and save it as `skipgram_model.pt`.
+- Save the embedding map as `embedding_map.pickle`.
+
+### Use the Embeddings
+
+Load the embeddings for further analysis or downstream tasks.
+
+#### Example Usage:
+
 ```python
-import torch
 import pickle
-
-# Load the embeddings
-embeddings = torch.load('node_embeddings.pt')
+import numpy as np
 
 # Load the embedding map
 with open('embedding_map.pickle', 'rb') as f:
         embedding_map = pickle.load(f)
 
 # Example: Get the embedding for a specific LLVM instruction
-instruction = "add i32 %1, %2"
+instruction = "<%ID> = add i32 <%ID>, <%ID>"
 if instruction in embedding_map:
         embedding = embedding_map[instruction]
         print(f"Embedding for '{instruction}': {embedding}")
@@ -64,4 +88,13 @@ else:
         print(f"Instruction '{instruction}' not found in the embedding map.")
 ```
 
-The `embedding_map.pickle` is used in the `ProGraML` project module which generates the graph representation of the programs.
+The `embedding_map.pickle` file contains a dictionary mapping preprocessed LLVM instructions to their embedding vectors (as NumPy arrays). This map can be used in the ProGraML project module to generate graph representations of programs.
+
+### Output Files
+
+- `skipgram_model.pt`: The trained Skip-Gram model weights.
+- `embedding_map.pickle`: A dictionary mapping preprocessed LLVM instructions to their embedding vectors.
+- **XFG Diagrams** (if visualization is enabled):
+  - `<filename>_control.png`: Diagram showing only control flow edges.
+  - `<filename>_data.png`: Diagram showing only data dependency edges.
+  - `<filename>.png`: Diagram showing both control and data edges (generated in `both` mode).
