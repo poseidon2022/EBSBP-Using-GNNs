@@ -1,10 +1,6 @@
 # Install LLVM development package
 sudo apt install -y llvm-dev
 
-# Download and install pip
-curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
-python3 get-pip.py --force-reinstall
-
 # Create and activate virtual environment
 python3 -m venv venv
 source ./venv/bin/activate

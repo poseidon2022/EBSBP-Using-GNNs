@@ -7,7 +7,7 @@ class PrepareXFG:
     def __init__(self):
             
 
-        self.folders = ["./_test_data/llvm"]
+        self.folders = ["../_test_data/llvm"]
         self.all_instructions = []
         self.all_pairs = []
 

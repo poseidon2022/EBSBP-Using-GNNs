@@ -1,6 +1,7 @@
 import os
 import subprocess
 from inst2vec import inst2vec_preprocess
+import shutil
 
 class Compiler():
     """
@@ -26,8 +27,14 @@ class Compiler():
         self.language_compilers = language_compilers
 
     def generate_ir(self):
-        if not os.path.exists(self.llvm_path):
-            os.makedirs(self.llvm_path)
+        if os.path.exists(self.llvm_path):
+            shutil.rmtree(self.llvm_path)
+
+        if os.path.exists(self.processed_llvm_path):
+            shutil.rmtree(self.processed_llvm_path)
+
+        os.makedirs(self.llvm_path)
+        os.makedirs(self.processed_llvm_path)
 
         print("COMPILING SOURCE FILES TO LLVM IR...\n")
         for root, dirs, files in os.walk(self.data_path):
@@ -65,18 +72,37 @@ class Compiler():
         with open(input_file, 'r') as f:
             lines = f.readlines()
 
-        lines = [[line.strip()] for line in lines if line.strip()]
+        # Combine multi-line instructions into single lines
+        combined_lines = []
+        buffer = ""
+        for line in lines:
+            if "@main()" in line: # Abort when main function encountered [A CRUCIAL DECISTION MADE AFTER DISCUSSION]
+                break
+            if line.startswith("define") or line.startswith("@"):
+                continue
+            
+            stripped_line = line.strip()
+            if stripped_line.endswith("[") or buffer:
+                buffer += " " + stripped_line
+                if stripped_line.endswith("]"):
+                    combined_lines.append(buffer.strip())
+                    buffer = ""
+            else:
+                combined_lines.append(stripped_line)
 
-        preprocessed_lines, _ = inst2vec_preprocess.preprocess(lines)
+        # Filter out empty lines and prepare for preprocessing
+        combined_lines = [[line] for line in combined_lines if line]
+
+        preprocessed_lines, _ = inst2vec_preprocess.preprocess(combined_lines)
         preprocessed_texts = [
             inst2vec_preprocess.PreprocessStatement(x[0] if len(x) else "")
             for x in preprocessed_lines
         ]
 
         preprocessed_texts = [full_text for full_text in preprocessed_texts if full_text]
-
         relative_path = os.path.relpath(os.path.dirname(input_file), self.llvm_path)
         processed_folder = os.path.join(self.processed_llvm_path, relative_path)
+
         if not os.path.exists(processed_folder):
             os.makedirs(processed_folder)
 
