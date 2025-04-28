@@ -48,8 +48,8 @@ class GraphVisualizer:
             raise ValueError(f"Layout computation failed to assign positions to nodes: {missing_nodes}")
         return pos
 
-    def _draw_graph(self, pos, mode, suffix="", output_file=None):
-        """Draw the graph with the specified mode and save it to the specified output file."""
+    def _draw_graph(self, pos, suffix="", output_file=None):
+        """Draw the graphs and save it to the specified output file."""
         if output_file is None:
             raise ValueError("Output file path must be provided.")
 
@@ -91,18 +91,16 @@ class GraphVisualizer:
         data_edges = [(u, v) for u, v, d in self.graph.edges(data=True) if d["type"] == "data"]
         control_edges = [(u, v) for u, v, d in self.graph.edges(data=True) if d["type"] == "control"]
 
-        if mode in ["data", "both"]:
-            nx.draw_networkx_edges(
-                self.graph, pos, edgelist=data_edges, edge_color="green", width=2.0,
-                arrows=True, arrowsize=30, ax=ax, alpha=0.7,
-                connectionstyle="arc3,rad=0.1"
-            )
-        if mode in ["control", "both"]:
-            nx.draw_networkx_edges(
-                self.graph, pos, edgelist=control_edges, edge_color="black", width=2.0,
-                arrows=True, arrowsize=30, ax=ax, alpha=0.7,
-                connectionstyle="arc3,rad=0.1"
-            )
+        nx.draw_networkx_edges(
+            self.graph, pos, edgelist=data_edges, edge_color="green", width=2.0,
+            arrows=True, arrowsize=30, ax=ax, alpha=0.7,
+            connectionstyle="arc3,rad=0.1"
+        )
+        nx.draw_networkx_edges(
+            self.graph, pos, edgelist=control_edges, edge_color="black", width=2.0,
+            arrows=True, arrowsize=30, ax=ax, alpha=0.7,
+            connectionstyle="arc3,rad=0.1"
+        )
 
         # Create legend mapping node numbers to instructions
         legend_text = "Node to Instruction Mapping:\n\n"
@@ -110,6 +108,7 @@ class GraphVisualizer:
         sorted_nodes = sorted(self.graph.nodes)
         num_nodes = len(sorted_nodes)
         num_columns = (num_nodes // nodes_per_column) + 1 if num_nodes % nodes_per_column else (num_nodes // nodes_per_column)
+        index = 0
 
         for col in range(num_columns):
             start_idx = col * nodes_per_column
@@ -117,15 +116,9 @@ class GraphVisualizer:
             for node in sorted_nodes[start_idx:end_idx]:
                 instr = self.graph.nodes[node]["instruction"]
                 wrapped_instr = "\n".join(textwrap.wrap(instr, width=40))
-                legend_text += f"{node}: {wrapped_instr}\n"
+                legend_text += f"[{index}] ➡️ {node}: {wrapped_instr}\n"
+                index += 1
             legend_text += "\n"
-
-        # Add edge type descriptions based on the mode
-        legend_text += "\nEdge Types:\n"
-        if mode in ["data", "both"]:
-            legend_text += "Green Solid: Data Dependency\n"
-        if mode in ["control", "both"]:
-            legend_text += "Black Dashed: Control Flow\n"
 
         # Add the legend as a text box
         plt.text(1.05, 0.5, legend_text, transform=ax.transAxes, fontsize=12,
@@ -142,10 +135,10 @@ class GraphVisualizer:
             plt.Line2D([0], [0], marker='o', color='w', label='Other Instruction',
                        markerfacecolor='lightblue', markersize=12),
         ]
-        if mode in ["data", "both"]:
-            legend_elements.append(plt.Line2D([0], [0], color='green', lw=2, label='Data Edge'))
-        if mode in ["control", "both"]:
-            legend_elements.append(plt.Line2D([0], [0], color='black', lw=2, label='Control Flow Edge'))
+
+        legend_elements.append(plt.Line2D([0], [0], color='green', lw=2, label='Data Edge'))
+        legend_elements.append(plt.Line2D([0], [0], color='black', lw=2, label='Control Flow Edge'))
+
         ax.legend(handles=legend_elements, loc='upper left', bbox_to_anchor=(1.05, 1), fontsize=12)
 
         # Add a descriptive title
@@ -160,13 +153,10 @@ class GraphVisualizer:
         plt.tight_layout(rect=[0, 0, 0.65, 1])
         plt.savefig(output_file, dpi=150, bbox_inches="tight")
         plt.close()
-        print(f"XFG diagram saved to {output_file}")
+        print(f"🖌️  XFG diagram saved to {output_file}")
 
-    def visualize_xfg(self, mode="both"):
-        """Generate XFG diagrams based on the specified mode."""
-        if mode == "none":
-            return
-
+    def visualize_xfg(self):
+        """Generate XFG diagrams."""
         # Compute the layout once to ensure consistency across diagrams
         pos = self._compute_layout()
 
@@ -175,20 +165,11 @@ class GraphVisualizer:
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
 
-        # Generate diagrams based on the mode
-        if mode == "control":
-            control_output_file = os.path.join(output_dir, f"{os.path.basename(output_dir)}_control.png")
-            self._draw_graph(pos, "control", suffix="Control Flow", output_file=control_output_file)
-        elif mode == "data":
-            data_output_file = os.path.join(output_dir, f"{os.path.basename(output_dir)}_data.png")
-            self._draw_graph(pos, "data", suffix="Data Dependency", output_file=data_output_file)
-        elif mode == "both":
-            control_output_file = os.path.join(output_dir, f"{os.path.basename(output_dir)}_control.png")
-            data_output_file = os.path.join(output_dir, f"{os.path.basename(output_dir)}_data.png")
-            both_output_file = os.path.join(output_dir, f"{os.path.basename(output_dir)}.png")
+        # Generate diagrams
+        control_output_file = os.path.join(output_dir, f"{os.path.basename(output_dir)}_control.png")
+        data_output_file = os.path.join(output_dir, f"{os.path.basename(output_dir)}_data.png")
+        both_output_file = os.path.join(output_dir, f"{os.path.basename(output_dir)}.png")
 
-            self._draw_graph(pos, "control", suffix="Control Flow", output_file=control_output_file)
-            self._draw_graph(pos, "data", suffix="Data Dependency", output_file=data_output_file)
-            self._draw_graph(pos, "both", suffix="", output_file=both_output_file)
-        else:
-            raise ValueError(f"Invalid visualization mode: {mode}. Must be 'control', 'data', 'both', or 'none'.")
+        self._draw_graph(pos, suffix="Control Flow", output_file=control_output_file)
+        self._draw_graph(pos, suffix="Data Dependency", output_file=data_output_file)
+        self._draw_graph(pos, suffix="", output_file=both_output_file)
