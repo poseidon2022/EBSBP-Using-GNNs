@@ -1,5 +1,4 @@
 import os
-import networkx as nx
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -7,160 +6,15 @@ from torch.utils.data import DataLoader
 import pickle
 from skipgram import SkipGram, SkipGramDataset
 import random
-import re
-from GraphVisualizer import GraphVisualizer
-from datetime import datetime
-
+from utils import parse_llvm_ir, generate_xfg, validate_node_count_logger
 class Embedding:
-    def __init__(self, data_path, visualize_mode="both"):
-        """Initialize the Embedding class with paths to LLVM IR files and visualization mode."""
+    def __init__(self, data_path):
+        """Initialize the Embedding class with paths to LLVM IR files."""
         self.data_path = data_path
         self.llvm_path = os.path.join(data_path, "llvm")
         self.processed_llvm_path = os.path.join(data_path, "processed_llvm")
         self.all_instructions = []  # Stores all instructions encountered
         self.instruction_to_id = {}  # Maps instructions to unique IDs
-        self.visualize_mode = visualize_mode  # Store the visualization mode
-
-    def parse_llvm_ir(self, llvm_file_path):
-        """Parse an LLVM IR file into a list of instruction strings, excluding non-instructions."""
-        with open(llvm_file_path, 'r') as f:
-            lines = f.readlines()
-
-        instructions = []
-        current_instruction = ""  # To accumulate multi-line instructions
-
-        for line in lines:
-            line = line.strip()
-
-            if line.endswith("}"):
-                line = line[:-1]
-            if "@main()" in line:
-                break
-
-            # Skip type definitions (e.g., %"class.std::ios_base::Init" = type { i8 })
-            if re.match(r'%"[^"]+" = type', line) or line.startswith("%struct.") or line.startswith("%class."):
-                continue
-
-            # Skip function declarations (e.g., declare dso_local void @_ZNSt8ios_base4InitC1Ev(...))
-            if line.startswith("declare "):
-                continue
-
-            # Skip global variable definitions (e.g., @llvm.global_ctors = appending global [1 x { i32, i8*, i8* }] [])
-            if line.startswith("$"):
-                continue
-
-            # Skip %union lines that are not type definitions
-            if line.startswith('%union') and re.match(r'%union\.\w+\s*=\s*type', line):
-                continue
-                
-            # Skip attributes lines (e.g., attributes #0 = { nounwind ... })
-            if line.startswith("attributes"):
-                continue
-    
-            # Skip other non-instruction lines
-            if not line or line.startswith(";") or line.startswith("source_filename") or \
-            line.startswith("!") or line.startswith("target datalayout") or \
-            line.startswith("target triple") or line.startswith("}") or line.startswith('@'):
-                continue
-
-            # Check if the line ends with "[" or "]" or is part of a multi-line instruction
-            if "[" in line or current_instruction:
-                current_instruction += " " + line
-                if "]" in line:  # End of multi-line instruction
-                    instructions.append(current_instruction.strip())
-                    current_instruction = ""
-            else:
-                # Single-line instruction
-                instructions.append(line)
-
-        return instructions
-    
-    def generate_xfg(self, instructions):
-        """Generate an Extended Flow Graph (XFG) from raw LLVM IR instructions."""
-        graph = nx.DiGraph()
-        label_to_start = {}  # Maps labels to their starting node indices
-        id_to_node = {}  # Maps SSA identifiers to node indices
-
-        function_to_head_and_tail = {} # Maps function names to their head and tail node indices
-        inside_function = None # Flag to indicate if we are inside a function
-
-        # First Pass: Identify labels, SSA identifiers, and build the graph
-        for i, instr in enumerate(instructions):
-            if instr.startswith("define"):
-                # Extract function name and initialize its head and tail
-                func_name = re.match(r'define.*@(\w+)', instr).group(1)
-                inside_function = func_name
-                function_to_head_and_tail[func_name] = [i + 1, None]
-                continue
-
-            # Identify labels (e.g., "6:", "8:", "9:")
-            match_label = re.match(r"(\w+):", instr)
-            if match_label:
-                label = f"%{match_label.group(1)}"  # e.g., %6, %8, %9
-                label_to_start[label] = i + 1
-                continue
-
-            # Add instruction node to the graph [labels and defines are skipped]
-            graph.add_node(i, instruction=instr)
-
-            if instr.startswith("ret"):
-                # Update the tail of the current function
-                if inside_function:
-                    function_to_head_and_tail[inside_function][1] = i
-                    inside_function = None
-                continue     
-
-            # Identify SSA identifiers (e.g., %2, %3)
-            match = re.match(r"(%\w+)\s*=\s*\w+\s+.*", instr)
-            if match:
-                id_to_node[match.group(1)] = i  # e.g., %2, %3
-
-        # Second Pass: Add control and data edges
-        for i, instr in enumerate(instructions):
-            # Skip "instructions" that are labels or define statements
-            if re.match(r"\d+:\s*;.*", instr) or instr.startswith("define"):
-                continue
-
-            # Data dependencies (based on SSA register usage)
-            operands = re.findall(r"(%\w+)", instr)
-            result = re.match(r"(%\w+)\s*=", instr)
-            if result and operands:
-                result_id = result.group(1)
-                for op in operands:
-                    if op in id_to_node and op != result_id:
-                        graph.add_edge(id_to_node[op], i, type="data")
-
-            # Control flow: Sequential edges within basic blocks
-            # Add a sequential edge unless the previous instruction ends the block (br or ret)
-            if i > 0 and not instructions[i-1].startswith(("br ", "ret ")) and "= call" not in instructions[i - 1]:
-                if re.match(r"\d+:\s*;.*", instructions[i - 1]) or instructions[i - 1].startswith("define"):
-                    continue
-                graph.add_edge(i - 1, i, type="control")
-
-            # Control flow: Edges for branches
-            if instr.startswith("br "):
-                targets = re.findall(r"label\s+%(\w+)", instr)
-                for target in targets:
-                    target_label = f"%{target}"  # Reconstruct full label, e.g., %6
-                    if target_label in label_to_start:
-                        graph.add_edge(i, label_to_start[target_label], type="control")
-                    else:
-                        print(f"Warning: Target label {target_label} not found in label_to_start: {label_to_start}")
-
-            # Add edges for call instructions (only for user-defined functions)
-            match_call = re.match(r".*call.*@(\w+)", instr)
-            if match_call:
-                called_function = match_call.group(1)
-                if called_function in function_to_head_and_tail:
-                    # This is a call to a user-defined function in the module
-                    head, tail = function_to_head_and_tail[called_function]
-                    graph.add_edge(i, head, type="control")
-                    # Ensure the tail connects back to the next instruction
-                    if tail is not None and i + 1 < len(instructions) and not instructions[i + 1].startswith(("define", "ret ")):
-                        if not re.match(r"\d+:\s*;.*", instructions[i + 1]):
-                            graph.add_edge(tail, i + 1, type="control")
-
-        return graph
 
     def random_walk(self, graph, start_node, walk_length):
         """Perform a biased random walk on the XFG to generate context sequences."""
@@ -210,36 +64,16 @@ class Embedding:
             ]
 
         # Generate XFG using RAW instructions (not preprocessed)
-        instructions = self.parse_llvm_ir(ll_path) 
-        graph = self.generate_xfg(instructions) 
+        instructions = parse_llvm_ir(ll_path) 
+        print(instructions)
+        graph = generate_xfg(instructions) 
 
-        ### LOGGER: this will keep a log of errors encountered
-        if len(graph.nodes) != len(preprocessed_instructions):
-            # Log the failed file
-            log_file_path = os.path.join(self.data_path, "failed_files.txt")
-            with open(log_file_path, 'a') as log_file:
-                log_file.write(f"Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
-                log_file.write('==========================================================================================\n')
-                log_file.write(f"{ll_path}\n")
-                log_file.write(f"Number of nodes in graph: {len(graph.nodes)}\n")
-                log_file.write(f"Number of preprocessed instructions: {len(preprocessed_instructions)}\n\n")
-                for idx, node in enumerate(graph.nodes):
-                    log_file.write(f"{idx}: {graph.nodes[node]['instruction']}\n")
-                log_file.write('------------------------------------------------------------------------------------------\n')
-                for idx in range(len(preprocessed_instructions)):
-                    log_file.write(f"{idx}: {preprocessed_instructions[idx]}\n")
-                log_file.write('===========================================================================================\n\n\n\n\n')
-                
-            print(f"☠️ ⚠️ ☠️ ⚠️  WARNING: Number of nodes in graph ({len(graph.nodes)}) does not match number of preprocessed instructions ({len(preprocessed_instructions)}), SKIPPING FILE ⚠️ ☠️ ⚠️ ☠️")
-            return []
+        ### LOGGER: Validate and log node count mismatch on "failed_files.txt"
+        validate_node_count_logger(ll_path, graph, preprocessed_instructions, self.data_path)
 
         # Update node instructions to preprocessed versions for context pair extraction
         for idx, node in enumerate(graph.nodes):
             graph.nodes[node]["instruction"] = preprocessed_instructions[idx]
-
-        # Visualize the XFG based on the specified mode
-        visualizer = GraphVisualizer(graph, ll_path)
-        visualizer.visualize_xfg(mode=self.visualize_mode)
 
         self.all_instructions.extend([graph.nodes[n]['instruction'] for n in graph.nodes])
         pairs = self.extract_context_pairs(graph, context_size, num_walks, walk_length)
