@@ -19,6 +19,7 @@ class XFGToPT:
         self.data_path = data_path
         self.llvm_path = os.path.join(data_path, "llvm")
         self.processed_llvm_path = os.path.join(data_path, "processed_llvm")
+
         # Load embedding map
         try:
             with open(embedding_map_path, 'rb') as f:

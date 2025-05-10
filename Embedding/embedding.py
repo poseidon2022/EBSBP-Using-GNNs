@@ -65,7 +65,6 @@ class Embedding:
 
         # Generate XFG using RAW instructions (not preprocessed)
         instructions = parse_llvm_ir(ll_path) 
-        print(instructions)
         graph = generate_xfg(instructions) 
 
         ### LOGGER: Validate and log node count mismatch on "failed_files.txt"
