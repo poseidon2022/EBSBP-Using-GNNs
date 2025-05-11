@@ -22,19 +22,17 @@ def parse_llvm_ir(llvm_file_path, for_report=False):
         # Skip type definitions, function declarations, global variables, etc.
         if re.match(r'%"[^"]+" = type', line) or line.startswith("%struct.") or line.startswith("%class."):
             continue
-        if line.startswith("declare "):
+        if line.startswith("declare ") or line.startswith("define "):
             continue
-        if line.startswith("$"):
+        if line.startswith("$") or line.startswith("attributes"):
             continue
         if line.startswith('%union') and re.match(r'%union\.\w+\s*=\s*type', line):
-            continue
-        if line.startswith("attributes"):
             continue
         if not line or line.startswith(";") or line.startswith("source_filename") or \
             line.startswith("!") or line.startswith("target datalayout") or \
             line.startswith("target triple") or line.startswith("}") or line.startswith('@'):
             continue
-        if for_report and line.startswith("define "):
+        if line.startswith('<LABEL>:') or re.match(r"\w+:", line):  # Skip labels
             continue
         if for_report and line[0].isdigit():
             continue
@@ -63,11 +61,18 @@ def generate_xfg(instructions):
     for i, instr in enumerate(instructions):
         # Handle function definitions
         if instr.startswith("define"):
-            func_name = re.match(r'define.*@(\w+)', instr).group(1)
-            current_function = func_name
-            function_to_head_and_tail[func_name] = [i + 1, None]
-            id_to_node = {}  # Reset SSA identifiers for new function
-            function_scopes[func_name] = id_to_node
+            # Match function name in define instruction
+            match = re.match(r'define\s+(?:internal|private|protected)?\s*(?:\[.*?\]\s*)?(?:\w+\s*)*@(\w+)', instr)
+            if match:
+                func_name = match.group(1)
+                current_function = func_name
+                function_to_head_and_tail[func_name] = [i + 1, None]
+                id_to_node = {}  # Reset SSA identifiers for new function
+                function_scopes[func_name] = id_to_node
+            else:
+                print(f"Warning: Could not parse function name from define instruction: {instr}")
+                current_function = None  # Reset to avoid misattribution
+                id_to_node = {}
             continue
 
         # Identify labels
@@ -144,20 +149,54 @@ def generate_xfg(instructions):
     return graph
 
 # Validate node count
+failed_file_count = 0  
+
 def validate_node_count_logger(ll_path, graph, preprocessed_instructions, data_path):
+    """Log node count mismatches with focused debugging information."""
+    global failed_file_count
     if len(graph.nodes) != len(preprocessed_instructions):
+        failed_file_count += 1
         log_file_path = os.path.join(data_path, "failed_files.txt")
         with open(log_file_path, 'a') as log_file:
+            # Log metadata
             log_file.write(f"Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
-            log_file.write('==========================================================================================\n')
-            log_file.write(f"{ll_path}\n")
-            log_file.write(f"Number of nodes in graph: {len(graph.nodes)}\n")
-            log_file.write(f"Number of preprocessed instructions: {len(preprocessed_instructions)}\n\n")
-            for idx, node in enumerate(graph.nodes):
-                log_file.write(f"{idx}: {graph.nodes[node]['instruction']}\n")
-            log_file.write('------------------------------------------------------------------------------------------\n')
-            for idx in range(len(preprocessed_instructions)):
-                log_file.write(f"{idx}: {preprocessed_instructions[idx]}\n")
-            log_file.write('===========================================================================================\n\n\n\n\n')
-        print(f"☠️ ⚠️ Warning: Node count mismatch for {ll_path}. Skipping.")
-        return
+            log_file.write(f"FAILED FILE #{failed_file_count} ==========================================================================\n")
+            log_file.write(f"File: {ll_path}\n")
+            log_file.write(f"Graph Nodes: {len(graph.nodes)}\n")
+            log_file.write(f"Preprocessed Instructions: {len(preprocessed_instructions)}\n")
+            log_file.write(f"Difference: {len(graph.nodes) - len(preprocessed_instructions)}\n\n")
+
+            # Find the first mismatch
+            graph_instructions = [graph.nodes[node]['instruction'] for node in sorted(graph.nodes)]
+            min_length = min(len(graph_instructions), len(preprocessed_instructions))
+            mismatch_idx = None
+            for i in range(min_length):
+                if graph_instructions[i] != preprocessed_instructions[i]:
+                    mismatch_idx = i
+                    break
+            if mismatch_idx is None and len(graph_instructions) != len(preprocessed_instructions):
+                mismatch_idx = min_length  # Mismatch due to length difference
+
+            # Log mismatch details
+            if mismatch_idx is not None:
+                log_file.write("First Mismatch at Index {}:\n".format(mismatch_idx))
+                log_file.write("- Graph Node: {}\n".format(graph_instructions[mismatch_idx] if mismatch_idx < len(graph_instructions) else "<END>"))
+                log_file.write("- Preprocessed: {}\n".format(preprocessed_instructions[mismatch_idx] if mismatch_idx < len(preprocessed_instructions) else "<END>"))
+                log_file.write("\nContext (3 instructions before and after):\n")
+                
+                # Log context around mismatch
+                start_idx = max(0, mismatch_idx - 3)
+                end_idx = min(max(len(graph_instructions), len(preprocessed_instructions)), mismatch_idx + 4)
+                log_file.write("{:<6} {:<60} {}\n".format("Index", "Graph Node", "Preprocessed"))
+                log_file.write("-" * 100 + "\n")
+                for i in range(start_idx, end_idx):
+                    graph_instr = graph_instructions[i] if i < len(graph_instructions) else "<END>"
+                    preproc_instr = preprocessed_instructions[i] if i < len(preprocessed_instructions) else "<END>"
+                    marker = ">>" if i == mismatch_idx else "  "
+                    log_file.write("{:<6} {:<60} {}\n".format(f"{i}{marker}", 
+                                                              graph_instr[:57] + ("..." if len(graph_instr) > 57 else ""), 
+                                                              preproc_instr[:57] + ("..." if len(preproc_instr) > 57 else "")))
+
+            log_file.write("================================================================================\n\n\n")
+        print(f"☠️ ⚠️ Warning: {failed_file_count}th file has failed 🥺. Node count mismatch for {ll_path}. Details in failed_files.txt.")
+        return True

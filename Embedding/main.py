@@ -5,7 +5,7 @@ from embedding import Embedding
 if __name__ == "__main__":
     # Set up directories and parameters
     ROOT_DIRECTORY = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    DATA_DIRECTORY = os.path.join(ROOT_DIRECTORY, '_test_data')
+    DATA_DIRECTORY = os.path.join(ROOT_DIRECTORY, '_data')
 
     EMBEDDING_SIZE = 10
     CONTEXT_SIZE = 10
