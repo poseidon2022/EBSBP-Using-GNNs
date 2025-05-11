@@ -4,6 +4,7 @@ _test_data/
 myenv/
 Embedding/venv
 ProGraML/venv
+Compiler/venv
 ProGraML/vocabulary
 GNN/venv
 Inst2Vec/venv
