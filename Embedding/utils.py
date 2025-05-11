@@ -26,7 +26,7 @@ def parse_llvm_ir(llvm_file_path, for_report=False):
             continue
         if line.startswith("$") or line.startswith("attributes"):
             continue
-        if line.startswith('%union') and re.match(r'%union\.\w+\s*=\s*type', line):
+        if line.startswith('%union'):
             continue
         if not line or line.startswith(";") or line.startswith("source_filename") or \
             line.startswith("!") or line.startswith("target datalayout") or \
@@ -160,7 +160,7 @@ def validate_node_count_logger(ll_path, graph, preprocessed_instructions, data_p
         with open(log_file_path, 'a') as log_file:
             # Log metadata
             log_file.write(f"Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
-            log_file.write(f"FAILED FILE #{failed_file_count} ==========================================================================\n")
+            log_file.write(f"FAILED FILE #{failed_file_count} ===========================================================================================================================\n")
             log_file.write(f"File: {ll_path}\n")
             log_file.write(f"Graph Nodes: {len(graph.nodes)}\n")
             log_file.write(f"Preprocessed Instructions: {len(preprocessed_instructions)}\n")
@@ -197,6 +197,6 @@ def validate_node_count_logger(ll_path, graph, preprocessed_instructions, data_p
                                                               graph_instr[:57] + ("..." if len(graph_instr) > 57 else ""), 
                                                               preproc_instr[:57] + ("..." if len(preproc_instr) > 57 else "")))
 
-            log_file.write("================================================================================\n\n\n")
+            log_file.write("===========================================================================================================================================\n\n\n")
         print(f"☠️ ⚠️ Warning: {failed_file_count}th file has failed 🥺. Node count mismatch for {ll_path}. Details in failed_files.txt.")
         return True
