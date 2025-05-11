@@ -5,6 +5,7 @@ myenv/
 Embedding/venv
 ProGraML/venv
 Compiler/venv
+Compiler/.env
 ProGraML/vocabulary
 GNN/venv
 Inst2Vec/venv
