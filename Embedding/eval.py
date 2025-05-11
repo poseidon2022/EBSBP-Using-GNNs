@@ -63,7 +63,7 @@ class EmbeddingEval:
             return np.mean(similarities) if similarities else 0.0
         return similarities
 
-    def evaluate_cosine_similarity(self, num_files=10, context_size=10, num_walks=10, walk_length=20):
+    def evaluate_cosine_similarity(self, num_files=1000, context_size=10, num_walks=5, walk_length=10):
         """Evaluate cosine similarity for context pairs vs. random pairs."""
         embedding = Embedding(self.data_path)
         all_pairs = []
@@ -111,7 +111,7 @@ class EmbeddingEval:
 
         return context_similarity, random_similarity
 
-    def evaluate_clustering(self, n_clusters=10):
+    def evaluate_clustering(self, n_clusters=3):
         """Evaluate clustering quality using k-means and Silhouette Score."""
         embeddings = np.array([self.embedding_map[instr] for instr in self.embedding_map if instr != "!UNK"])
         if len(embeddings) < n_clusters:
@@ -125,7 +125,7 @@ class EmbeddingEval:
         print(f"Silhouette Score (k={n_clusters}): {silhouette:.4f}")
         return silhouette
 
-    def evaluate_reconstruction_error(self, num_files=10, context_size=10, num_walks=10, walk_length=20, k=5):
+    def evaluate_reconstruction_error(self, num_files=10, context_size=10, num_walks=5, walk_length=10, k=5):
         """Evaluate reconstruction error using the SkipGram model on a validation set."""
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         model = SkipGram(self.vocab_size, self.embed_size).to(device)
@@ -207,7 +207,7 @@ class EmbeddingEval:
         except Exception as e:
             print(f"Failed to generate t-SNE visualization: {e}")
 
-    def evaluate(self, num_files=10, context_size=10, num_walks=10, walk_length=20, n_clusters=10, k=5):
+    def evaluate(self, num_files=10, context_size=10, num_walks=5, walk_length=10, n_clusters=3, k=5):
         """Run all evaluation metrics and generate visualizations."""
         print("Evaluating Embeddings...\n")
         
@@ -242,6 +242,6 @@ class EmbeddingEval:
         return results
 
 if __name__ == "__main__":
-    DATA_DIRECTORY = "/home/mercury/Desktop/Final_Year_Project/_test_data"  # Updated to your data directory
+    DATA_DIRECTORY = "/content/drive/MyDrive/data"
     evaluator = EmbeddingEval(data_path=DATA_DIRECTORY)
     evaluator.evaluate()
