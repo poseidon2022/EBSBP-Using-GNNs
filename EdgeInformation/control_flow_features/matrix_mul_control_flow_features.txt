@@ -1,0 +1,269 @@
+BB: <unnamed_0> starts with   call void @_ZNSt8ios_base4InitC1Ev(%"class.std::ios_base::Init"* @_ZStL8__ioinit)
+Control-flow features for function: __cxx_global_var_init
+<unnamed_0>:
+  call void @_ZNSt8ios_base4InitC1Ev(%"class.std::ios_base::Init"* @_ZStL8__ioinit): [in_loop: 0, dist_to_branch: 0]
+  %1 = call i32 @__cxa_atexit(void (i8*)* bitcast (void (%"class.std::ios_base::Init"*)* @_ZNSt8ios_base4InitD1Ev to void (i8*)*), i8* getelementptr inbounds (%"class.std::ios_base::Init", %"class.std::ios_base::Init"* @_ZStL8__ioinit, i32 0, i32 0), i8* @__dso_handle) #3: [in_loop: 0, dist_to_branch: 0]
+  ret void: [in_loop: 0, dist_to_branch: 0]
+BB: <unnamed_0> starts with   %4 = alloca [2 x i32]*, align 8
+BB: 10 starts with   %11 = load i32, i32* %7, align 4
+BB: 13 starts with   store i32 0, i32* %8, align 4
+BB: 14 starts with   %15 = load i32, i32* %8, align 4
+BB: 17 starts with   %18 = load [2 x i32]*, [2 x i32]** %6, align 8
+BB: 25 starts with   %26 = load i32, i32* %9, align 4
+BB: 28 starts with   %29 = load [2 x i32]*, [2 x i32]** %4, align 8
+BB: 55 starts with   %56 = load i32, i32* %9, align 4
+BB: 58 starts with   br label %59
+BB: 59 starts with   %60 = load i32, i32* %8, align 4
+BB: 62 starts with   br label %63
+BB: 63 starts with   %64 = load i32, i32* %7, align 4
+BB: 66 starts with   ret void
+Control-flow features for function: _Z8multiplyPA2_iS0_S0_
+<unnamed_0>:
+  %4 = alloca [2 x i32]*, align 8: [in_loop: 0, dist_to_branch: 10]
+  %5 = alloca [2 x i32]*, align 8: [in_loop: 0, dist_to_branch: 9]
+  %6 = alloca [2 x i32]*, align 8: [in_loop: 0, dist_to_branch: 8]
+  %7 = alloca i32, align 4: [in_loop: 0, dist_to_branch: 7]
+  %8 = alloca i32, align 4: [in_loop: 0, dist_to_branch: 6]
+  %9 = alloca i32, align 4: [in_loop: 0, dist_to_branch: 5]
+  store [2 x i32]* %0, [2 x i32]** %4, align 8: [in_loop: 0, dist_to_branch: 4]
+  Depends on:     %4 = alloca [2 x i32]*, align 8
+  store [2 x i32]* %1, [2 x i32]** %5, align 8: [in_loop: 0, dist_to_branch: 3]
+  Depends on:     %5 = alloca [2 x i32]*, align 8
+  store [2 x i32]* %2, [2 x i32]** %6, align 8: [in_loop: 0, dist_to_branch: 2]
+  Depends on:     %6 = alloca [2 x i32]*, align 8
+  store i32 0, i32* %7, align 4: [in_loop: 0, dist_to_branch: 1]
+  Depends on:     %7 = alloca i32, align 4
+  br label %10: [in_loop: 0, dist_to_branch: 0]
+10:
+  %11 = load i32, i32* %7, align 4: [in_loop: 1, dist_to_branch: 2]
+  Depends on:     %7 = alloca i32, align 4
+  %12 = icmp slt i32 %11, 2: [in_loop: 1, dist_to_branch: 1]
+  Depends on:     %11 = load i32, i32* %7, align 4
+BranchID: 0     br i1 %12, label %13, label %66: [in_loop: 1, dist_to_branch: 0]
+  Depends on:     %12 = icmp slt i32 %11, 2
+13:
+  store i32 0, i32* %8, align 4: [in_loop: 1, dist_to_branch: 1]
+  Depends on:     %8 = alloca i32, align 4
+  br label %14: [in_loop: 1, dist_to_branch: 0]
+14:
+  %15 = load i32, i32* %8, align 4: [in_loop: 1, dist_to_branch: 2]
+  Depends on:     %8 = alloca i32, align 4
+  %16 = icmp slt i32 %15, 2: [in_loop: 1, dist_to_branch: 1]
+  Depends on:     %15 = load i32, i32* %8, align 4
+BranchID: 1     br i1 %16, label %17, label %62: [in_loop: 1, dist_to_branch: 0]
+  Depends on:     %16 = icmp slt i32 %15, 2
+17:
+  %18 = load [2 x i32]*, [2 x i32]** %6, align 8: [in_loop: 1, dist_to_branch: 9]
+  Depends on:     %6 = alloca [2 x i32]*, align 8
+  %19 = load i32, i32* %7, align 4: [in_loop: 1, dist_to_branch: 8]
+  Depends on:     %7 = alloca i32, align 4
+  %20 = sext i32 %19 to i64: [in_loop: 1, dist_to_branch: 7]
+  Depends on:     %19 = load i32, i32* %7, align 4
+  %21 = getelementptr inbounds [2 x i32], [2 x i32]* %18, i64 %20: [in_loop: 1, dist_to_branch: 6]
+  Depends on:     %18 = load [2 x i32]*, [2 x i32]** %6, align 8,   %20 = sext i32 %19 to i64
+  %22 = load i32, i32* %8, align 4: [in_loop: 1, dist_to_branch: 5]
+  Depends on:     %8 = alloca i32, align 4
+  %23 = sext i32 %22 to i64: [in_loop: 1, dist_to_branch: 4]
+  Depends on:     %22 = load i32, i32* %8, align 4
+  %24 = getelementptr inbounds [2 x i32], [2 x i32]* %21, i64 0, i64 %23: [in_loop: 1, dist_to_branch: 3]
+  Depends on:     %21 = getelementptr inbounds [2 x i32], [2 x i32]* %18, i64 %20,   %23 = sext i32 %22 to i64
+  store i32 0, i32* %24, align 4: [in_loop: 1, dist_to_branch: 2]
+  Depends on:     %24 = getelementptr inbounds [2 x i32], [2 x i32]* %21, i64 0, i64 %23
+  store i32 0, i32* %9, align 4: [in_loop: 1, dist_to_branch: 1]
+  Depends on:     %9 = alloca i32, align 4
+  br label %25: [in_loop: 1, dist_to_branch: 0]
+25:
+  %26 = load i32, i32* %9, align 4: [in_loop: 1, dist_to_branch: 2]
+  Depends on:     %9 = alloca i32, align 4
+  %27 = icmp slt i32 %26, 2: [in_loop: 1, dist_to_branch: 1]
+  Depends on:     %26 = load i32, i32* %9, align 4
+BranchID: 2     br i1 %27, label %28, label %58: [in_loop: 1, dist_to_branch: 0]
+  Depends on:     %27 = icmp slt i32 %26, 2
+28:
+  %29 = load [2 x i32]*, [2 x i32]** %4, align 8: [in_loop: 1, dist_to_branch: 27]
+  Depends on:     %4 = alloca [2 x i32]*, align 8
+  %30 = load i32, i32* %7, align 4: [in_loop: 1, dist_to_branch: 26]
+  Depends on:     %7 = alloca i32, align 4
+  %31 = sext i32 %30 to i64: [in_loop: 1, dist_to_branch: 25]
+  Depends on:     %30 = load i32, i32* %7, align 4
+  %32 = getelementptr inbounds [2 x i32], [2 x i32]* %29, i64 %31: [in_loop: 1, dist_to_branch: 24]
+  Depends on:     %29 = load [2 x i32]*, [2 x i32]** %4, align 8,   %31 = sext i32 %30 to i64
+  %33 = load i32, i32* %9, align 4: [in_loop: 1, dist_to_branch: 23]
+  Depends on:     %9 = alloca i32, align 4
+  %34 = sext i32 %33 to i64: [in_loop: 1, dist_to_branch: 22]
+  Depends on:     %33 = load i32, i32* %9, align 4
+  %35 = getelementptr inbounds [2 x i32], [2 x i32]* %32, i64 0, i64 %34: [in_loop: 1, dist_to_branch: 21]
+  Depends on:     %32 = getelementptr inbounds [2 x i32], [2 x i32]* %29, i64 %31,   %34 = sext i32 %33 to i64
+  %36 = load i32, i32* %35, align 4: [in_loop: 1, dist_to_branch: 20]
+  Depends on:     %35 = getelementptr inbounds [2 x i32], [2 x i32]* %32, i64 0, i64 %34
+  %37 = load [2 x i32]*, [2 x i32]** %5, align 8: [in_loop: 1, dist_to_branch: 19]
+  Depends on:     %5 = alloca [2 x i32]*, align 8
+  %38 = load i32, i32* %9, align 4: [in_loop: 1, dist_to_branch: 18]
+  Depends on:     %9 = alloca i32, align 4
+  %39 = sext i32 %38 to i64: [in_loop: 1, dist_to_branch: 17]
+  Depends on:     %38 = load i32, i32* %9, align 4
+  %40 = getelementptr inbounds [2 x i32], [2 x i32]* %37, i64 %39: [in_loop: 1, dist_to_branch: 16]
+  Depends on:     %37 = load [2 x i32]*, [2 x i32]** %5, align 8,   %39 = sext i32 %38 to i64
+  %41 = load i32, i32* %8, align 4: [in_loop: 1, dist_to_branch: 15]
+  Depends on:     %8 = alloca i32, align 4
+  %42 = sext i32 %41 to i64: [in_loop: 1, dist_to_branch: 14]
+  Depends on:     %41 = load i32, i32* %8, align 4
+  %43 = getelementptr inbounds [2 x i32], [2 x i32]* %40, i64 0, i64 %42: [in_loop: 1, dist_to_branch: 13]
+  Depends on:     %40 = getelementptr inbounds [2 x i32], [2 x i32]* %37, i64 %39,   %42 = sext i32 %41 to i64
+  %44 = load i32, i32* %43, align 4: [in_loop: 1, dist_to_branch: 12]
+  Depends on:     %43 = getelementptr inbounds [2 x i32], [2 x i32]* %40, i64 0, i64 %42
+  %45 = mul nsw i32 %36, %44: [in_loop: 1, dist_to_branch: 11]
+  Depends on:     %36 = load i32, i32* %35, align 4,   %44 = load i32, i32* %43, align 4
+  %46 = load [2 x i32]*, [2 x i32]** %6, align 8: [in_loop: 1, dist_to_branch: 10]
+  Depends on:     %6 = alloca [2 x i32]*, align 8
+  %47 = load i32, i32* %7, align 4: [in_loop: 1, dist_to_branch: 9]
+  Depends on:     %7 = alloca i32, align 4
+  %48 = sext i32 %47 to i64: [in_loop: 1, dist_to_branch: 8]
+  Depends on:     %47 = load i32, i32* %7, align 4
+  %49 = getelementptr inbounds [2 x i32], [2 x i32]* %46, i64 %48: [in_loop: 1, dist_to_branch: 7]
+  Depends on:     %46 = load [2 x i32]*, [2 x i32]** %6, align 8,   %48 = sext i32 %47 to i64
+  %50 = load i32, i32* %8, align 4: [in_loop: 1, dist_to_branch: 6]
+  Depends on:     %8 = alloca i32, align 4
+  %51 = sext i32 %50 to i64: [in_loop: 1, dist_to_branch: 5]
+  Depends on:     %50 = load i32, i32* %8, align 4
+  %52 = getelementptr inbounds [2 x i32], [2 x i32]* %49, i64 0, i64 %51: [in_loop: 1, dist_to_branch: 4]
+  Depends on:     %49 = getelementptr inbounds [2 x i32], [2 x i32]* %46, i64 %48,   %51 = sext i32 %50 to i64
+  %53 = load i32, i32* %52, align 4: [in_loop: 1, dist_to_branch: 3]
+  Depends on:     %52 = getelementptr inbounds [2 x i32], [2 x i32]* %49, i64 0, i64 %51
+  %54 = add nsw i32 %53, %45: [in_loop: 1, dist_to_branch: 2]
+  Depends on:     %45 = mul nsw i32 %36, %44,   %53 = load i32, i32* %52, align 4
+  store i32 %54, i32* %52, align 4: [in_loop: 1, dist_to_branch: 1]
+  Depends on:     %52 = getelementptr inbounds [2 x i32], [2 x i32]* %49, i64 0, i64 %51,   %54 = add nsw i32 %53, %45
+  br label %55: [in_loop: 1, dist_to_branch: 0]
+55:
+  %56 = load i32, i32* %9, align 4: [in_loop: 1, dist_to_branch: 3]
+  Depends on:     %9 = alloca i32, align 4
+  %57 = add nsw i32 %56, 1: [in_loop: 1, dist_to_branch: 2]
+  Depends on:     %56 = load i32, i32* %9, align 4
+  store i32 %57, i32* %9, align 4: [in_loop: 1, dist_to_branch: 1]
+  Depends on:     %9 = alloca i32, align 4,   %57 = add nsw i32 %56, 1
+  br label %25: [in_loop: 1, dist_to_branch: 0]
+58:
+  br label %59: [in_loop: 1, dist_to_branch: 0]
+59:
+  %60 = load i32, i32* %8, align 4: [in_loop: 1, dist_to_branch: 3]
+  Depends on:     %8 = alloca i32, align 4
+  %61 = add nsw i32 %60, 1: [in_loop: 1, dist_to_branch: 2]
+  Depends on:     %60 = load i32, i32* %8, align 4
+  store i32 %61, i32* %8, align 4: [in_loop: 1, dist_to_branch: 1]
+  Depends on:     %8 = alloca i32, align 4,   %61 = add nsw i32 %60, 1
+  br label %14: [in_loop: 1, dist_to_branch: 0]
+62:
+  br label %63: [in_loop: 1, dist_to_branch: 0]
+63:
+  %64 = load i32, i32* %7, align 4: [in_loop: 1, dist_to_branch: 3]
+  Depends on:     %7 = alloca i32, align 4
+  %65 = add nsw i32 %64, 1: [in_loop: 1, dist_to_branch: 2]
+  Depends on:     %64 = load i32, i32* %7, align 4
+  store i32 %65, i32* %7, align 4: [in_loop: 1, dist_to_branch: 1]
+  Depends on:     %7 = alloca i32, align 4,   %65 = add nsw i32 %64, 1
+  br label %10: [in_loop: 1, dist_to_branch: 0]
+66:
+  ret void: [in_loop: 0, dist_to_branch: 0]
+BB: <unnamed_0> starts with   %1 = alloca i32, align 4
+BB: 12 starts with   %13 = load i32, i32* %5, align 4
+BB: 15 starts with   store i32 0, i32* %6, align 4
+BB: 16 starts with   %17 = load i32, i32* %6, align 4
+BB: 19 starts with   %20 = load i32, i32* %5, align 4
+BB: 29 starts with   %30 = load i32, i32* %6, align 4
+BB: 32 starts with   %33 = call dereferenceable(272) %"class.std::basic_ostream"* @_ZNSolsEPFRSoS_E(%"class.std::basic_ostream"* @_ZSt4cout, %"class.std::basic_ostream"* (%"class.std::basic_ostream"*)* @_ZSt4endlIcSt11char_traitsIcEERSt13basic_ostreamIT_T0_ES6_)
+BB: 34 starts with   %35 = load i32, i32* %5, align 4
+BB: 37 starts with   ret i32 0
+Control-flow features for function: main
+<unnamed_0>:
+  %1 = alloca i32, align 4: [in_loop: 0, dist_to_branch: 8]
+  %2 = alloca [2 x [2 x i32]], align 16: [in_loop: 0, dist_to_branch: 7]
+  %3 = alloca [2 x [2 x i32]], align 16: [in_loop: 0, dist_to_branch: 6]
+  %4 = alloca [2 x [2 x i32]], align 16: [in_loop: 0, dist_to_branch: 5]
+  %5 = alloca i32, align 4: [in_loop: 0, dist_to_branch: 4]
+  %6 = alloca i32, align 4: [in_loop: 0, dist_to_branch: 3]
+  store i32 0, i32* %1, align 4: [in_loop: 0, dist_to_branch: 2]
+  Depends on:     %1 = alloca i32, align 4
+  %7 = bitcast [2 x [2 x i32]]* %2 to i8*: [in_loop: 0, dist_to_branch: 1]
+  Depends on:     %2 = alloca [2 x [2 x i32]], align 16
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 16 %7, i8* align 16 bitcast ([2 x [2 x i32]]* @__const.main.A to i8*), i64 16, i1 false): [in_loop: 0, dist_to_branch: 0]
+  Depends on:     %7 = bitcast [2 x [2 x i32]]* %2 to i8*
+  %8 = bitcast [2 x [2 x i32]]* %3 to i8*: [in_loop: 0, dist_to_branch: 1]
+  Depends on:     %3 = alloca [2 x [2 x i32]], align 16
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 16 %8, i8* align 16 bitcast ([2 x [2 x i32]]* @__const.main.B to i8*), i64 16, i1 false): [in_loop: 0, dist_to_branch: 0]
+  Depends on:     %8 = bitcast [2 x [2 x i32]]* %3 to i8*
+  %9 = getelementptr inbounds [2 x [2 x i32]], [2 x [2 x i32]]* %2, i64 0, i64 0: [in_loop: 0, dist_to_branch: 3]
+  Depends on:     %2 = alloca [2 x [2 x i32]], align 16
+  %10 = getelementptr inbounds [2 x [2 x i32]], [2 x [2 x i32]]* %3, i64 0, i64 0: [in_loop: 0, dist_to_branch: 2]
+  Depends on:     %3 = alloca [2 x [2 x i32]], align 16
+  %11 = getelementptr inbounds [2 x [2 x i32]], [2 x [2 x i32]]* %4, i64 0, i64 0: [in_loop: 0, dist_to_branch: 1]
+  Depends on:     %4 = alloca [2 x [2 x i32]], align 16
+  call void @_Z8multiplyPA2_iS0_S0_([2 x i32]* %9, [2 x i32]* %10, [2 x i32]* %11): [in_loop: 0, dist_to_branch: 0]
+  Depends on:     %9 = getelementptr inbounds [2 x [2 x i32]], [2 x [2 x i32]]* %2, i64 0, i64 0,   %10 = getelementptr inbounds [2 x [2 x i32]], [2 x [2 x i32]]* %3, i64 0, i64 0,   %11 = getelementptr inbounds [2 x [2 x i32]], [2 x [2 x i32]]* %4, i64 0, i64 0
+  store i32 0, i32* %5, align 4: [in_loop: 0, dist_to_branch: 1]
+  Depends on:     %5 = alloca i32, align 4
+  br label %12: [in_loop: 0, dist_to_branch: 0]
+12:
+  %13 = load i32, i32* %5, align 4: [in_loop: 1, dist_to_branch: 2]
+  Depends on:     %5 = alloca i32, align 4
+  %14 = icmp slt i32 %13, 2: [in_loop: 1, dist_to_branch: 1]
+  Depends on:     %13 = load i32, i32* %5, align 4
+BranchID: 3     br i1 %14, label %15, label %37: [in_loop: 1, dist_to_branch: 0]
+  Depends on:     %14 = icmp slt i32 %13, 2
+15:
+  store i32 0, i32* %6, align 4: [in_loop: 1, dist_to_branch: 1]
+  Depends on:     %6 = alloca i32, align 4
+  br label %16: [in_loop: 1, dist_to_branch: 0]
+16:
+  %17 = load i32, i32* %6, align 4: [in_loop: 1, dist_to_branch: 2]
+  Depends on:     %6 = alloca i32, align 4
+  %18 = icmp slt i32 %17, 2: [in_loop: 1, dist_to_branch: 1]
+  Depends on:     %17 = load i32, i32* %6, align 4
+BranchID: 4     br i1 %18, label %19, label %32: [in_loop: 1, dist_to_branch: 0]
+  Depends on:     %18 = icmp slt i32 %17, 2
+19:
+  %20 = load i32, i32* %5, align 4: [in_loop: 1, dist_to_branch: 7]
+  Depends on:     %5 = alloca i32, align 4
+  %21 = sext i32 %20 to i64: [in_loop: 1, dist_to_branch: 6]
+  Depends on:     %20 = load i32, i32* %5, align 4
+  %22 = getelementptr inbounds [2 x [2 x i32]], [2 x [2 x i32]]* %4, i64 0, i64 %21: [in_loop: 1, dist_to_branch: 5]
+  Depends on:     %4 = alloca [2 x [2 x i32]], align 16,   %21 = sext i32 %20 to i64
+  %23 = load i32, i32* %6, align 4: [in_loop: 1, dist_to_branch: 4]
+  Depends on:     %6 = alloca i32, align 4
+  %24 = sext i32 %23 to i64: [in_loop: 1, dist_to_branch: 3]
+  Depends on:     %23 = load i32, i32* %6, align 4
+  %25 = getelementptr inbounds [2 x i32], [2 x i32]* %22, i64 0, i64 %24: [in_loop: 1, dist_to_branch: 2]
+  Depends on:     %22 = getelementptr inbounds [2 x [2 x i32]], [2 x [2 x i32]]* %4, i64 0, i64 %21,   %24 = sext i32 %23 to i64
+  %26 = load i32, i32* %25, align 4: [in_loop: 1, dist_to_branch: 1]
+  Depends on:     %25 = getelementptr inbounds [2 x i32], [2 x i32]* %22, i64 0, i64 %24
+  %27 = call dereferenceable(272) %"class.std::basic_ostream"* @_ZNSolsEi(%"class.std::basic_ostream"* @_ZSt4cout, i32 %26): [in_loop: 1, dist_to_branch: 0]
+  Depends on:     %26 = load i32, i32* %25, align 4
+  %28 = call dereferenceable(272) %"class.std::basic_ostream"* @_ZStlsISt11char_traitsIcEERSt13basic_ostreamIcT_ES5_PKc(%"class.std::basic_ostream"* dereferenceable(272) %27, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @.str, i64 0, i64 0)): [in_loop: 1, dist_to_branch: 0]
+  Depends on:     %27 = call dereferenceable(272) %"class.std::basic_ostream"* @_ZNSolsEi(%"class.std::basic_ostream"* @_ZSt4cout, i32 %26)
+  br label %29: [in_loop: 1, dist_to_branch: 0]
+29:
+  %30 = load i32, i32* %6, align 4: [in_loop: 1, dist_to_branch: 3]
+  Depends on:     %6 = alloca i32, align 4
+  %31 = add nsw i32 %30, 1: [in_loop: 1, dist_to_branch: 2]
+  Depends on:     %30 = load i32, i32* %6, align 4
+  store i32 %31, i32* %6, align 4: [in_loop: 1, dist_to_branch: 1]
+  Depends on:     %6 = alloca i32, align 4,   %31 = add nsw i32 %30, 1
+  br label %16: [in_loop: 1, dist_to_branch: 0]
+32:
+  %33 = call dereferenceable(272) %"class.std::basic_ostream"* @_ZNSolsEPFRSoS_E(%"class.std::basic_ostream"* @_ZSt4cout, %"class.std::basic_ostream"* (%"class.std::basic_ostream"*)* @_ZSt4endlIcSt11char_traitsIcEERSt13basic_ostreamIT_T0_ES6_): [in_loop: 1, dist_to_branch: 0]
+  br label %34: [in_loop: 1, dist_to_branch: 0]
+34:
+  %35 = load i32, i32* %5, align 4: [in_loop: 1, dist_to_branch: 3]
+  Depends on:     %5 = alloca i32, align 4
+  %36 = add nsw i32 %35, 1: [in_loop: 1, dist_to_branch: 2]
+  Depends on:     %35 = load i32, i32* %5, align 4
+  store i32 %36, i32* %5, align 4: [in_loop: 1, dist_to_branch: 1]
+  Depends on:     %5 = alloca i32, align 4,   %36 = add nsw i32 %35, 1
+  br label %12: [in_loop: 1, dist_to_branch: 0]
+37:
+  ret i32 0: [in_loop: 0, dist_to_branch: 0]
+BB: <unnamed_0> starts with   call void @__cxx_global_var_init()
+Control-flow features for function: _GLOBAL__sub_I_matrix_mul.cpp
+<unnamed_0>:
+  call void @__cxx_global_var_init(): [in_loop: 0, dist_to_branch: 0]
+  ret void: [in_loop: 0, dist_to_branch: 0]

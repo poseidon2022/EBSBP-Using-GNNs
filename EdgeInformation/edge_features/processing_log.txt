@@ -1,0 +1,9 @@
+Found 8 LLVM IR files to process
+Processing 1/8: binary_search
+Processing 2/8: prime
+Processing 3/8: matrix_mul
+Processing 4/8: linear_search
+Processing 5/8: sorting
+Processing 6/8: linked_list
+Processing 7/8: factorial
+Processing 8/8: quick_sort
