@@ -28,7 +28,13 @@ class Embedding:
                 break
             data_neighbors = [n for n in neighbors if graph[current][n]['type'] == "data"]
             control_neighbors = [n for n in neighbors if graph[current][n]['type'] == "control"]
-            if data_neighbors and random.random() < 0.7:  # 70% chance to follow data edges
+
+            if data_neighbors and control_neighbors:
+                if random.random() < 0.5:  # 50% chance for data or control
+                    current = random.choice(data_neighbors)
+                else:
+                    current = random.choice(control_neighbors)
+            elif data_neighbors:
                 current = random.choice(data_neighbors)
             elif control_neighbors:
                 current = random.choice(control_neighbors)
@@ -102,20 +108,30 @@ class Embedding:
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         print(f"Using device: {device}")
 
+       # Build vocabulary with frequency filtering
+        instruction_counts = {}
+        for instr in self.all_instructions:
+            instruction_counts[instr] = instruction_counts.get(instr, 0) + 1
+            
         # Build vocabulary incrementally
-        unique_instructions = set(self.all_instructions)
+        unique_instructions = set()
         for pair in self.get_context_pairs_generator(context_size, num_walks, walk_length):
-            unique_instructions.add(pair[0])
-            unique_instructions.add(pair[1])
+            instr, ctx = pair
+            if instruction_counts.get(instr, 0) >= 5:
+                unique_instructions.add(instr)
+            if instruction_counts.get(ctx, 0) >= 5:
+                unique_instructions.add(ctx)
+                
         unique_instructions = list(unique_instructions)
         self.instruction_to_id = {instr: i for i, instr in enumerate(unique_instructions)}
         vocab_size = len(unique_instructions)
-        print(f"Vocabulary size: {vocab_size}")
+        print(f"Vocabulary size after filtering: {vocab_size}")
 
         # Initialize model
         model = SkipGram(vocab_size, embed_size).to(device)
         criterion = nn.BCEWithLogitsLoss()
         optimizer = optim.Adam(model.parameters(), lr=learning_rate)
+        scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=5, gamma=0.1)  # Decay LR by 0.1 every 5 epochs
 
         print("\nTRAINING SKIP-GRAM MODEL...\n")
         for epoch in range(epochs):
@@ -151,6 +167,7 @@ class Embedding:
                             optimizer.step()
                             total_loss += loss.item()
                         batch_pairs = []  # Clear batch
+            scheduler.step()  # Update learning rate
 
             # Process remaining pairs
             if batch_pairs:
@@ -178,7 +195,7 @@ class Embedding:
 
     def get_embedding_map(self):
         """Generate a mapping from instructions to their trained embeddings."""
-        model = SkipGram(len(self.instruction_to_id), embed_size=10)  # Match training embed_size
+        model = SkipGram(len(self.instruction_to_id), embed_size=50)  # Match training embed_size
         model.load_state_dict(torch.load('skipgram_model.pt'))
         embeddings = model.embedding.weight
         embedding_map = {}

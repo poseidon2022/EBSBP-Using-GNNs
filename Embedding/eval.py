@@ -64,27 +64,27 @@ class EmbeddingEval:
         return similarities
 
     def evaluate_cosine_similarity(self, num_files=1000, context_size=10, num_walks=5, walk_length=10):
-        """Evaluate cosine similarity for context pairs vs. random pairs."""
         embedding = Embedding(self.data_path)
         all_pairs = []
         random_pairs = []
         unique_instructions = list(self.embedding_map.keys())
 
-        # Collect context pairs from a subset of files
+        # Use a different subset of files for evaluation
         count = 0
+        files = []
         for root, _, files in os.walk(os.path.join(self.data_path, "llvm")):
             for file_name in files:
                 if file_name.endswith('.ll'):
-                    ll_path = os.path.join(root, file_name)
-                    pairs = embedding.process_file(ll_path, context_size, num_walks, walk_length)
-                    all_pairs.extend(pairs)
-                    count += 1
-                    if count >= num_files:
-                        break
+                    files.append(os.path.join(root, file_name))
+                    
+        random.shuffle(files)  # Shuffle to select different files
+        for ll_path in files:
+            pairs = embedding.process_file(ll_path, context_size, num_walks, walk_length)
+            all_pairs.extend(pairs)
+            count += 1
             if count >= num_files:
                 break
 
-        # Generate random pairs
         for _ in range(len(all_pairs)):
             instr1, instr2 = random.sample(unique_instructions, 2)
             random_pairs.append((instr1, instr2))
@@ -95,19 +95,15 @@ class EmbeddingEval:
         print(f"Average Cosine Similarity (Context Pairs): {context_similarity:.4f}")
         print(f"Average Cosine Similarity (Random Pairs): {random_similarity:.4f}")
 
-        # Plot histogram
-        try:
-            plt.figure(figsize=(10, 6))
-            sns.histplot(self.compute_cosine_similarity(all_pairs, return_mean=False), bins=50, label="Context Pairs", color="blue", alpha=0.5)
-            sns.histplot(self.compute_cosine_similarity(random_pairs, return_mean=False), bins=50, label="Random Pairs", color="red", alpha=0.5)
-            plt.title("Cosine Similarity Distribution")
-            plt.xlabel("Cosine Similarity")
-            plt.ylabel("Frequency")
-            plt.legend()
-            plt.savefig(os.path.join(self.output_dir, "cosine_similarity_histogram.png"))
-            plt.close()
-        except Exception as e:
-            print(f"Failed to plot cosine similarity histogram: {e}")
+        plt.figure(figsize=(10, 6))
+        sns.histplot(self.compute_cosine_similarity(all_pairs, return_mean=False), bins=50, label="Context Pairs", color="blue", alpha=0.5)
+        sns.histplot(self.compute_cosine_similarity(random_pairs, return_mean=False), bins=50, label="Random Pairs", color="red", alpha=0.5)
+        plt.title("Cosine Similarity Distribution")
+        plt.xlabel("Cosine Similarity")
+        plt.ylabel("Frequency")
+        plt.legend()
+        plt.savefig(os.path.join(self.output_dir, "cosine_similarity_histogram.png"))
+        plt.close()
 
         return context_similarity, random_similarity
 
@@ -125,7 +121,7 @@ class EmbeddingEval:
         print(f"Silhouette Score (k={n_clusters}): {silhouette:.4f}")
         return silhouette
 
-    def evaluate_reconstruction_error(self, num_files=10, context_size=10, num_walks=5, walk_length=10, k=5):
+    def evaluate_reconstruction_error(self, num_files=10, context_size=10, num_walks=5, walk_length=10, k=10):
         """Evaluate reconstruction error using the SkipGram model on a validation set."""
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         model = SkipGram(self.vocab_size, self.embed_size).to(device)
