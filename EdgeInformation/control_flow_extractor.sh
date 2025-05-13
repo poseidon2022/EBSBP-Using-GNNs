@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Directory containing LLVM IR files (default: current directory, or specify with argument)
-IR_DIR="dsa/dsa/llvm"
+IR_DIR="../_test_data/llvm"
 
 OUTPUT_DIR="control_flow_features"
 LLVM_DIR="/usr/local/llvm-10"
@@ -66,4 +66,5 @@ for ((i = 0; i < TOTAL_FILES; i++)); do
     fi
 done
 
+rm ControlFlowExtractor.so
 echo "Done processing all $TOTAL_FILES files"

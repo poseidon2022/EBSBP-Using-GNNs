@@ -2,7 +2,6 @@ import os
 import re
 import glob
 from collections import defaultdict
-import uuid
 
 def parse_control_flow(cf_file):
     """Parse control_flow_features.txt with robust label parsing."""
@@ -182,14 +181,7 @@ def parse_control_flow(cf_file):
     except Exception as e:
         print(f"Error parsing {cf_file}: {e}")
         return {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}
-    
-    print(f"node_to_id: {node_to_id}")
-    print(f"label_to_start: {dict(label_to_start)}")
-    print(f"function_to_head_and_tail: {function_to_head_and_tail}")
-    print(f"mem_ops: {dict(mem_ops)}")
-    print(f"dependencies: {dict(dependencies)}")
-    print(f"branch_ids: {branch_ids}")
-    print(f"instr_order: {dict(instr_order)}")
+
     return cf_data, instr_text, label_to_start, function_to_head_and_tail, function_scopes, func_map, instr_order, node_to_id, mem_ops, dependencies, branch_ids
 
 def parse_branch_history(bh_file):
@@ -337,7 +329,7 @@ def build_edge_features(cf_data, instr_text, label_to_start, function_to_head_an
     
     return edge_features, branch_mapping
 
-def merge_features_for_corpus(ll_dir="dsa/dsa/llvm", cf_dir="control_flow_features", bh_dir="branch_history_logs", output_dir="edge_features"):
+def merge_features_for_corpus(ll_dir="../_test_data/llvm", cf_dir="control_flow_features", bh_dir="branch_history_logs", output_dir="edge_features"):
     corpus_data = {}
     
     # Create output directory if it doesn't exist
@@ -345,11 +337,14 @@ def merge_features_for_corpus(ll_dir="dsa/dsa/llvm", cf_dir="control_flow_featur
     
     ll_files = glob.glob(f"{ll_dir}/*.ll")
     with open(os.path.join(output_dir, "processing_log.txt"), 'w') as log_f:
+        log_f.write(f"Searching for LLVM IR files recursively in {ll_dir}\n")
+        ll_files = [os.path.join(root, file) for root, _, files in os.walk(ll_dir) for file in files if file.endswith('.ll')]
         log_f.write(f"Found {len(ll_files)} LLVM IR files to process\n")
+        
         for i, ll_file in enumerate(ll_files):
             base_name = os.path.basename(ll_file).replace('.ll', '')
-            cf_file = f"{cf_dir}/{base_name}_control_flow_features.txt"
-            bh_file = f"{bh_dir}/{base_name}_branch_history.log"
+            cf_file = os.path.join(cf_dir, f"{base_name}_control_flow_features.txt")
+            bh_file = os.path.join(bh_dir, f"{base_name}_branch_history.log")
             output_file = os.path.join(output_dir, f"{base_name}_edge_features.txt")
             
             log_f.write(f"Processing {i+1}/{len(ll_files)}: {base_name}\n")

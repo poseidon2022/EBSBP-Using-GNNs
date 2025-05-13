@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Directory containing LLVM IR files (default: current directory, or specify with argument)
-IR_DIR="dsa/dsa/llvm"
+IR_DIR="../_test_data/llvm"
 
 # Output directories
 INSTR_DIR="instrumented_programs"
@@ -116,4 +116,5 @@ for ((i = 0; i < TOTAL_INSTR; i++)); do
     fi
 done
 
+rm -f BranchHistoryInstrumenter.so DynamicLog.o
 echo "Done processing all $TOTAL_INSTR instrumented files"
