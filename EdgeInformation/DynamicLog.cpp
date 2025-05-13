@@ -15,33 +15,34 @@ extern "C" void setProgramName(const char* name) {
 
 extern "C" void logBranchOutcome(uint64_t branchID, bool taken) {
   if (!logFile.is_open()) {
-    // Fallback to environment variable if not set explicitly
-    if (!programName) {
-      programName = std::getenv("PROGRAM_NAME");
+    if (!logFile.is_open()) {
       if (!programName) {
-        programName = "unknown"; // Default if neither is set
+        programName = std::getenv("PROGRAM_NAME");
+        if (!programName) {
+          programName = "unknown";
+        }
       }
-    }
 
-    // Construct log file path: branch_history_logs/<program_name>_branch_history.log
-    std::string logPath = "/home/mercury/Desktop/Final_Year_Project/_test_data/edge_embed/branch_history_logs/";
-    logPath += programName;
-    logPath += "_branch_history.log";
+      static std::string logPath;
+      if (logPath.empty()) {
+        const char* envDir = std::getenv("BRANCH_LOG_DIR");
+        if (envDir) {
+          logPath = envDir;
+          if (logPath.back() != '/') logPath += "/";
+        } else {
+          logPath = "../_test_data/edge_embed/branch_history_logs/";
+        }
+      }
 
-    // Ensure the directory exists (rudimentary check, Bash will handle creation)
-    std::ofstream dirCheck("branch_history_logs/.test", std::ios::out);
-    if (dirCheck) {
-      dirCheck.close();
-      std::remove("branch_history_logs/.test");
-    } else {
-      std::cerr << "Warning: branch_history_logs directory may not exist" << std::endl;
-    }
+      logPath += programName;
+      logPath += "_branch_history.log";
 
-    logFile.open(logPath, std::ios::out);
-    if (!logFile) {
-      std::cerr << "Failed to open " << logPath << std::endl;
-      return;
-    }
+      logFile.open(logPath, std::ios::out);
+      if (!logFile) {
+        std::cerr << "Failed to open " << logPath << std::endl;
+        return;
+      }
+    } 
   }
   logFile << branchID << "," << (taken ? 1 : 0) << "\n";
   logFile.flush(); // Ensure immediate write

@@ -28,7 +28,6 @@ class Embedding:
                 break
             data_neighbors = [n for n in neighbors if graph[current][n]['type'] == "data"]
             control_neighbors = [n for n in neighbors if graph[current][n]['type'] == "control"]
-
             if data_neighbors and control_neighbors:
                 if random.random() < 0.5:  # 50% chance for data or control
                     current = random.choice(data_neighbors)
@@ -108,26 +107,15 @@ class Embedding:
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         print(f"Using device: {device}")
 
-       # Build vocabulary with frequency filtering
-        instruction_counts = {}
-        for instr in self.all_instructions:
-            instruction_counts[instr] = instruction_counts.get(instr, 0) + 1
-            
-        # Build vocabulary incrementally
-        unique_instructions = set()
+        unique_instructions = set(self.all_instructions)
         for pair in self.get_context_pairs_generator(context_size, num_walks, walk_length):
-            instr, ctx = pair
-            if instruction_counts.get(instr, 0) >= 5:
-                unique_instructions.add(instr)
-            if instruction_counts.get(ctx, 0) >= 5:
-                unique_instructions.add(ctx)
-                
+            unique_instructions.add(pair[0])
+            unique_instructions.add(pair[1])
         unique_instructions = list(unique_instructions)
         self.instruction_to_id = {instr: i for i, instr in enumerate(unique_instructions)}
         vocab_size = len(unique_instructions)
-        print(f"Vocabulary size after filtering: {vocab_size}")
+        print(f"Vocabulary size: {vocab_size}")
 
-        # Initialize model
         model = SkipGram(vocab_size, embed_size).to(device)
         criterion = nn.BCEWithLogitsLoss()
         optimizer = optim.Adam(model.parameters(), lr=learning_rate)
