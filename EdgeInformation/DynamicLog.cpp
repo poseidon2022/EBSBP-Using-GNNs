@@ -24,7 +24,7 @@ extern "C" void logBranchOutcome(uint64_t branchID, bool taken) {
     }
 
     // Construct log file path: branch_history_logs/<program_name>_branch_history.log
-    std::string logPath = "branch_history_logs/";
+    std::string logPath = "/home/mercury/Desktop/Final_Year_Project/_test_data/edge_embed/branch_history_logs/";
     logPath += programName;
     logPath += "_branch_history.log";
 

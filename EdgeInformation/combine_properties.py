@@ -1,6 +1,7 @@
 import os
 import re
 import glob
+import json
 from collections import defaultdict
 
 def parse_control_flow(cf_file):
@@ -185,11 +186,10 @@ def parse_control_flow(cf_file):
     return cf_data, instr_text, label_to_start, function_to_head_and_tail, function_scopes, func_map, instr_order, node_to_id, mem_ops, dependencies, branch_ids
 
 def parse_branch_history(bh_file):
-    """Parse branch_history.log for edge-relevant dynamic features."""
+    """Parse branch_history.log to compute average taken probability per branch ID."""
     branch_outcomes = defaultdict(list)
     try:
         with open(bh_file, 'r') as f:
-            next(f)  # Skip header
             for line in f:
                 branch_id, taken = map(int, line.strip().split(','))
                 branch_outcomes[branch_id].append(taken)
@@ -197,14 +197,13 @@ def parse_branch_history(bh_file):
         print(f"Error parsing {bh_file}: {e}")
         return {}
     
-    history_features = {}
+    branch_averages = {}
     for branch_id, outcomes in branch_outcomes.items():
         n = len(outcomes)
-        taken_prob = sum(outcomes) / n if n > 0 else 0.0
-        geo = [sum(outcomes[-l:]) / l if n >= l else taken_prob for l in [2, 4, 8]]
-        history_features[branch_id] = [taken_prob] + geo
-        print(f"Branch {branch_id}: taken_prob={taken_prob}, geo={geo}")
-    return history_features
+        avg_taken = sum(outcomes) / n if n > 0 else 0.0
+        branch_averages[branch_id] = avg_taken
+        print(f"Branch {branch_id}: avg_taken={avg_taken:.4f} ({sum(outcomes)}/{n})")
+    return branch_averages
 
 def build_edge_features(cf_data, instr_text, label_to_start, function_to_head_and_tail, function_scopes, func_map, instr_order, node_to_id, mem_ops, bh_data, dependencies, branch_ids, max_dist=100):
     """Build edge features ensuring branches and returns connect to correct instructions."""
@@ -235,7 +234,6 @@ def build_edge_features(cf_data, instr_text, label_to_start, function_to_head_an
         # Sequential edges
         if i > 0 and i-1 in instr_text and isinstance(instr_text[i-1], str):
             prev_instr = instr_text[i-1]
-            # Allow sequential edges to unconditional branches, but not conditional branches or returns
             is_unconditional_branch = instr.startswith("br label ")
             is_valid_prev = not (prev_instr.startswith(("br i1 ", "ret ")) or "= call" in prev_instr or re.match(r"(\w+|<unnamed_\d+>):", prev_instr))
             if is_valid_prev and not (instr.startswith(("br i1 ", "ret ")) and not is_unconditional_branch):
@@ -251,14 +249,14 @@ def build_edge_features(cf_data, instr_text, label_to_start, function_to_head_an
             branch_mapping[branch_id] = i
             targets = re.findall(r"label\s+%(\w+)", instr)
             is_conditional = "br i1" in instr
-            history = bh_data.get(branch_id, [0.0, 0.0, 0.0, 0.0]) if branch_id != -1 else [0.0, 0.0, 0.0, 0.0]
+            history = bh_data.get(branch_id, 0.0) if branch_id != -1 else 0.0
             print(f"Processing branch: node={i}, branch_id={branch_id}, instr={instr}, history={history}, targets={targets}, conditional={is_conditional}")
             if not targets:
                 print(f"ERROR: No targets found for branch at node {i}: {instr}")
             for idx, target in enumerate(targets):
                 target_label = f"%{target}"
                 edge_type = 1 if idx == 0 and is_conditional else 2 if idx == 1 and is_conditional else 3
-                geo = history[1:] if idx == 0 and is_conditional else [1.0 - h for h in history[1:]] if idx == 1 and is_conditional else history[1:] if branch_id != -1 else [0.0, 0.0, 0.0]
+                geo = [history, history, history] if idx == 0 and is_conditional else [1.0 - history, 1.0 - history, 1.0 - history] if idx == 1 and is_conditional else [history, history, history] if branch_id != -1 else [0.0, 0.0, 0.0]
                 if (node_function, target_label) in label_to_start:
                     tgt_node = label_to_start[(node_function, target_label)]
                     if tgt_node in instr_text:
@@ -267,7 +265,7 @@ def build_edge_features(cf_data, instr_text, label_to_start, function_to_head_an
                     else:
                         print(f"ERROR: Branch edge to {tgt_node} invalid (not in instr_text)")
                 else:
-                    print(f"Warning: Target label {target_label} not found in {node_function} for branch at node {i}. Available labels: {[(k[1], v) for k in label_to_start if k[0] == node_function]}")
+                    print(f"Warning: Target label {target_label} not found in {node_function} for branch at node {i}")
                     func_nodes = instr_order[node_function]
                     branch_idx = func_nodes.index(i) if i in func_nodes else -1
                     if branch_idx == -1:
@@ -310,9 +308,9 @@ def build_edge_features(cf_data, instr_text, label_to_start, function_to_head_an
                     func_map.get(next_i) == node_function and 
                     not instr_text[next_i].startswith("ret ")):
                     edge_features[(tail, next_i)] = [dist_to_branch, 0.0, 0.0, 0.0, cf_data.get(tail, [0, 0, 0, 0, 0])[0], src_in_loop, 0, 8]
-                    print(f"Return edge: {tail} -> {next_i} (from {called_function} in {func_map.get(tail)} to {instr_text[next_i]} in {func_map.get(next_i)})")
+                    print(f"Return edge: {tail} -> {next_i} (from {called_function})")
                 else:
-                    print(f"Warning: Skipping invalid return edge from {tail} (func={func_map.get(tail)}) to {next_i} (func={func_map.get(next_i, 'None')}, instr={instr_text.get(next_i, 'None')})")
+                    print(f"Warning: Skipping invalid return edge from {tail} to {next_i}")
     
         # Memory dependencies
         for mem_addr, ops in mem_ops.items():
@@ -329,59 +327,56 @@ def build_edge_features(cf_data, instr_text, label_to_start, function_to_head_an
     
     return edge_features, branch_mapping
 
-def merge_features_for_corpus(ll_dir="../_test_data/llvm", cf_dir="control_flow_features", bh_dir="branch_history_logs", output_dir="edge_features"):
+def merge_features_for_corpus(ll_dir="../_test_data/llvm", cf_dir="../_test_data/edge_embed/control_flow_features", bh_dir="../_test_data/edge_embed/branch_history_logs", output_dir="../_test_data/edge_embed/edge_features"):
+    """Generate edge embeddings and branch properties for all programs."""
     corpus_data = {}
-    
-    # Create output directory if it doesn't exist
     os.makedirs(output_dir, exist_ok=True)
     
-    ll_files = glob.glob(f"{ll_dir}/*.ll")
-    with open(os.path.join(output_dir, "processing_log.txt"), 'w') as log_f:
-        log_f.write(f"Searching for LLVM IR files recursively in {ll_dir}\n")
-        ll_files = [os.path.join(root, file) for root, _, files in os.walk(ll_dir) for file in files if file.endswith('.ll')]
-        log_f.write(f"Found {len(ll_files)} LLVM IR files to process\n")
-        
-        for i, ll_file in enumerate(ll_files):
-            base_name = os.path.basename(ll_file).replace('.ll', '')
-            cf_file = os.path.join(cf_dir, f"{base_name}_control_flow_features.txt")
-            bh_file = os.path.join(bh_dir, f"{base_name}_branch_history.log")
-            output_file = os.path.join(output_dir, f"{base_name}_edge_features.txt")
-            
-            log_f.write(f"Processing {i+1}/{len(ll_files)}: {base_name}\n")
-            if not os.path.exists(cf_file) or not os.path.exists(bh_file):
-                log_f.write(f"Warning: Missing files for {base_name}, skipping\n")
-                continue
-            
-            cf_data, instr_text, label_to_start, function_to_head_and_tail, function_scopes, func_map, instr_order, node_to_id, mem_ops, dependencies, branch_ids = parse_control_flow(cf_file)
-            if not cf_data:
-                log_f.write(f"Warning: No data parsed for {base_name}, skipping\n")
-                continue
-            
-            bh_data = parse_branch_history(bh_file)
-            
-            edge_features, branch_mapping = build_edge_features(
-                cf_data, instr_text, label_to_start, function_to_head_and_tail, function_scopes, func_map, instr_order, node_to_id, mem_ops, bh_data, dependencies, branch_ids, max_dist=100
-            )
-            
-            corpus_data[base_name] = {
-                "edge_features": edge_features,
-                "node_to_id": node_to_id,
-                "instr_text": instr_text,
-                "branch_mapping": branch_mapping
-            }
-            
-            # Write edge features to program-specific file
-            with open(output_file, 'w') as f:
-                if not edge_features:
-                    f.write("  No edges generated\n")
-                for (src_node, tgt_node), feat in sorted(edge_features.items()):
-                    src_instr = instr_text.get(src_node, "Unknown")
-                    tgt_instr = instr_text.get(tgt_node, "Unknown")
-                    f.write(f"  Edge {src_node} -> {tgt_node} (\"{src_instr}\" -> \"{tgt_instr}\"): {feat}\n")
+    ll_files = [os.path.join(root, file) for root, _, files in os.walk(ll_dir) for file in files if file.endswith('.ll')]
+    print(f"Found {len(ll_files)} LLVM IR files to process")
     
-    # Print the processing log
-    with open(os.path.join(output_dir, "processing_log.txt"), 'r') as log_f:
-        print(log_f.read())
+    for i, ll_file in enumerate(ll_files):
+        base_name = os.path.basename(ll_file).replace('.ll', '')
+        cf_file = os.path.join(cf_dir, f"{base_name}_control_flow_features.txt")
+        bh_file = os.path.join(bh_dir, f"{base_name}_branch_history.log")
+        edge_json = os.path.join(output_dir, f"{base_name}_edge_embeddings.json")
+        branch_json = os.path.join(output_dir, f"{base_name}_branch_properties.json")
+        
+        print(f"Processing {i+1}/{len(ll_files)}: {base_name}")
+        if not os.path.exists(cf_file) or not os.path.exists(bh_file):
+            print(f"Warning: Missing files for {base_name}, skipping")
+            continue
+        
+        cf_data, instr_text, label_to_start, function_to_head_and_tail, function_scopes, func_map, instr_order, node_to_id, mem_ops, dependencies, branch_ids = parse_control_flow(cf_file)
+        if not cf_data:
+            print(f"Warning: No data parsed for {base_name}, skipping")
+            continue
+        
+        bh_data = parse_branch_history(bh_file)
+        
+        edge_features, branch_mapping = build_edge_features(
+            cf_data, instr_text, label_to_start, function_to_head_and_tail, function_scopes, func_map, instr_order, node_to_id, mem_ops, bh_data, dependencies, branch_ids, max_dist=100
+        )
+        
+        # Save edge embeddings as JSON
+        edge_dict = {f"{src},{tgt}": feat for (src, tgt), feat in edge_features.items()}
+        with open(edge_json, 'w') as f:
+            json.dump(edge_dict, f, indent=2)
+        print(f"Saved edge embeddings to {edge_json}")
+        
+        # Save branch properties as JSON (branch ID to average)
+        branch_properties = {str(bid): avg for bid, avg in bh_data.items()}
+        with open(branch_json, 'w') as f:
+            json.dump(branch_properties, f, indent=2)
+        print(f"Saved branch properties to {branch_json}")
+    
+        corpus_data[base_name] = {
+            "edge_embeddings": edge_dict,
+            "branch_properties": branch_properties,
+            "node_to_id": node_to_id,
+            "instr_text": instr_text,
+            "branch_mapping": branch_mapping
+        }
     
     return corpus_data
 

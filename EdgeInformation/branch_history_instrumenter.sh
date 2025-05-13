@@ -4,8 +4,8 @@
 IR_DIR="../_test_data/llvm"
 
 # Output directories
-INSTR_DIR="instrumented_programs"
-LOG_DIR="branch_history_logs"
+INSTR_DIR="/home/mercury/Desktop/Final_Year_Project/_test_data/edge_embed/instrumented_programs"
+LOG_DIR="/home/mercury/Desktop/Final_Year_Project/_test_data/edge_embed/branch_history_logs"
 
 # Path to LLVM 10
 LLVM_DIR="/usr/local/llvm-10"
@@ -88,7 +88,7 @@ for ((i = 0; i < TOTAL_INSTR; i++)); do
     BASE_NAME=$(basename "$INSTR_FILE" _instrumented.ll)
     EXEC_FILE="${INSTR_DIR}/${BASE_NAME}_instrumented"
     LOG_FILE="$LOG_DIR/${BASE_NAME}_branch_history.log"
-    
+
     PROGRESS=$((i + 1))
     echo "Compiling and running $PROGRESS out of $TOTAL_INSTR: $INSTR_FILE -> $EXEC_FILE"
 
@@ -102,7 +102,7 @@ for ((i = 0; i < TOTAL_INSTR; i++)); do
 
     # Run the instrumented program with PROGRAM_NAME set
     echo "Running $EXEC_FILE..."
-    PROGRAM_NAME="$BASE_NAME" ./"$EXEC_FILE"
+    PROGRAM_NAME="$BASE_NAME" "$EXEC_FILE"
 
     if [ $? -ne 0 ]; then
         echo "Execution failed for $EXEC_FILE"

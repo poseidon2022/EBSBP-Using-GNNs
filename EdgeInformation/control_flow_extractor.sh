@@ -3,13 +3,13 @@
 # Directory containing LLVM IR files (default: current directory, or specify with argument)
 IR_DIR="../_test_data/llvm"
 
-OUTPUT_DIR="control_flow_features"
+OUTPUT_DIR="../_test_data/edge_embed/control_flow_features"
 LLVM_DIR="/usr/local/llvm-10"
 
 # Create the output directory if it doesn't exist (moved to top)
 if [ ! -d "$OUTPUT_DIR" ]; then
     echo "Creating directory: $OUTPUT_DIR"
-    mkdir "$OUTPUT_DIR"
+    mkdir -p "$OUTPUT_DIR"
     if [ $? -ne 0 ]; then
         echo "Failed to create directory $OUTPUT_DIR"
         exit 1
