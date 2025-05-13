@@ -204,12 +204,13 @@ def parse_branch_history(bh_file):
     except Exception as e:
         return {}
     
-    branch_averages = {}
+    history_features = {}
     for branch_id, outcomes in branch_outcomes.items():
         n = len(outcomes)
-        avg_taken = sum(outcomes) / n if n > 0 else 0.0
-        branch_averages[branch_id] = avg_taken
-    return branch_averages
+        taken_prob = sum(outcomes) / n if n > 0 else 0.0
+        geo = [sum(outcomes[-l:]) / l if n >= l else taken_prob for l in [2, 4, 8]]
+        history_features[branch_id] = [taken_prob] + geo
+    return history_features
 
 def build_edge_features(cf_data, instr_text, label_to_start, function_to_head_and_tail, function_scopes, func_map, instr_order, node_to_id, mem_ops, bh_data, dependencies, branch_ids, max_dist=100):
     """Build edge features ensuring branches and returns connect to correct instructions."""
@@ -237,6 +238,7 @@ def build_edge_features(cf_data, instr_text, label_to_start, function_to_head_an
         # Sequential edges
         if i > 0 and i-1 in instr_text and isinstance(instr_text[i-1], str):
             prev_instr = instr_text[i-1]
+            # Allow sequential edges to unconditional branches, but not conditional branches or returns
             is_unconditional_branch = instr.startswith("br label ")
             is_valid_prev = not (prev_instr.startswith(("br i1 ", "ret ")) or "= call" in prev_instr or re.match(r"(\w+|<unnamed_\d+>):", prev_instr))
             if is_valid_prev and not (instr.startswith(("br i1 ", "ret ")) and not is_unconditional_branch):
@@ -251,40 +253,40 @@ def build_edge_features(cf_data, instr_text, label_to_start, function_to_head_an
             branch_mapping[branch_id] = i
             targets = re.findall(r"label\s+%(\w+)", instr)
             is_conditional = "br i1" in instr
-            history = bh_data.get(branch_id, 0.0) if branch_id != -1 else 0.0
-            if not targets:
-                continue
+            history = bh_data.get(branch_id, [0.0, 0.0, 0.0, 0.0]) if branch_id != -1 else [0.0, 0.0, 0.0, 0.0]
+           
             for idx, target in enumerate(targets):
                 target_label = f"%{target}"
                 edge_type = 1 if idx == 0 and is_conditional else 2 if idx == 1 and is_conditional else 3
-                geo = [history, history, history] if idx == 0 and is_conditional else [1.0 - history, 1.0 - history, 1.0 - history] if idx == 1 and is_conditional else [history, history, history] if branch_id != -1 else [0.0, 0.0, 0.0]
+                geo = history[1:] if idx == 0 and is_conditional else [1.0 - h for h in history[1:]] if idx == 1 and is_conditional else history[1:] if branch_id != -1 else [0.0, 0.0, 0.0]
                 if (node_function, target_label) in label_to_start:
                     tgt_node = label_to_start[(node_function, target_label)]
                     if tgt_node in instr_text:
                         edge_features[(i, tgt_node)] = [dist_to_branch, *geo, src_in_loop, cf_data.get(tgt_node, [0, 0, 0, 0, 0])[0], 0, edge_type]
-                    continue
-                func_nodes = instr_order[node_function]
-                branch_idx = func_nodes.index(i) if i in func_nodes else -1
-                if branch_idx == -1:
-                    continue
-                potential_tgt = None
-                start_idx = branch_idx + 1
-                while start_idx < len(func_nodes):
-                    candidate = func_nodes[start_idx]
-                    candidate_instr = instr_text.get(candidate, "")
-                    if re.match(r"(\w+|<unnamed_\d+>):", candidate_instr):
-                        start_idx += 1
+                else:
+                    func_nodes = instr_order[node_function]
+
+                    branch_idx = func_nodes.index(i) if i in func_nodes else -1
+                    if branch_idx == -1:
                         continue
-                    if is_conditional and idx == 1:
-                        if not candidate_instr.startswith(("br ", "ret ")):
+                    potential_tgt = None
+                    start_idx = branch_idx + 1
+                    while start_idx < len(func_nodes):
+                        candidate = func_nodes[start_idx]
+                        candidate_instr = instr_text.get(candidate, "")
+                        if re.match(r"(\w+|<unnamed_\d+>):", candidate_instr):
+                            start_idx += 1
+                            continue
+                        if is_conditional and idx == 1:
+                            if not candidate_instr.startswith(("br ", "ret ")):
+                                potential_tgt = candidate
+                                break
+                        else:
                             potential_tgt = candidate
                             break
-                    else:
-                        potential_tgt = candidate
-                        break
-                    start_idx += 1
-                if potential_tgt is not None and func_map.get(potential_tgt) == node_function:
-                    edge_features[(i, potential_tgt)] = [dist_to_branch, *geo, src_in_loop, cf_data.get(potential_tgt, [0, 0, 0, 0, 0])[0], 0, edge_type]
+                        start_idx += 1
+                    if potential_tgt is not None and func_map.get(potential_tgt) == node_function:
+                        edge_features[(i, potential_tgt)] = [dist_to_branch, *geo, src_in_loop, cf_data.get(potential_tgt, [0, 0, 0, 0, 0])[0], 0, edge_type]
         
         # Call edges
         match_call = re.match(r".*call.*@(\w+)", instr)
@@ -300,7 +302,7 @@ def build_edge_features(cf_data, instr_text, label_to_start, function_to_head_an
                     func_map.get(next_i) == node_function and 
                     not instr_text[next_i].startswith("ret ")):
                     edge_features[(tail, next_i)] = [dist_to_branch, 0.0, 0.0, 0.0, cf_data.get(tail, [0, 0, 0, 0, 0])[0], src_in_loop, 0, 8]
-        
+    
         # Memory dependencies
         for mem_addr, ops in mem_ops.items():
             for store_id in ops['writes']:
@@ -314,6 +316,7 @@ def build_edge_features(cf_data, instr_text, label_to_start, function_to_head_an
                     edge_features[(store_id, load_id)] = [dist_to_branch_dep, 0.0, 0.0, 0.0, src_in_loop_dep, cf_data[load_id][0], 1, 4]
     
     return edge_features, branch_mapping
+
 
 def merge_features_for_corpus(ll_dir="../_test_data/llvm", cf_dir="../_test_data/edge_embed/control_flow_features", bh_dir="../_test_data/edge_embed/branch_history_logs", output_dir="../_test_data/edge_embed/edge_data"):
     """Generate edge embeddings and branch properties for all programs."""
@@ -349,7 +352,7 @@ def merge_features_for_corpus(ll_dir="../_test_data/llvm", cf_dir="../_test_data
             json.dump(edge_dict, f, indent=2)
         
         # Save branch properties as JSON (branch ID to average)
-        branch_properties = {str(bid): avg for bid, avg in bh_data.items()}
+        branch_properties = {str(bid): history[0] for bid, history in bh_data.items()}
         with open(branch_json, 'w') as f:
             json.dump(branch_properties, f, indent=2)
     
