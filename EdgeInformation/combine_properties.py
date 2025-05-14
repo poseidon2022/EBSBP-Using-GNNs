@@ -345,7 +345,7 @@ def build_edge_features(cf_data, instr_text, label_to_start, function_to_head_an
     logging.info(f"Built {len(edge_features)} edge features, {len(branch_mapping)} branch mappings")
     return edge_features, branch_mapping
 
-def save_json_features(base_name, edge_features, bh_data, output_dir):
+def save_json_features(base_name, edge_features, bh_data, output_dir, branch_mapping, edge_features_full):
     """
     Save edge embeddings and branch properties as JSON files.
 
@@ -354,11 +354,13 @@ def save_json_features(base_name, edge_features, bh_data, output_dir):
         edge_features (dict): (src, tgt) to edge feature list.
         bh_data (dict): Branch ID to history features [avg_prob, geo2, geo4, geo8].
         output_dir (str): Directory to save JSON files.
+        branch_mapping (dict): Branch ID to node ID for branch instructions.
+        edge_features_full (dict): Full edge features to identify branch targets.
 
     Returns:
         tuple: (edge_dict, branch_properties)
             - edge_dict (dict): Edge key "src,tgt" to feature list.
-            - branch_properties (dict): Ordinal index to average taken probability.
+            - branch_properties (dict): "src,tgt" to average taken probability for branch edges.
     """
     # Save edge embeddings
     edge_dict = {f"{src},{tgt}": feat for (src, tgt), feat in edge_features.items()}
@@ -367,8 +369,25 @@ def save_json_features(base_name, edge_features, bh_data, output_dir):
         json.dump(edge_dict, f, indent=2)
     logging.info(f"Saved edge embeddings to {edge_json}")
 
-    # Save branch properties with ordinal indices
-    branch_properties = {str(idx): bh_data[bid][0] for idx, bid in enumerate(sorted(bh_data.keys()))}
+    # Save branch properties with "src,tgt" keys
+    branch_properties = {}
+    for branch_id, features in bh_data.items():
+        if branch_id not in branch_mapping:
+            continue
+
+        src_node = branch_mapping[branch_id]
+        source, first_target, second_target = None, None, None
+
+        # Find the target node for this branch (edge_type 1, 2, or 3 indicates branch edges)
+        for (src, tgt), feat in edge_features_full.items():
+            if src == src_node and feat[7] in [1, 2, 3]:  # edge_type for branches
+                if first_target is None:
+                    first_target = tgt
+                source, second_target = src, tgt
+
+        branch_properties[f"{source},{first_target}"] = 1 - features[0]
+        branch_properties[f"{source},{second_target}"] = features[0]
+        
     branch_json = os.path.join(output_dir, f"{base_name}_branch_properties.json")
     with open(branch_json, 'w') as f:
         json.dump(branch_properties, f, indent=2)
@@ -396,7 +415,7 @@ def merge_features_for_corpus(
 
     Notes:
         - Generates `[program_name]_edge_embeddings.json` and `[program_name]_branch_properties.json` for each program.
-        - Branch properties use ordinal indices ("0", "1", ...) for branch edges, mapping to average taken probabilities.
+        - Branch properties use "src,tgt" keys for branch edges, mapping to average taken probabilities.
     """
     corpus_data = {}
     os.makedirs(output_dir, exist_ok=True)
@@ -437,7 +456,9 @@ def merge_features_for_corpus(
         )
 
         # Save JSON files
-        edge_dict, branch_properties = save_json_features(base_name, edge_features, bh_data, output_dir)
+        edge_dict, branch_properties = save_json_features(
+            base_name, edge_features, bh_data, output_dir, branch_mapping, edge_features
+        )
 
         # Store corpus data
         corpus_data[base_name] = {
