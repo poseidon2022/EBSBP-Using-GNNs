@@ -22,17 +22,19 @@ def parse_llvm_ir(llvm_file_path, for_report=False):
         # Skip type definitions, function declarations, global variables, etc.
         if re.match(r'%"[^"]+" = type', line) or line.startswith("%struct.") or line.startswith("%class."):
             continue
-        if line.startswith("declare ") or line.startswith("define "):
+        if line.startswith("declare "):
             continue
-        if line.startswith("$") or line.startswith("attributes"):
+        if line.startswith("$"):
             continue
         if line.startswith('%union'):
+            continue
+        if line.startswith("attributes"):
             continue
         if not line or line.startswith(";") or line.startswith("source_filename") or \
             line.startswith("!") or line.startswith("target datalayout") or \
             line.startswith("target triple") or line.startswith("}") or line.startswith('@'):
             continue
-        if line.startswith('<LABEL>:') or re.match(r"\w+:", line):  # Skip labels
+        if for_report and line.startswith("define "):
             continue
         if for_report and line[0].isdigit():
             continue
@@ -61,18 +63,11 @@ def generate_xfg(instructions):
     for i, instr in enumerate(instructions):
         # Handle function definitions
         if instr.startswith("define"):
-            # Match function name in define instruction
-            match = re.match(r'define\s+(?:internal|private|protected)?\s*(?:\[.*?\]\s*)?(?:\w+\s*)*@(\w+)', instr)
-            if match:
-                func_name = match.group(1)
-                current_function = func_name
-                function_to_head_and_tail[func_name] = [i + 1, None]
-                id_to_node = {}  # Reset SSA identifiers for new function
-                function_scopes[func_name] = id_to_node
-            else:
-                print(f"Warning: Could not parse function name from define instruction: {instr}")
-                current_function = None  # Reset to avoid misattribution
-                id_to_node = {}
+            func_name = re.match(r'define.*@(\w+)', instr).group(1)
+            current_function = func_name
+            function_to_head_and_tail[func_name] = [i + 1, None]
+            id_to_node = {}  # Reset SSA identifiers for new function
+            function_scopes[func_name] = id_to_node
             continue
 
         # Identify labels

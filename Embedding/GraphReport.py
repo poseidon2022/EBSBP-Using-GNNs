@@ -62,7 +62,7 @@ class GraphReport:
             for edge_idx in range(data.edge_index.size(1)):
                 src = data.edge_index[0, edge_idx].item()
                 dst = data.edge_index[1, edge_idx].item()
-                edge_type = "DATA-FLOW" if data.edge_attr[edge_idx].item() == 1.0 else "CONTROL-FLOW"
+                edge_type = "DATA-FLOW" if data.edge_attr[edge_idx][-1].item() == 1.0 else "CONTROL-FLOW"
                 f.write(f"{src} -> {dst}\n")
                 f.write(f"Edge Type: {edge_type}\n")
                 f.write("\n")
