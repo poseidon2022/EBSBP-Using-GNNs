@@ -3,7 +3,7 @@ from compiler import Compiler
 
 if __name__ == "__main__":
     ROOT_DIRECTORY = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    DATA_DIRECTORY = os.path.join(ROOT_DIRECTORY, '_data')
+    DATA_DIRECTORY = os.path.join(ROOT_DIRECTORY, '_test_data')
 
     # Mapping of file extensions to language and compiler commands
     LANGUAGE_COMPILERS = {
@@ -14,5 +14,5 @@ if __name__ == "__main__":
     }
 
     compiler = Compiler(DATA_DIRECTORY, LANGUAGE_COMPILERS)
-    # compiler.generate_ir()
-    compiler.generate_ir_from_big_code()
+    compiler.generate_ir()
+    # compiler.generate_ir_from_big_code()
