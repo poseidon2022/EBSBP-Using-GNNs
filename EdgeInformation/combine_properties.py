@@ -259,8 +259,9 @@ def build_edge_features(cf_data, instr_text, label_to_start, function_to_head_an
 
         # Add data dependency edges
         for dep_node in dependencies[node_id]:
+            edge_type = 4
             edge_features[(dep_node, node_id)] = [dist_to_branch, 0.0, 0.0, 0.0,
-                                                cf_data[dep_node][0], src_in_loop, 1, 4]
+                                                cf_data[dep_node][0], src_in_loop, 1, edge_type / 6]
 
         # Add sequential edges
         if node_id > 0 and node_id - 1 in instr_text and isinstance(instr_text[node_id - 1], str):
@@ -288,6 +289,7 @@ def build_edge_features(cf_data, instr_text, label_to_start, function_to_head_an
                 target_label = f"%{target}"
                 edge_type = (1 if idx == 0 and is_conditional else
                             2 if idx == 1 and is_conditional else 3)
+                
                 geo = (history[1:] if idx == 0 and is_conditional else
                       [1.0 - h for h in history[1:]] if idx == 1 and is_conditional else
                       history[1:] if branch_id != -1 else [0.0, 0.0, 0.0])
@@ -295,7 +297,7 @@ def build_edge_features(cf_data, instr_text, label_to_start, function_to_head_an
                 tgt_node = label_to_start.get((node_function, target_label))
                 if tgt_node in instr_text:
                     edge_features[(node_id, tgt_node)] = [dist_to_branch, *geo,
-                                                        src_in_loop, cf_data.get(tgt_node, [0])[0], 0, edge_type]
+                                                        src_in_loop, cf_data.get(tgt_node, [0])[0], 0, edge_type / 6]
                 else:
                     func_nodes = instr_order[node_function]
                     branch_idx = func_nodes.index(node_id) if node_id in func_nodes else -1
@@ -309,7 +311,7 @@ def build_edge_features(cf_data, instr_text, label_to_start, function_to_head_an
                         if is_conditional and idx == 1 and candidate_instr.startswith(("br ", "ret ")):
                             continue
                         edge_features[(node_id, candidate)] = [dist_to_branch, *geo,
-                                                             src_in_loop, cf_data.get(candidate, [0])[0], 0, edge_type]
+                                                             src_in_loop, cf_data.get(candidate, [0])[0], 0, edge_type / 6]
                         break
 
         # Add call edges
@@ -317,8 +319,9 @@ def build_edge_features(cf_data, instr_text, label_to_start, function_to_head_an
             called_function = match_call.group(1)
             if called_function in function_to_head_and_tail:
                 head, tail = function_to_head_and_tail[called_function]
+                edge_type = 5
                 edge_features[(node_id, head)] = [dist_to_branch, 0.0, 0.0, 0.0,
-                                                src_in_loop, cf_data.get(head, [0])[0], 0, 7]
+                                                src_in_loop, cf_data.get(head, [0])[0], 0, edge_type / 6]
                 next_i = node_id + 1
                 while next_i in instr_text and (
                     re.match(r"(\w+|<unnamed_\d+>):", instr_text[next_i]) or
@@ -327,8 +330,9 @@ def build_edge_features(cf_data, instr_text, label_to_start, function_to_head_an
                 if (next_i in instr_text and
                     func_map.get(next_i) == node_function and
                     not instr_text[next_i].startswith("ret ")):
+                    edge_type = 6
                     edge_features[(tail, next_i)] = [dist_to_branch, 0.0, 0.0, 0.0,
-                                                    cf_data.get(tail, [0])[0], src_in_loop, 0, 8]
+                                                    cf_data.get(tail, [0])[0], src_in_loop, 0, edge_type / 6]
 
         # Add memory dependency edges
         for mem_addr, ops in mem_ops.items():
@@ -380,7 +384,7 @@ def save_json_features(base_name, edge_features, bh_data, output_dir, branch_map
 
         # Find the target node for this branch (edge_type 1, 2, or 3 indicates branch edges)
         for (src, tgt), feat in edge_features_full.items():
-            if src == src_node and feat[7] in [1, 2, 3]:  # edge_type for branches
+            if src == src_node and feat[7] in [1/6, 2/6, 3/6]:  # edge_type for branches
                 if first_target is None:
                     first_target = tgt
                 source, second_target = src, tgt
