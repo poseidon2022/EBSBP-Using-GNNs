@@ -120,26 +120,26 @@ class XFGToPT:
         edge_embeddings = []
         dynamic_branch_props = []
         edge_list = list(graph.edges)
+        branch_mask = [False] *  len(edge_list) # Initialize branch mask
 
-        # Process edge embeddings
+        # Process edge embedding and dynamic branch properties
         edge_data_list = DATA.edge_index.t().tolist() 
         for i in range(len(edge_data_list)):
             src, tgt = edge_data_list[i][0], edge_data_list[i][1]
             edge_key = f"{src},{tgt}"
+
+            # Process edge embeddings
             embedding = edge_embeddings_data.get(edge_key, [0.0] * edge_embedding_size)
             if len(embedding) != edge_embedding_size:
                 logging.warning(f"Edge embedding size mismatch for {edge_key} in {ll_path}: expected {edge_embedding_size}, got {len(embedding)}")
                 embedding = [0.0] * edge_embedding_size
             edge_embeddings.append(embedding)
 
-        # Process dynamic branch properties
-        for i in range(len(edge_data_list)):
-            src, tgt = edge_data_list[i][0], edge_data_list[i][1]
+            # Branch mask is set to True for conditional branches
+            if edge_key in branch_properties_data:
+                branch_mask[i] = True
 
-            # print(f"Processing edge {src} -> {tgt}")
-            if "{src},{tgt}" in branch_properties_data:
-                print(f"Dynamic branch property for {src},{tgt} in {ll_path}: {branch_properties_data[src,tgt]}")
-            prop_value = branch_properties_data.get(f"{src},{tgt}", 1.0)
+            prop_value = branch_properties_data.get(edge_key, 1.0)
             dynamic_branch_props.append(prop_value)
 
         # Convert to NumPy arrays, then to tensors
@@ -150,6 +150,10 @@ class XFGToPT:
         dynamic_branch_props = np.array(dynamic_branch_props, dtype=np.float32)
         dynamic_branch_tensor = torch.tensor(dynamic_branch_props, dtype=torch.float).view(-1, 1)  # Ensure y is a column vector
         logging.info(f"Dynamic branch properties shape for {ll_path}: {dynamic_branch_tensor.shape}")
+
+        branch_mask = np.array(branch_mask, dtype=np.float32)
+        branch_mask_tensor = torch.tensor(branch_mask, dtype=torch.float).view(-1, 1)  # Ensure y is a column vector
+        logging.info(f"Branch mask shape for {ll_path}: {branch_mask_tensor.shape}")
 
         # Validate edge DATA
         if len(edge_embeddings) != len(edge_list):
@@ -165,11 +169,21 @@ class XFGToPT:
         DATA.x = node_features_tensor
         DATA.y = dynamic_branch_tensor
         DATA.edge_attr = edge_attr_tensor
+        DATA.branch_mask = branch_mask_tensor
+
+        # GENEREATED DATA OBJECT STRUCTURE EXAMPLE:
+        # Data(edge_index=[2, 190], instruction=[113], function=[113], type=[190], num_nodes=113, x=[113, 10], y=[190, 1], edge_attr=[190, 8])
 
         # print(f"DATA EDGE INDEX: {DATA.edge_index}")
+        # print(f"DATA INSTRUCTION: {DATA.instruction}")
+        # print(f"DATA FUNCTION: {DATA.function}")
+        # print(f"DATA TYPE: {DATA.type}")
+        # print(f"DATA NODE COUNT: {DATA.num_nodes}")
         # print(f"DATA NODE FEATURE: {DATA.x}")
         # print(f"DATA DYNAMIC BRANCH: {DATA.y}")
         # print(f"DATA EDGE ATTR: {DATA.edge_attr}")
+        # print(f"DATA BRANCH MASK: {DATA.branch_mask}")
+        # print(f"DATA: {DATA}")
 
         # Create output directory
         graph_subdir = os.path.join(save_dir, os.path.dirname(relative_path))
@@ -191,7 +205,7 @@ class XFGToPT:
         for root, _, files in os.walk(self.llvm_path):
             for file_name in files:
                 if file_name.endswith('.ll'):
-                    logging.info(f"Processing {count}/{llvm_file_count} files")
+                    logging.info(f"Processing file {count}/{llvm_file_count}: {file_name}")
                     ll_path = os.path.join(root, file_name)
                     self.generate_pt_file(ll_path, save_dir)
                     count += 1
