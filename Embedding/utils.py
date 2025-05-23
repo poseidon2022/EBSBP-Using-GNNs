@@ -63,11 +63,16 @@ def generate_xfg(instructions):
     for i, instr in enumerate(instructions):
         # Handle function definitions
         if instr.startswith("define"):
-            func_name = re.match(r'define.*@(\w+)', instr).group(1)
-            current_function = func_name
-            function_to_head_and_tail[func_name] = [i + 1, None]
-            id_to_node = {}  # Reset SSA identifiers for new function
-            function_scopes[func_name] = id_to_node
+            match = re.match(r'define.*@(?:\"([^"]+)\"|([^"\s()]+))', instr)
+            if match:
+                func_name = match.group(1) or match.group(2)
+                current_function = func_name
+                function_to_head_and_tail[func_name] = [i + 1, None]
+                id_to_node = {}  # Reset SSA identifiers for new function
+                function_scopes[func_name] = id_to_node
+            else:
+                print(f"Warning: Could not parse function name in instruction: {instr}")
+
             continue
 
         # Identify labels
@@ -97,7 +102,11 @@ def generate_xfg(instructions):
     for i, instr in enumerate(instructions):
         if re.match(r"\d+:\s*;.*", instr) or instr.startswith("define"):
             continue
-
+        
+        print(i, len(graph.nodes))
+        print(type(graph.nodes))
+        print(graph.nodes)
+        print(graph.nodes[i])
         node_function = graph.nodes[i]["function"]
 
         # Data dependencies: Handle all SSA register uses within the same function

@@ -10,21 +10,21 @@ def main():
 
     # Define the directories
     IR_DIR = f'{BASE_DIR}/llvm'
-    INSTR_DIR = f'{BASE_DIR}/edge_embed/instrumented_programs'
+    INSTRUMENTATION_DIR = f'{BASE_DIR}/edge_embed/instrumented_programs'
     LOG_DIR = f'{BASE_DIR}/edge_embed/branch_history_logs'
-    OUT_DIR = f'{BASE_DIR}/edge_embed/control_flow_features'
+    CONTROL_FLOW_DIR = f'{BASE_DIR}/edge_embed/control_flow_features'
 
     # Run the control_flow_extractor.sh script
     print("\n1️⃣  Running control_flow_extractor.sh...\n")
     subprocess.run(
-        ["bash", control_flow_script, IR_DIR, OUT_DIR], 
+        ["bash", control_flow_script, IR_DIR, CONTROL_FLOW_DIR], 
         check=True
     )
 
     # Run the branch_history_instrumenter.sh script
     print("\n2️⃣  Running branch_history_instrumenter.sh...\n")
     subprocess.run(
-        ["bash", branch_history_script, IR_DIR, INSTR_DIR, LOG_DIR],
+        ["bash", branch_history_script, IR_DIR, INSTRUMENTATION_DIR, LOG_DIR],
         check=True
     )
 

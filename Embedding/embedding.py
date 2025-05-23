@@ -7,6 +7,9 @@ import pickle
 from skipgram import SkipGram, SkipGramDataset
 import random
 from utils import parse_llvm_ir, generate_xfg, validate_node_count_logger
+from torch.cuda.amp import GradScaler, autocast
+import numpy as np
+from collections import Counter
 
 class Embedding:
     def __init__(self, data_path):
@@ -58,30 +61,23 @@ class Embedding:
         return pairs
 
     def process_file(self, ll_path, context_size, num_walks, walk_length):
-        print(f"Processing file: {ll_path}")
-        print(f"Remaining ⏳: {self.LLVM_COUNT} files\n")
-        
-        # Compute the relative path from /llvm and corresponding processed path in /processed_llvm
+        """Process a single LLVM IR file to generate context pairs."""
         relative_path = os.path.relpath(ll_path, self.llvm_path)
         processed_path = os.path.join(self.processed_llvm_path, f"{relative_path.split('.')[0]}.processed.ll")
 
-        # Read existing preprocessed instructions WITHOUT the block labels
         with open(processed_path, 'r') as f:
             preprocessed_instructions = [
                 line.strip() for line in f.readlines()
                 if not line.startswith('<LABEL>:')
             ]
 
-        # Generate XFG using RAW instructions (not preprocessed)
-        instructions = parse_llvm_ir(ll_path) 
-        graph = generate_xfg(instructions) 
+        instructions = parse_llvm_ir(ll_path)
+        graph = generate_xfg(instructions)
 
-        ### LOGGER: Validate and log node count mismatch on "failed_files.txt"
         if validate_node_count_logger(ll_path, graph, preprocessed_instructions, self.data_path):
             self.LLVM_COUNT -= 1
             return []
 
-        # Update node instructions to preprocessed versions for context pair extraction
         for idx, node in enumerate(graph.nodes):
             graph.nodes[node]["instruction"] = preprocessed_instructions[idx]
 
@@ -91,24 +87,49 @@ class Embedding:
 
         return pairs
 
-    def get_context_pairs_generator(self, context_size, num_walks, walk_length):
-        """Yield context pairs from LLVM IR files one file at a time."""
+    def preprocess_all_files(self, context_size, num_walks, walk_length):
+        """Preprocess all LLVM files and save context pairs and instruction counts."""
+        all_pairs = []
+        instruction_counts = Counter()
         self.LLVM_COUNT = sum(1 for root, _, files in os.walk(self.llvm_path) for f in files if f.endswith('.ll'))
         for root, _, files in os.walk(self.llvm_path):
             for file_name in files:
                 if file_name.endswith('.ll'):
                     ll_path = os.path.join(root, file_name)
                     pairs = self.process_file(ll_path, context_size, num_walks, walk_length)
-                    for pair in pairs:
-                        yield pair
+                    all_pairs.extend(pairs)
+                    for instr, context in pairs:
+                        instruction_counts[instr] += 1
+                        instruction_counts[context] += 1
+        with open(os.path.join(self.data_path, 'context_pairs.pkl'), 'wb') as f:
+            pickle.dump(all_pairs, f)
+        with open(os.path.join(self.data_path, 'instruction_counts.pkl'), 'wb') as f:
+            pickle.dump(instruction_counts, f)
+        return all_pairs
+
+    def get_context_pairs_generator(self, context_size, num_walks, walk_length):
+        """Yield context pairs, loading from precomputed file if available."""
+        try:
+            with open(os.path.join(self.data_path, 'context_pairs.pkl'), 'rb') as f:
+                pairs = pickle.load(f)
+            for pair in pairs:
+                yield pair
+        except FileNotFoundError:
+            pairs = self.preprocess_all_files(context_size, num_walks, walk_length)
+            for pair in pairs:
+                yield pair
 
     def train(self, embed_size=10, context_size=10, learning_rate=0.01, epochs=2, num_walks=10, walk_length=20, k=5, batch_size=32):
-        """Train the SkipGram model with negative sampling using context pairs incrementally."""
+        """Train the SkipGram model with negative sampling using context pairs."""
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        scaler = GradScaler()  # For mixed precision
         print(f"Using device: {device}")
 
-        unique_instructions = set(self.all_instructions)
+        # Collect all pairs and build vocabulary
+        all_pairs = []
+        unique_instructions = set()
         for pair in self.get_context_pairs_generator(context_size, num_walks, walk_length):
+            all_pairs.append(pair)
             unique_instructions.add(pair[0])
             unique_instructions.add(pair[1])
         unique_instructions = list(unique_instructions)
@@ -116,66 +137,48 @@ class Embedding:
         vocab_size = len(unique_instructions)
         print(f"Vocabulary size: {vocab_size}")
 
+        # Load instruction frequencies for negative sampling
+        with open(os.path.join(self.data_path, 'instruction_counts.pkl'), 'rb') as f:
+            instruction_counts = pickle.load(f)
+        frequencies = np.array([instruction_counts.get(instr, 1) for instr in unique_instructions], dtype=np.float32)
+        frequencies = frequencies ** 0.75  # Unigram distribution
+        frequencies /= frequencies.sum()
+
+        # Convert pairs to IDs
+        pair_ids = [(self.instruction_to_id[instr], self.instruction_to_id[context])
+                    for instr, context in all_pairs
+                    if instr in self.instruction_to_id and context in self.instruction_to_id]
+
+        # Create dataset and dataloader
+        dataset = SkipGramDataset(pair_ids)
+        data_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=4, pin_memory=True)
+
         model = SkipGram(vocab_size, embed_size).to(device)
         criterion = nn.BCEWithLogitsLoss()
         optimizer = optim.Adam(model.parameters(), lr=learning_rate)
-        scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=5, gamma=0.1)  # Decay LR by 0.1 every 5 epochs
+        scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=5, gamma=0.1)
 
         print("\nTRAINING SKIP-GRAM MODEL...\n")
         for epoch in range(epochs):
             total_loss = 0
-            batch_pairs = []
-            for pair in self.get_context_pairs_generator(context_size, num_walks, walk_length):
-                # Convert pair to IDs
-                instr, context_instr = pair
-                if instr in self.instruction_to_id and context_instr in self.instruction_to_id:
-                    pair_ids = (self.instruction_to_id[instr], self.instruction_to_id[context_instr])
-                    batch_pairs.append(pair_ids)
-
-                    # Process batch when full
-                    if len(batch_pairs) >= batch_size:
-                        dataset = SkipGramDataset(batch_pairs)
-                        data_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
-                        for center, context in data_loader:
-                            optimizer.zero_grad()
-                            center = center.to(device)
-                            context = context.to(device)
-                            pos_score = model(center, context)
-
-                            # Negative sampling
-                            neg_context = torch.randint(0, vocab_size, (center.size(0), k), device=device)
-                            center_repeated = center.repeat(1, k).view(-1, 1)
-                            neg_score = model(center_repeated, neg_context.view(-1, 1))
-
-                            # Loss computation
-                            pos_target = torch.ones_like(pos_score)
-                            neg_target = torch.zeros_like(neg_score)
-                            loss = criterion(pos_score, pos_target) + criterion(neg_score, neg_target)
-                            loss.backward()
-                            optimizer.step()
-                            total_loss += loss.item()
-                        batch_pairs = []  # Clear batch
-            scheduler.step()  # Update learning rate
-
-            # Process remaining pairs
-            if batch_pairs:
-                dataset = SkipGramDataset(batch_pairs)
-                data_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
-                for center, context in data_loader:
-                    optimizer.zero_grad()
-                    center = center.to(device)
-                    context = context.to(device)
+            model.train()
+            for center, context in data_loader:
+                optimizer.zero_grad()
+                center = center.to(device, non_blocking=True)
+                context = context.to(device, non_blocking=True)
+                with autocast():  # Mixed precision context
                     pos_score = model(center, context)
-                    neg_context = torch.randint(0, vocab_size, (center.size(0), k), device=device)
+                    neg_context = torch.multinomial(torch.tensor(frequencies, device=device), center.size(0) * k, replacement=True).view(center.size(0), k)
                     center_repeated = center.repeat(1, k).view(-1, 1)
                     neg_score = model(center_repeated, neg_context.view(-1, 1))
                     pos_target = torch.ones_like(pos_score)
                     neg_target = torch.zeros_like(neg_score)
                     loss = criterion(pos_score, pos_target) + criterion(neg_score, neg_target)
-                    loss.backward()
-                    optimizer.step()
-                    total_loss += loss.item()
-
+                scaler.scale(loss).backward()
+                scaler.step(optimizer)
+                scaler.update()
+                total_loss += loss.item()
+            scheduler.step()
             print(f"Epoch {epoch+1}, Loss: {total_loss}")
 
         torch.save(model.state_dict(), "skipgram_model.pt")
@@ -183,7 +186,7 @@ class Embedding:
 
     def get_embedding_map(self):
         """Generate a mapping from instructions to their trained embeddings."""
-        model = SkipGram(len(self.instruction_to_id), embed_size=50)  # Match training embed_size
+        model = SkipGram(len(self.instruction_to_id), embed_size=128)  # Match training embed_size
         model.load_state_dict(torch.load('skipgram_model.pt'))
         embeddings = model.embedding.weight
         embedding_map = {}

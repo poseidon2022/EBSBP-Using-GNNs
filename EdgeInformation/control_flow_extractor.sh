@@ -2,12 +2,12 @@
 
 # Directory containing LLVM IR files (default: current directory, or specify with argument)
 IR_DIR="$1"
-OUT_DIR="$2"
+CONTROL_FLOW_DIR="$2"
 LLVM_DIR="/usr/local/llvm-10"
 
 # Create the output directory if it doesn't exist (moved to top)
-if [ ! -d "$OUT_DIR" ]; then
-    mkdir -p "$OUT_DIR"
+if [ ! -d "$CONTROL_FLOW_DIR" ]; then
+    mkdir -p "$CONTROL_FLOW_DIR"
     if [ $? -ne 0 ]; then
         exit 1
     fi
@@ -37,7 +37,7 @@ for ((i = 0; i < TOTAL_FILES; i++)); do
     IR_FILE="${IR_FILES[$i]}"
     # Extract base name without path and extension (e.g., test_program from ./path/test_program.ll)
     BASE_NAME=$(basename "$IR_FILE" .ll)
-    OUTPUT_FILE="$OUT_DIR/${BASE_NAME}_control_flow_features.txt"
+    OUTPUT_FILE="$CONTROL_FLOW_DIR/${BASE_NAME}_control_flow_features.txt"
     
     # Progress indicator
     PROGRESS=$((i + 1))

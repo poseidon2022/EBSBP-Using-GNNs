@@ -173,7 +173,7 @@ class Compiler:
                 compile_command = compiler + [file_path, '-o', llvm_file_path]
                 try:
                     subprocess.run(compile_command, check=True, capture_output=True, text=True)
-                    print(f"Compiled {file_path} to {llvm_file_path}")
+                    print(f"💻⚙️ {file_path}")
                 except subprocess.CalledProcessError as e:
                     print(f"Compilation failed for {file_name}: {e.stderr}")
                     with open(self.log_file, "a") as log:
@@ -193,7 +193,7 @@ class Compiler:
                 processed_file_path = os.path.join(processed_dir, f"{os.path.splitext(file_name)[0]}.processed.ll")
                 try:
                     self.preprocess_llvm_ir(llvm_file_path, processed_file_path)
-                    print(f"Preprocessed {llvm_file_path} to {processed_file_path}")
+                    print(f"✅ {llvm_file_path}")
                 except Exception as e:
                     print(f"Preprocessing failed for {llvm_file_path}: {e}")
                     with open(self.log_file, "a") as log:
