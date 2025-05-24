@@ -26,7 +26,7 @@ class Compiler:
             Preprocesses a given LLVM IR file to prepare it for further analysis or processing.
     """
     def __init__(self, data_path, language_compilers, log_file="compilation_errors.log"):
-        self.data_path = os.path.join(data_path, "_program_corpus")
+        self.data_path = os.path.join(data_path, "cpp_program_corpus")
         self.llvm_path = os.path.join(data_path, "llvm")
         self.processed_llvm_path = os.path.join(data_path, "processed_llvm")
         self.language_compilers = language_compilers
