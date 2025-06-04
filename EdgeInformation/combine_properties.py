@@ -99,13 +99,13 @@ def parse_control_flow(cf_file):
 
             in_loop = int(in_loop or 0)
             distance_to_control_flow = int(distance_to_control_flow or 0)
-            num_preds_BB = int(num_preds_BB or 0)
-            num_succs_BB = int(num_succs_BB or 0)
-            loop_depth_BB = int(loop_depth_BB or 0)
-            op_is_mem_access =  int(op_is_mem_access or 0)
-            op_is_reg_operand = int(op_is_reg_operand or 0)
-            op_is_immediate = int(op_is_immediate or 0)
-            num_operands = int(num_operands or 0)
+            num_preds_BB = int(num_preds_BB or 0) / 2
+            num_succs_BB = int(num_succs_BB or 0) /  2
+            loop_depth_BB = int(loop_depth_BB or 0) / 5
+            op_is_mem_access =  int(op_is_mem_access or 0) / 1.0
+            op_is_reg_operand = int(op_is_reg_operand or 0) / 1.0
+            op_is_immediate = int(op_is_immediate or 0) / 1.0
+            num_operands = int(num_operands or 0) / 5
 
             is_branch = "br i1" in instr
             opcode_cat = (0 if any(op in instr for op in ["add", "sub", "mul"]) else
