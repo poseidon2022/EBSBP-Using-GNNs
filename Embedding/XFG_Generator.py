@@ -90,13 +90,13 @@ class XFGToPT:
         logging.info(f"Node features shape for {ll_path}: {node_features_tensor.shape}")
 
         # Load edge embeddings
-        edge_embedding_size = 8  # Default size based on provided example
+        edge_embedding_size = 16  # Default size based on provided example
         try:
             with open(edge_embeddings_path, 'r') as f:
                 edge_embeddings_data = json.load(f)
             logging.info(f"Loaded edge embeddings from {edge_embeddings_path}")
             # Update edge embedding size from the first available embedding
-            edge_embedding_size = len(next(iter(edge_embeddings_data.values()), [0.0] * 8))
+            edge_embedding_size = len(next(iter(edge_embeddings_data.values()), [0.0] * 16))
         except FileNotFoundError:
             logging.warning(f"Edge embeddings file {edge_embeddings_path} not found for {ll_path}. Using default embeddings.")
             edge_embeddings_data = {}
@@ -121,6 +121,7 @@ class XFGToPT:
         dynamic_branch_props = []
         edge_list = list(graph.edges)
         branch_mask = [False] *  len(edge_list) # Initialize branch mask
+        hard_to_predict_branch_mask = [False] * len(edge_list)
 
         # Process edge embedding and dynamic branch properties
         edge_data_list = DATA.edge_index.t().tolist() 
@@ -141,6 +142,12 @@ class XFGToPT:
 
             prop_value = branch_properties_data.get(edge_key, 1.0)
             dynamic_branch_props.append(prop_value)
+        
+        for i in range(len(edge_embeddings)):
+            edge_features = edge_embeddings[i]
+            if branch_mask[i]:
+                if edge_features[5] > 1 or edge_features[6] > 1 or edge_features[7] or not edge_features[9]:
+                    hard_to_predict_branch_mask[i] = True
 
         # Convert to NumPy arrays, then to tensors
         edge_embeddings = np.array(edge_embeddings, dtype=np.float32)
@@ -154,6 +161,10 @@ class XFGToPT:
         branch_mask = np.array(branch_mask, dtype=np.float32)
         branch_mask_tensor = torch.tensor(branch_mask, dtype=torch.float).view(-1, 1)  # Ensure y is a column vector
         logging.info(f"Branch mask shape for {ll_path}: {branch_mask_tensor.shape}")
+
+        hard_to_predict_branch_mask = np.array(hard_to_predict_branch_mask, dtype=np.float32)
+        hard_to_predict_branch_mask_tensor = torch.tensor(hard_to_predict_branch_mask, dtype=torch.float).view(-1, 1)  # Ensure y is a column vector
+        logging.info(f"Branch mask shape for {ll_path}: {hard_to_predict_branch_mask.shape}")
 
         # Validate edge DATA
         if len(edge_embeddings) != len(edge_list):
@@ -170,6 +181,7 @@ class XFGToPT:
         DATA.y = dynamic_branch_tensor
         DATA.edge_attr = edge_attr_tensor
         DATA.branch_mask = branch_mask_tensor
+        DATA.hard_to_predict_branch_mask = hard_to_predict_branch_mask_tensor
 
         # GENEREATED DATA OBJECT STRUCTURE EXAMPLE:
         # Data(edge_index=[2, 190], instruction=[113], function=[113], type=[190], num_nodes=113, x=[113, 10], y=[190, 1], edge_attr=[190, 8])
