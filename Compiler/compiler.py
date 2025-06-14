@@ -32,7 +32,7 @@ class Compiler:
         self.language_compilers = language_compilers
         self.log_file = os.path.join(data_path, log_file)
 
-    def generate_ir_from_big_code(self, limit=10000, save_cpp=False):
+    def generate_ir_from_big_code(self, limit=1000000, save_cpp=False):
         # Authenticate with Hugging Face
         load_dotenv()
         hf_token = os.getenv("HF_TOKEN")
@@ -55,7 +55,9 @@ class Compiler:
         # Filter and save .cpp files
         file_count = 0
         total_size = 0
-        max_size_bytes = 90 * 1024 * 1024 * 1024 * 1024  # 90MB limit
+        max_size_bytes = 1 * 1024 * 1024 * 1024 * 1024  # 1 * 1024 * 1024 * 1024 = 100MB
+        
+        print("MAX SIZE BYTES: ", max_size_bytes)
 
         # List of problematic includes to skip
         problematic_includes = [

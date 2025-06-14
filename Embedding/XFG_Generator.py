@@ -238,3 +238,4 @@ if __name__ == "__main__":
     parser.add_argument("--generate-report", action="store_true", help="Generate a .txt report and image for XFGs.")
     args = parser.parse_args()
     main(args)
+

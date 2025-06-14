@@ -26,16 +26,17 @@ class SkipGram(nn.Module):
         self.embedding = nn.Embedding(vocab_size, embed_size)
 
     def forward(self, center, context):
-        center_emb = self.embedding(center)  # Center embedding
-        context_emb = self.embedding(context)  # Context embedding
+        center_emb = self.embedding(center)  # Shape: (batch_size, embed_size) or (batch_size*k, embed_size)
+        context_emb = self.embedding(context)  # Shape: (batch_size, embed_size) or (batch_size*k, embed_size)
 
+        # Ensure center and context have compatible shapes
         if center_emb.dim() == 1:
             center_emb = center_emb.unsqueeze(0)
         if context_emb.dim() == 1:
             context_emb = context_emb.unsqueeze(0)
 
-
-        score = (center_emb * context_emb).sum(dim=1)  # Dot product
+        # Compute dot product
+        score = (center_emb * context_emb).sum(dim=-1)  # Sum over embedding dimension
         return score
 
 class SkipGramDataset(Dataset):
@@ -48,3 +49,4 @@ class SkipGramDataset(Dataset):
     def __getitem__(self, idx):
         center, context = self.pairs[idx]
         return torch.tensor(center, dtype=torch.long), torch.tensor(context, dtype=torch.long)
+
