@@ -1,6 +1,6 @@
 Embedding Evaluation Results
 ==========================
-Average Cosine Similarity (Context Pairs): 0.8660
-Average Cosine Similarity (Random Pairs): 0.1430
-Silhouette Score (k=10): 0.4031
-Reconstruction Error (BCE Loss): 0.7708
+Average Cosine Similarity (Context Pairs): 0.0000
+Average Cosine Similarity (Random Pairs): 0.0000
+Silhouette Score (k=5): 0.0209
+Reconstruction Error (BCE Loss): inf

@@ -140,6 +140,8 @@ class EmbeddingEval:
             print(f"Skipping clustering: Not enough instructions ({len(embeddings)} < {n_clusters})")
             return 0.0
 
+        print(embeddings)
+
         kmeans = KMeans(n_clusters=n_clusters, random_state=42)
         labels = kmeans.fit_predict(embeddings)
         silhouette = silhouette_score(embeddings, labels)
@@ -217,12 +219,20 @@ class EmbeddingEval:
         embeddings = np.array([self.embedding_map[instr] for instr in instructions])
         
         def get_instruction_type(instr):
-            parts = instr.split()
-            return parts[0].split('=')[-1].strip() if parts else "unknown"
+            instr = instr.strip()
+            if '=' in instr:
+                _, rhs = instr.split('=', 1)
+                parts = rhs.strip().split()
+            else:
+                parts = instr.split()
+
+            return parts[0] if parts else "unknown"
         
         labels = [get_instruction_type(instr) for instr in instructions]
         unique_labels = list(set(labels))
+        print(unique_labels)
         label_to_id = {label: i for i, label in enumerate(unique_labels)}
+        print(label_to_id)
         colors = [label_to_id[label] for label in labels]
 
         try:

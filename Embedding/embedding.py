@@ -15,8 +15,15 @@ import psutil
 import torch.cuda as cuda
 
 class Embedding:
-    def __init__(self, data_path, min_freq=5):
-        """Initialize the Embedding class with paths to LLVM IR files."""
+    def __init__(self, data_path, min_freq=5, force_preprocessing=False):
+        """
+        Initialize the Embedding class.
+        
+        Args:
+            data_path (str): Path to the data directory.
+            min_freq (int): Minimum frequency for instructions to be included in the vocabulary.
+            force_preprocessing (bool): If True, forces preprocessing even if a saved file exists.
+        """
         self.data_path = data_path
         self.llvm_path = os.path.join(data_path, "llvm")
         self.processed_llvm_path = os.path.join(data_path, "processed_llvm")
@@ -24,6 +31,7 @@ class Embedding:
         self.min_freq = min_freq  # Minimum frequency for instructions
         self.LLVM_COUNT = 0
         self.walk_cache = {}  # Cache for random walks per graph
+        self.force_preprocessing = force_preprocessing
 
     def random_walk(self, graph, start_node, walk_length):
         """Perform a biased random walk on the XFG to generate context sequences."""
@@ -102,9 +110,23 @@ class Embedding:
         gc.collect()
 
     def preprocess_all_files(self, context_size, num_walks, walk_length):
-        """Preprocess all LLVM files and save instruction counts."""
+        """
+        Preprocess all LLVM files to generate and save instruction counts.
+        If a pre-saved counts file exists and force_preprocessing is False, it loads the file instead.
+        """
+        counts_path = os.path.join(self.data_path, 'instruction_counts.pkl')
+
+        if not self.force_preprocessing and os.path.exists(counts_path):
+            print(f"✅ Found existing instruction counts file. Loading from '{counts_path}'...")
+            with open(counts_path, 'rb') as f:
+                filtered_counts = pickle.load(f)
+            print("👍 Successfully loaded instruction counts.")
+            return filtered_counts
+
+        print("🚀 Starting preprocessing of all LLVM files...")
         instruction_counts = Counter()
         self.LLVM_COUNT = sum(1 for root, _, files in os.walk(self.llvm_path) for f in files if f.endswith('.ll'))
+        
         for root, _, files in os.walk(self.llvm_path):
             for file_name in files:
                 if file_name.endswith('.ll'):
@@ -114,10 +136,14 @@ class Embedding:
                         instruction_counts[pair[0]] += 1
                         instruction_counts[pair[1]] += 1
                     self.LLVM_COUNT -= 1
+        
         # Filter rare instructions
         filtered_counts = {k: v for k, v in instruction_counts.items() if v >= self.min_freq}
-        with open(os.path.join(self.data_path, 'instruction_counts.pkl'), 'wb') as f:
+        
+        with open(counts_path, 'wb') as f:
             pickle.dump(filtered_counts, f)
+        
+        print(f"✅ Preprocessing complete. Instruction counts saved to '{counts_path}'")
         return filtered_counts
 
     def get_context_pairs_generator(self, context_size, num_walks, walk_length):

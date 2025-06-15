@@ -6,7 +6,7 @@ def main():
     control_flow_script = "./control_flow_extractor.sh"
 
     # Define the base directory
-    BASE_DIR = '../_test_data'
+    BASE_DIR = '../_data'
 
     # Define the directories
     IR_DIR = f'{BASE_DIR}/llvm'
