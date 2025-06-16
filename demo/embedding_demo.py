@@ -17,7 +17,27 @@ class EmbeddingDemo:
 
         # Load embedding map
         self.embedding_map = self.load_embedding_map()
-        self.instructions = [instr for instr in self.embedding_map.keys() if instr != "!UNK"][:self.num_instructions]
+        self.instructions = []
+        type_counts = {}  # To store counts for each instruction type
+        
+        # Iterate through all instructions in the embedding map
+        for instr in self.embedding_map.keys():
+            if instr == "!UNK":  # Skip the special "!UNK" token
+                continue
+
+            # Stop if we have already collected the total desired number of instructions
+            if len(self.instructions) >= self.num_instructions:
+                break
+            
+            # Get the type of the current instruction using the class method
+            instr_type = self.get_instruction_type(instr)
+            
+            # Check if the count for this instruction type is less than 100
+            if type_counts.get(instr_type, 0) < 200:
+                self.instructions.append(instr)
+                type_counts[instr_type] = type_counts.get(instr_type, 0) + 1
+
+        print(len(self.instructions))
         self.embeddings = np.array([self.embedding_map[instr] for instr in self.instructions])
 
         # Perform t-SNE
@@ -50,7 +70,7 @@ class EmbeddingDemo:
         # Create figure and canvas
         self.fig = Figure(figsize=(10, 5), dpi=100)
         self.ax = self.fig.add_subplot(111)
-        self.scatter = self.ax.scatter(self.embeddings_2d[:, 0], self.embeddings_2d[:, 1], c=self.colors, cmap='tab20', alpha=0.6)
+        self.scatter = self.ax.scatter(self.embeddings_2d[:, 0], self.embeddings_2d[:, 1], c=self.colors, cmap='tab20', alpha=0.6, s=20)  # Added s=10 for smaller points
         plt.colorbar(self.scatter, ax=self.ax, ticks=range(len(self.unique_labels)), label='Instruction Type')
         self.ax.set_title("t-SNE Visualization of Instruction Embeddings")
         self.ax.set_xlabel("t-SNE Component 1")
@@ -73,8 +93,8 @@ class EmbeddingDemo:
         self.info_frame.rowconfigure(0, weight=1)
 
         # Configure weights
-        self.main_frame.columnconfigure(0, weight=1)
-        self.main_frame.columnconfigure(1, weight=1)
+        self.main_frame.columnconfigure(0, weight=1)  # Increased weight for left side
+        self.main_frame.columnconfigure(1, weight=5)  # Decreased weight for right side
         self.main_frame.rowconfigure(0, weight=1)
 
     def load_embedding_map(self):
@@ -141,5 +161,5 @@ class EmbeddingDemo:
 
 if __name__ == "__main__":
     root = tk.Tk()
-    app = EmbeddingDemo(root, num_instructions=1000)
+    app = EmbeddingDemo(root, num_instructions=2000)
     app.run()
