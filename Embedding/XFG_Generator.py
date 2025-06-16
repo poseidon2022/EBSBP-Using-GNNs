@@ -1,4 +1,5 @@
 import os
+import pandas as pd
 import shutil
 import torch
 import networkx as nx
@@ -90,13 +91,13 @@ class XFGToPT:
         logging.info(f"Node features shape for {ll_path}: {node_features_tensor.shape}")
 
         # Load edge embeddings
-        edge_embedding_size = 16  # Default size based on provided example
+        edge_embedding_size = 18  # Default size based on provided example
         try:
             with open(edge_embeddings_path, 'r') as f:
                 edge_embeddings_data = json.load(f)
             logging.info(f"Loaded edge embeddings from {edge_embeddings_path}")
             # Update edge embedding size from the first available embedding
-            edge_embedding_size = len(next(iter(edge_embeddings_data.values()), [0.0] * 16))
+            edge_embedding_size = len(next(iter(edge_embeddings_data.values()), [0.0] * 18))
         except FileNotFoundError:
             logging.warning(f"Edge embeddings file {edge_embeddings_path} not found for {ll_path}. Using default embeddings.")
             edge_embeddings_data = {}
@@ -124,29 +125,49 @@ class XFGToPT:
         hard_to_predict_branch_mask = [False] * len(edge_list)
 
         # Process edge embedding and dynamic branch properties
-        edge_data_list = DATA.edge_index.t().tolist() 
+        edge_data_list = DATA.edge_index.t().tolist()
+        branch_src = set()
+        heuristic_data = []
         for i in range(len(edge_data_list)):
             src, tgt = edge_data_list[i][0], edge_data_list[i][1]
             edge_key = f"{src},{tgt}"
 
             # Process edge embeddings
-            embedding = edge_embeddings_data.get(edge_key, [0.0] * edge_embedding_size)
-            if len(embedding) != edge_embedding_size:
+            embedding = edge_embeddings_data.get(edge_key, [0.0] * 16)[:16]
+            if len(embedding) != 16:
                 logging.warning(f"Edge embedding size mismatch for {edge_key} in {ll_path}: expected {edge_embedding_size}, got {len(embedding)}")
-                embedding = [0.0] * edge_embedding_size
+                embedding = [0.0] * 16
             edge_embeddings.append(embedding)
 
             # Branch mask is set to True for conditional branches
             if edge_key in branch_properties_data:
+                if src in branch_src:
+                    heuristic_taken = edge_embeddings_data.get(edge_key)[-1]
+                    heuristic_not_taken = edge_embeddings_data.get(edge_key)[16]
+                else:
+                    heuristic_taken = edge_embeddings_data.get(edge_key)[16]
+                    heuristic_not_taken = edge_embeddings_data.get(edge_key)[-1]
+
+                heuristic_data.append({
+                    'Edge_Key': edge_key,
+                    'Heuristic_Taken': heuristic_taken,
+                    'Heuristic_Not_Taken': heuristic_not_taken
+                })
+                
                 branch_mask[i] = True
+                branch_src.add(src)
 
             prop_value = branch_properties_data.get(edge_key, 1.0)
             dynamic_branch_props.append(prop_value)
+
+
+        df = pd.DataFrame(heuristic_data)
+        df.to_excel('heuristic_output.xlsx', index=False)
         
         for i in range(len(edge_embeddings)):
             edge_features = edge_embeddings[i]
             if branch_mask[i]:
-                if edge_features[5] > 1 or edge_features[6] > 1 or edge_features[7] or not edge_features[9]:
+                if edge_features[5] > 1 or edge_features[4] >= 0.8 or edge_features[6] > 1 or edge_features[7]:
                     hard_to_predict_branch_mask[i] = True
 
         # Convert to NumPy arrays, then to tensors

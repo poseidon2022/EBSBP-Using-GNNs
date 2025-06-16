@@ -89,12 +89,12 @@ def parse_control_flow(cf_file):
                 continue
 
             # Parse instruction and features
-            match = re.match(r"(?:BranchID:\s*(\d+)\s+)?(.+?)(?:\s*\[(?:in_loop:\s*(\d+),\s*dist_to_control_flow:\s*(\d+),\s*num_preds_BB:\s*(\d+),\s*num_succs_BB:\s*(\d+),\s*loop_depth_BB:\s*(\d+),\s*op_is_mem_access:\s*(\d+),\s*op_is_reg_operand:\s*(\d+),\s*op_is_immediate:\s*(\d+),\s*num_operands:\s*(\d+)\s*)\]|$)", line)
+            match = re.match(r"(?:BranchID:\s*(\d+)\s+)?(.+?)(?:\s*\[(?:in_loop:\s*(\d+),\s*dist_to_control_flow:\s*(\d+),\s*num_preds_BB:\s*(\d+),\s*num_succs_BB:\s*(\d+),\s*loop_depth_BB:\s*(\d+),\s*op_is_mem_access:\s*(\d+),\s*op_is_reg_operand:\s*(\d+),\s*op_is_immediate:\s*(\d+),\s*num_operands:\s*(\d+),\s*true_prob:\s*([0-9.]+),\s*false_prob:\s*([0-9.]+))\]|$)", line)
             if not match:
                 i += 1
                 continue
 
-            branch_id, instr, in_loop, distance_to_control_flow, num_preds_BB, num_succs_BB, loop_depth_BB, op_is_mem_access, op_is_reg_operand, op_is_immediate, num_operands = match.groups()
+            branch_id, instr, in_loop, distance_to_control_flow, num_preds_BB, num_succs_BB, loop_depth_BB, op_is_mem_access, op_is_reg_operand, op_is_immediate, num_operands, true_prob, false_prob = match.groups()
             instr = instr.strip()
 
             in_loop = int(in_loop or 0)
@@ -114,7 +114,7 @@ def parse_control_flow(cf_file):
             cond_type = 1 if is_branch else 0
 
             # Store instruction data
-            cf_data[node_id] = [in_loop, distance_to_control_flow, loop_depth_BB, num_preds_BB, num_succs_BB, op_is_mem_access, op_is_reg_operand, op_is_immediate, num_operands, cond_type, opcode_cat]
+            cf_data[node_id] = [in_loop, distance_to_control_flow, loop_depth_BB, num_preds_BB, num_succs_BB, op_is_mem_access, op_is_reg_operand, op_is_immediate, num_operands, cond_type, opcode_cat, float(true_prob), float(false_prob)]
             instr_text[node_id] = instr
             func_map[node_id] = current_function
             instr_order[current_function].append(node_id)
@@ -270,7 +270,7 @@ def build_edge_features(cf_data, instr_text, label_to_start, function_to_head_an
         for dep_node in dependencies[node_id]:
             edge_type = 4
             edge_features[(dep_node, node_id)] = [dist_to_branch, 0.0, 0.0, 0.0,  *cf_data[dep_node][2:10],
-                                                cf_data[dep_node][0], src_in_loop, 1, edge_type / 6]
+                                                cf_data[dep_node][0], src_in_loop, 1, edge_type / 6, cf_data[dep_node][11], cf_data[dep_node][12]]
 
         # Add sequential edges
         if node_id > 0 and node_id - 1 in instr_text and isinstance(instr_text[node_id - 1], str):
@@ -283,7 +283,7 @@ def build_edge_features(cf_data, instr_text, label_to_start, function_to_head_an
             if (is_valid_prev and prev_function == node_function and
                 not (instr.startswith(("br i1 ", "ret ")) and not is_unconditional_branch)):
                 edge_features[(node_id - 1, node_id)] = [dist_to_branch, 0.0, 0.0, 0.0, *cf_data[node_id-1][2:10],
-                                                        cf_data[node_id - 1][0], src_in_loop, 0, 0]
+                                                        cf_data[node_id - 1][0], src_in_loop, 0, 0, cf_data[node_id - 1][11], cf_data[node_id - 1][12]]
 
         # Add branch edges
         if instr.startswith("br "):
@@ -306,7 +306,7 @@ def build_edge_features(cf_data, instr_text, label_to_start, function_to_head_an
                 tgt_node = label_to_start.get((node_function, target_label))
                 if tgt_node in instr_text:
                     edge_features[(node_id, tgt_node)] = [dist_to_branch, *geo, *cf_data.get(tgt_node, [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])[2:10],
-                                                        src_in_loop, cf_data.get(tgt_node, [0])[0], 0, edge_type / 6]
+                                                        src_in_loop, cf_data.get(tgt_node, [0]*13)[0], 0, edge_type / 6, cf_data.get(node_id)[11], cf_data.get(node_id)[12]]
                 else:
                     func_nodes = instr_order[node_function]
                     branch_idx = func_nodes.index(node_id) if node_id in func_nodes else -1
@@ -320,7 +320,7 @@ def build_edge_features(cf_data, instr_text, label_to_start, function_to_head_an
                         if is_conditional and idx == 1 and candidate_instr.startswith(("br ", "ret ")):
                             continue
                         edge_features[(node_id, candidate)] = [dist_to_branch, *geo, *cf_data.get(candidate, [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])[2:10],
-                                                             src_in_loop, cf_data.get(candidate, [0])[0], 0, edge_type / 6]
+                                                             src_in_loop, cf_data.get(candidate, [0]*13)[0], 0, edge_type / 6, cf_data.get(candidate, [0]*13)[11], cf_data.get(candidate, [0]*13)[12]]
                         break
 
         # Add call edges
@@ -330,7 +330,7 @@ def build_edge_features(cf_data, instr_text, label_to_start, function_to_head_an
                 head, tail = function_to_head_and_tail[called_function]
                 edge_type = 5
                 edge_features[(node_id, head)] = [dist_to_branch, 0.0, 0.0, 0.0, *cf_data.get(head, [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])[2:10],
-                                                src_in_loop, cf_data.get(head, [0])[0], 0, edge_type / 6]
+                                                src_in_loop, cf_data.get(head, [0]*13)[0], 0, edge_type / 6, cf_data.get(head, [0]*13)[11], cf_data.get(head, [0]*13)[12]]
                 next_i = node_id + 1
                 while next_i in instr_text and (
                     re.match(r"(\w+|<unnamed_\d+>):", instr_text[next_i]) or
@@ -341,7 +341,7 @@ def build_edge_features(cf_data, instr_text, label_to_start, function_to_head_an
                     not instr_text[next_i].startswith("ret ")):
                     edge_type = 6
                     edge_features[(tail, next_i)] = [dist_to_branch, 0.0, 0.0, 0.0, *cf_data.get(tail, [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])[2:10],
-                                                    cf_data.get(tail, [0])[0], src_in_loop, 0, edge_type / 6]
+                                                    cf_data.get(tail, [0]*13)[0], src_in_loop, 0, edge_type / 6, cf_data.get(tail, [0]*13)[11], cf_data.get(tail, [0]*13)[12]]
 
         # Add memory dependency edges
         for mem_addr, ops in mem_ops.items():
@@ -353,7 +353,7 @@ def build_edge_features(cf_data, instr_text, label_to_start, function_to_head_an
                 for load_id in ops['reads']:
                     if load_id != store_id:                                                     
                         edge_features[(store_id, load_id)] = [dist_to_branch_dep, 0.0, 0.0, 0.0, *cf_data[store_id][2:10], 
-                                                            src_in_loop_dep, cf_data[load_id][0], 1, 4]
+                                                            src_in_loop_dep, cf_data[load_id][0], 1, 4, cf_data[load_id][11], cf_data[load_id][12]]
 
     logging.info(f"Built {len(edge_features)} edge features, {len(branch_mapping)} branch mappings")
     return edge_features, branch_mapping
@@ -467,8 +467,6 @@ def merge_features_for_corpus(
             cf_data, instr_text, label_to_start, function_to_head_and_tail, func_map,
             instr_order, mem_ops, bh_data, dependencies, branch_ids, max_dist=100
         )
-
-        # Save JSON files
         edge_dict, branch_properties = save_json_features(
             base_name, edge_features, bh_data, output_dir, branch_mapping, edge_features
         )
