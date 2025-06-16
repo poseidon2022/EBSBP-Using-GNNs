@@ -225,7 +225,7 @@ class XFGToPT:
 
 def main(args):
     """Main function to generate .pt files for XFGs."""
-    DATA_DIRECTORY = "../_test_data"
+    DATA_DIRECTORY = "../_data"
     PICKLE_DIRECTORY = "embedding_map.pickle"
 
     save_dir = os.path.join(DATA_DIRECTORY, 'xfg')

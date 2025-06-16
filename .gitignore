@@ -1,6 +1,7 @@
 _data/
 GNN/runs
 _test_data/
+_demo_data/
 myenv/
 Embedding/venv
 ProGraML/venv
@@ -10,6 +11,7 @@ ProGraML/vocabulary
 GNN/venv
 Inst2Vec/venv
 Embedding_EVAL/venv
+demo/venv
 __pycache__/
 
 ProGraML/vocabulary/vocabulary/cutoff_stmts.csv
