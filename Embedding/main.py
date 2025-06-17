@@ -6,7 +6,7 @@ if __name__ == "__main__":
     ROOT_DIRECTORY = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     DATA_DIRECTORY = os.path.join(ROOT_DIRECTORY, '_data')
 
-    EMBEDDING_SIZE = 128    # Keep as is
+    EMBEDDING_SIZE = 32    # Keep as is
     CONTEXT_SIZE = 3       # Minimal context window
     LEARNING_RATE = 0.001
     EPOCHS = 5             # Keep as is

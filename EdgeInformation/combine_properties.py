@@ -89,7 +89,7 @@ def parse_control_flow(cf_file):
                 continue
 
             # Parse instruction and features
-            match = re.match(r"(?:BranchID:\s*(\d+)\s+)?(.+?)(?:\s*\[(?:in_loop:\s*(\d+),\s*dist_to_control_flow:\s*(\d+),\s*num_preds_BB:\s*(\d+),\s*num_succs_BB:\s*(\d+),\s*loop_depth_BB:\s*(\d+),\s*op_is_mem_access:\s*(\d+),\s*op_is_reg_operand:\s*(\d+),\s*op_is_immediate:\s*(\d+),\s*num_operands:\s*(\d+),\s*true_prob:\s*([0-9.]+),\s*false_prob:\s*([0-9.]+))\]|$)", line)
+            match = re.match(r"(?:BranchID:\s*(\d+)\s+)?(.+?)?\[in_loop:\s*(\d+),\s*dist_to_control_flow:\s*(\d+),\s*num_preds_BB:\s*(\d+),\s*num_succs_BB:\s*(\d+),\s*loop_depth_BB:\s*(\d+),\s*op_is_mem_access:\s*(\d+),\s*op_is_reg_operand:\s*(\d+),\s*op_is_immediate:\s*(\d+),\s*num_operands:\s*(\d+),\s*true_prob:\s*(\d*\.\d+),\s*false_prob:\s*(\d*\.\d+)\]", line)
             if not match:
                 i += 1
                 continue
