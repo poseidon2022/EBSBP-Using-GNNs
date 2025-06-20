@@ -13,7 +13,7 @@ class DLPredictor:
     Deep Learning Branch Predictor integrated with PyTorch Geometric model.
     Loads the GNN model and pre-processes predictions for hard-to-predict branches.
     """
-    def __init__(self, model_path="branch_prediction_gnn.pth", data_file_path="demo.pt", save_csv=False, csv_filename="gnn_predictions.csv"):
+    def __init__(self, model_path="branch_prediction_gnn.pth", data_file_path="demo.pt", save_csv=False):
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.model = None
         self.predictions = []
@@ -31,7 +31,7 @@ class DLPredictor:
         try:
             # Initialize the GNN model with correct dimensions
             # (Node_dim and edge_dim MUST match your trained model's config)
-            self.model = BranchPredictionGNN(node_dim=128, edge_dim=16, hidden_dim=64, num_layers=2).to(self.device)
+            self.model = BranchPredictionGNN(node_dim=32, edge_dim=16, hidden_dim=64, num_layers=2).to(self.device)
             checkpoint = torch.load(model_path, map_location=self.device)
             self.model.load_state_dict(checkpoint['model_state_dict'])
             self.model.eval()
@@ -50,6 +50,7 @@ class DLPredictor:
             print("Running DL Predictor with dummy logic.")
             self.model = None # Fallback to dummy
         except Exception as e:
+            print(e)
             print(f"Error initializing DL Predictor: {e}")
             print("Running DL Predictor with dummy logic.")
             self.model = None # Fallback to dummy

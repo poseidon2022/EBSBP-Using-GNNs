@@ -162,7 +162,8 @@ class XFGToPT:
 
 
         df = pd.DataFrame(heuristic_data)
-        df.to_excel('heuristic_output.xlsx', index=False)
+        csv_file = ll_path.split('.')[-2].split('/')[-1] + '_heuristic_data.csv'
+        df.to_csv(os.path.join('csv', csv_file), index=False)
         
         for i in range(len(edge_embeddings)):
             edge_features = edge_embeddings[i]

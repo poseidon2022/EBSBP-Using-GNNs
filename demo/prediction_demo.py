@@ -2,10 +2,21 @@ import pygame
 import time
 import numpy as np
 
-from dumb_predict import TwoBitPredictor
+from heuristic_predict import HeuristicPredictor
 from gnn_predict import DLPredictor
 
 pygame.init()
+
+DL_MODEL_PATH = "branch_prediction_gnn.pth"
+
+DL_DATA_PATH = "../_data/xfg/dsa/pts/packet.pt"
+HEURISTIC_CSV_PATH = "../Embedding/csv/packet_heuristic_data.csv"
+
+# DL_DATA_PATH = "../_data/xfg/dsa/pts/chaotic.pt"
+# HEURISTIC_CSV_PATH = "../Embedding/csv/chaotic_heuristic_data.csv"
+
+# DL_DATA_PATH = "../_data/xfg/dsa/pts/quick_sort.pt"
+# HEURISTIC_CSV_PATH = "../Embedding/csv/quick_sort_heuristic_data.csv"
 
 WIDTH, HEIGHT = 1200, 700
 WHITE = (255, 255, 255)
@@ -67,11 +78,8 @@ def draw_metrics(x_offset, y_offset, predictor_obj):
 running = True
 clock = pygame.time.Clock()
 
-DL_MODEL_PATH = "branch_prediction_gnn.pth"
-DL_DATA_PATH = "../_data/xfg/dsa/pts/chaotic.pt"
-
-trad_predictor = TwoBitPredictor()
-dl_predictor = DLPredictor(DL_MODEL_PATH, DL_DATA_PATH, save_csv=True, csv_filename="gnn_inference_results.csv")
+trad_predictor = HeuristicPredictor(HEURISTIC_CSV_PATH)
+dl_predictor = DLPredictor(DL_MODEL_PATH, DL_DATA_PATH, save_csv=True)
 
 if dl_predictor.model and dl_predictor.hard_branch_data:
     hard_branch_outcomes = [item[1] for item in dl_predictor.hard_branch_data]
@@ -96,7 +104,7 @@ while running:
                 print(f"Simulation {'RESUMED' if simulation_running else 'PAUSED'}")
             if event.key == pygame.K_r:
                 current_iteration = 0
-                trad_predictor = TwoBitPredictor()
+                trad_predictor = HeuristicPredictor(HEURISTIC_CSV_PATH)
                 dl_predictor.predictions = []
                 dl_predictor.mispredictions = 0
                 dl_predictor.current_hard_branch_idx = 0
@@ -112,12 +120,14 @@ while running:
         actual_outcome = current_branch_sequence[current_iteration]
 
         trad_predicted = trad_predictor.predict()
+        print("Heuristic Prediction:", trad_predicted, "actual:", actual_outcome)
         trad_predictor.update(actual_outcome)
         trad_mispredict = trad_predicted != actual_outcome
         trad_outcome_color = GREEN if not trad_mispredict else RED
 
         dl_predicted = dl_predictor.predict()
-        print("predicted:", dl_predicted, "actual:", actual_outcome)
+        print("GNN Prediction:", dl_predicted, "actual:", actual_outcome)
+        print("")
         dl_predictor.update(actual_outcome)
         dl_mispredict = dl_predicted != actual_outcome
         dl_outcome_color = GREEN if not dl_mispredict else RED
@@ -133,7 +143,7 @@ while running:
     seq_name_surf = font.render(f"Current Sequence: {sequence_name}", True, BLUE)
     screen.blit(seq_name_surf, (WIDTH // 2 - seq_name_surf.get_width() // 2, 20))
 
-    draw_pipeline(50, 150, trad_outcome_color, "Traditional Predictor (2-bit)")
+    draw_pipeline(50, 150, trad_outcome_color, "Heuristic Predictor")
     draw_metrics(50, 270, trad_predictor)
 
     draw_pipeline(WIDTH / 2 + 50, 150, dl_outcome_color, "Deep Learning Predictor")
