@@ -1,4 +1,0 @@
-Pin: pin-3.31-98869-fa6f126a8
-Copyright 2002-2024 Intel Corporation.
-A:  /tmp_proj/pin_jen/workspace/pypl-pin-nightly-user/GitPin/Source/pin/pin/image.cpp: RTN_Sec: 3080: assertion failed: RTN_Valid(x)
-
